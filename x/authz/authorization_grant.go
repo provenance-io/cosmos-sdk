@@ -51,10 +51,6 @@ func (g Grant) GetAuthorization() Authorization {
 }
 
 func (g Grant) ValidateBasic() error {
-	if g.Expiration.Unix() < time.Now().Unix() {
-		return sdkerrors.Wrap(ErrInvalidExpirationTime, "Time can't be in the past")
-	}
-
 	av := g.Authorization.GetCachedValue()
 	a, ok := av.(Authorization)
 	if !ok {

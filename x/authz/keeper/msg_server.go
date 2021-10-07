@@ -21,6 +21,9 @@ func (k Keeper) Grant(goCtx context.Context, msg *authz.MsgGrant) (*authz.MsgGra
 	if err != nil {
 		return nil, err
 	}
+	if msg.Grant.Expiration.Before(ctx.BlockHeader().Time) {
+		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "Grant has already expired.")
+	}
 
 	authorization := msg.GetAuthorization()
 	if authorization == nil {
