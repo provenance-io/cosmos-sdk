@@ -133,6 +133,10 @@ type BaseApp struct { // nolint: maligned
 	// indexEvents defines the set of events in the form {eventType}.{attributeKey},
 	// which informs Tendermint what to index. If empty, all events will be indexed.
 	indexEvents map[string]struct{}
+
+	// msg fee handler
+	// custom fee handler for provenance
+	msgFeeCalculateHandler    sdk.AdditionalMsgFeeHandler // ante handler for fee and auth
 }
 
 // NewBaseApp returns a reference to an initialized BaseApp. It accepts a
@@ -683,6 +687,11 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 	// Result if any single message fails or does not have a registered Handler.
 	result, err = app.runMsgs(runMsgCtx, msgs, mode)
 	if err == nil && mode == runTxModeDeliver {
+		// charge additional fee if logic calls for it
+		if app.msgFeeCalculateHandler != nil {
+			app.msgFeeCalculateHandler(runMsgCtx, false)
+		}
+
 		msCache.Write()
 
 		if len(events) > 0 {

@@ -237,3 +237,12 @@ func (app *BaseApp) SetInterfaceRegistry(registry types.InterfaceRegistry) {
 	app.grpcQueryRouter.SetInterfaceRegistry(registry)
 	app.msgServiceRouter.SetInterfaceRegistry(registry)
 }
+
+// SetKeeperHandler sets the Keepers needed by baseapp for msg fees.
+func (app *BaseApp) SetMsgFeeHandler(msgFeeHandler sdk.AdditionalMsgFeeHandler) {
+	if app.sealed {
+		panic("SetKeeperHandler() on sealed BaseApp")
+	}
+
+	app.msgFeeCalculateHandler = msgFeeHandler
+}
