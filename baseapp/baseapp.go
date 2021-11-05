@@ -195,6 +195,11 @@ func (app *BaseApp) Trace() bool {
 	return app.trace
 }
 
+// sets MsgServiceRouter of the BaseApp.
+func (app *BaseApp) SetMsgServiceRouter(msgServiceRouter IMsgServiceRouter) {
+	app.msgServiceRouter = msgServiceRouter
+}
+
 // MsgServiceRouter returns the MsgServiceRouter of a BaseApp.
 func (app *BaseApp) MsgServiceRouter() IMsgServiceRouter { return app.msgServiceRouter }
 
