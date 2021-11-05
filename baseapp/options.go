@@ -244,5 +244,5 @@ func (app *BaseApp) SetMsgFeeHandler(msgFeeHandler sdk.AdditionalMsgFeeHandler) 
 		panic("SetKeeperHandler() on sealed BaseApp")
 	}
 
-	app.msgFeeCalculateHandler = msgFeeHandler
+	app.additionalMsgFeeHandler = msgFeeHandler
 }

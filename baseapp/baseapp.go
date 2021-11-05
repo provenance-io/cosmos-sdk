@@ -135,8 +135,8 @@ type BaseApp struct { // nolint: maligned
 	indexEvents map[string]struct{}
 
 	// msg fee handler
-	// custom fee handler for provenance
-	msgFeeCalculateHandler    sdk.AdditionalMsgFeeHandler // ante handler for fee and auth
+	// custom fee handler for provenance, which will calculate and charge fee(if not run in simulation mode)
+	additionalMsgFeeHandler sdk.AdditionalMsgFeeHandler // ante handler for fee and auth
 }
 
 // NewBaseApp returns a reference to an initialized BaseApp. It accepts a
@@ -688,8 +688,9 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 	result, err = app.runMsgs(runMsgCtx, msgs, mode)
 	if err == nil && mode == runTxModeDeliver {
 		// charge additional fee if logic calls for it
-		if app.msgFeeCalculateHandler != nil {
-			app.msgFeeCalculateHandler(runMsgCtx, false)
+		if app.additionalMsgFeeHandler != nil {
+			// call the msgFee
+			app.additionalMsgFeeHandler(runMsgCtx, mode == runTxModeSimulate)
 		}
 
 		msCache.Write()
