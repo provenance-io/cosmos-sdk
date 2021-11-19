@@ -238,7 +238,7 @@ func (app *BaseApp) SetInterfaceRegistry(registry types.InterfaceRegistry) {
 	app.msgServiceRouter.SetInterfaceRegistry(registry)
 }
 
-// SetKeeperHandler sets the Keepers needed by baseapp for msg fees.
+// SetMsgFeeHandler sets the AdditionalMsgFeeHandler which if set will charge additional fee for a msgType(if configured via governance).
 func (app *BaseApp) SetMsgFeeHandler(msgFeeHandler sdk.AdditionalMsgFeeHandler) {
 	if app.sealed {
 		panic("SetKeeperHandler() on sealed BaseApp")
