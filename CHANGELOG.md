@@ -58,6 +58,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * [\#10430](https://github.com/cosmos/cosmos-sdk/pull/10430) ADR-040: Add store/v2 `MultiStore` implementation
 * [\#10947](https://github.com/cosmos/cosmos-sdk/pull/10947) Add `AllowancesByGranter` query to the feegrant module
 * [\#10407](https://github.com/cosmos/cosmos-sdk/pull/10407) Add validation to `x/upgrade` module's `BeginBlock` to check accidental binary downgrades
+* [\10639](https://github.com/cosmos/cosmos-sdk/pull/10639) Plugin architecture for ADR-038 + FileStreamingService plugin.
 
 ### API Breaking Changes
 
