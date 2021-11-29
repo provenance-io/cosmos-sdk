@@ -37,6 +37,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
+### Features
+
+* [\10639](https://github.com/cosmos/cosmos-sdk/pull/10639) Plugin architecture for ADR-038 + FileStreamingService plugin.
+
 # Provenance Specific releases
 
 ## [v0.45-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-2) - 2022-02-15
