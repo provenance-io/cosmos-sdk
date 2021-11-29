@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -135,6 +136,14 @@ type BaseApp struct { // nolint: maligned
 	indexEvents map[string]struct{}
 
 	feeHandler sdk.FeeHandler
+
+	// abciListeners for hooking into the ABCI message processing of the BaseApp
+	// and exposing the requests and responses to external consumers
+	abciListeners []ABCIListener
+
+	// globalWaitTime is the maximum amount of time the BaseApp will wait for positive acknowledgement of message
+	// receipt from ABCIListeners before halting
+	globalWaitLimit time.Duration
 }
 
 // NewBaseApp returns a reference to an initialized BaseApp. It accepts a
