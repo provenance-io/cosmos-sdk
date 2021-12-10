@@ -688,13 +688,14 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 	result, err = app.runMsgs(runMsgCtx, msgs, mode)
 	if err == nil && mode == runTxModeDeliver {
 		// charge additional fee if logic calls for it
-		events = AdditionalMsgBasedFeeInvoke(mode, app, runMsgCtx, events)
-
-		msCache.Write()
-
-		if len(events) > 0 {
-			// append the events in the order of occurrence
-			result.Events = append(events.ToABCIEvents(), result.Events...)
+		events, err = AdditionalMsgBasedFeeInvoke(mode, app, runMsgCtx, events)
+		// if err from AdditionalMsgBasedFeeInvoke then don't write to cache
+		if err != nil {
+			msCache.Write()
+			if len(events) > 0 {
+				// append the events in the order of occurrence
+				result.Events = append(events.ToABCIEvents(), result.Events...)
+			}
 		}
 	}
 
@@ -702,16 +703,19 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 }
 
 // AdditionalMsgBasedFeeInvoke charge additional fee if logic calls for it. This method is Provenance specific.
-func AdditionalMsgBasedFeeInvoke(mode runTxMode, app *BaseApp, runMsgCtx sdk.Context, events sdk.Events) sdk.Events {
+func AdditionalMsgBasedFeeInvoke(mode runTxMode, app *BaseApp, runMsgCtx sdk.Context, events sdk.Events) (sdk.Events, error) {
 	if app.additionalMsgFeeHandler != nil {
 		// call the msgFee
-		_, eventsFromAdditionalFeeHandler, _ := app.additionalMsgFeeHandler(runMsgCtx, mode == runTxModeSimulate)
+		_, eventsFromAdditionalFeeHandler, err := app.additionalMsgFeeHandler(runMsgCtx, mode == runTxModeSimulate)
+		if err != nil {
+			return nil, err
+		}
 		// append any events emitted by AdditionalMsgFeeHandler
 		if events != nil && len(events) > 0 {
 			events = events.AppendEvents(eventsFromAdditionalFeeHandler)
 		}
 	}
-	return events
+	return events, nil
 }
 
 // runMsgs iterates through a list of messages and executes them with the provided
