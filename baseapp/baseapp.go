@@ -690,7 +690,7 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 		// charge additional fee if logic calls for it
 		events, err = AdditionalMsgBasedFeeInvoke(mode, app, runMsgCtx, events)
 		// if err from AdditionalMsgBasedFeeInvoke then don't write to cache
-		if err != nil {
+		if err == nil {
 			msCache.Write()
 			if len(events) > 0 {
 				// append the events in the order of occurrence
