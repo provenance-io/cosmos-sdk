@@ -134,8 +134,8 @@ type BaseApp struct { // nolint: maligned
 	// which informs Tendermint what to index. If empty, all events will be indexed.
 	indexEvents map[string]struct{}
 
-	// msg fee handler
-	additionalMsgFeeHandler sdk.AdditionalMsgFeeHandler // ante handler for fee and auth
+	// fee handler
+	feeHandler sdk.FeeHandler // ante handler for fee and auth
 }
 
 // NewBaseApp returns a reference to an initialized BaseApp. It accepts a
@@ -686,9 +686,9 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 	// Result if any single message fails or does not have a registered Handler.
 	result, err = app.runMsgs(runMsgCtx, msgs, mode)
 	if err == nil && mode == runTxModeDeliver {
-		// charge additional fee if logic calls for it
-		events, err = AdditionalMsgBasedFeeInvoke(mode, app, runMsgCtx, events)
-		// if err from AdditionalMsgBasedFeeInvoke then don't write to cache
+		// apply fee logic calls
+		events, err = FeeInvoke(mode, app, runMsgCtx, events)
+		// if err from FeeInvoke then don't write to cache
 		if err == nil {
 			msCache.Write()
 			if len(events) > 0 {
@@ -701,17 +701,17 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 	return gInfo, result, ctx, err
 }
 
-// AdditionalMsgBasedFeeInvoke charge additional fee if logic calls for it. This method is Provenance specific.
-func AdditionalMsgBasedFeeInvoke(mode runTxMode, app *BaseApp, runMsgCtx sdk.Context, events sdk.Events) (sdk.Events, error) {
-	if app.additionalMsgFeeHandler != nil {
+// FeeInvoke apply fee logic and append events
+func FeeInvoke(mode runTxMode, app *BaseApp, runMsgCtx sdk.Context, events sdk.Events) (sdk.Events, error) {
+	if app.feeHandler != nil {
 		// call the msgFee
-		_, eventsFromAdditionalFeeHandler, err := app.additionalMsgFeeHandler(runMsgCtx, mode == runTxModeSimulate)
+		_, eventsFromFeeHandler, err := app.feeHandler(runMsgCtx, mode == runTxModeSimulate)
 		if err != nil {
 			return nil, err
 		}
-		// append any events emitted by AdditionalMsgFeeHandler
+		// append any events emitted by FeeHandler
 		if events != nil && len(events) > 0 {
-			events = events.AppendEvents(eventsFromAdditionalFeeHandler)
+			events = events.AppendEvents(eventsFromFeeHandler)
 		}
 	}
 	return events, nil
