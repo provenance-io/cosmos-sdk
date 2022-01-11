@@ -19,14 +19,9 @@ func (app *BaseApp) Check(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo, *sdk
 	return gasInfo, result, err
 }
 
-<<<<<<< HEAD
 func (app *BaseApp) Simulate(txBytes []byte) (sdk.GasInfo, *sdk.Result, error) {
-	gasInfo, result, _, err := app.runTx(runTxModeSimulate, txBytes)
-	return gasInfo, result, err
-=======
-func (app *BaseApp) Simulate(txBytes []byte) (sdk.GasInfo, *sdk.Result, sdk.Context, error) {
-	return app.runTx(runTxModeSimulate, txBytes)
->>>>>>> eff7dd7b11a9569860ce8f0dcf51007365bda9f2
+	gasInfo, result, _, ctx, err := app.runTx(runTxModeSimulate, txBytes)
+	return gasInfo, result, ctx, err
 }
 
 func (app *BaseApp) Deliver(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo, *sdk.Result, error) {

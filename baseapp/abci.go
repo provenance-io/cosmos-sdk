@@ -240,11 +240,7 @@ func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 		panic(fmt.Sprintf("unknown RequestCheckTx type: %s", req.Type))
 	}
 
-<<<<<<< HEAD
-	gInfo, result, anteEvents, err := app.runTx(mode, req.Tx)
-=======
-	gInfo, result, _, err := app.runTx(mode, req.Tx)
->>>>>>> eff7dd7b11a9569860ce8f0dcf51007365bda9f2
+	gInfo, result, anteEvents, _, err := app.runTx(mode, req.Tx)
 	if err != nil {
 		return sdkerrors.ResponseCheckTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, anteEvents, app.trace)
 	}
@@ -276,11 +272,7 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx 
 		telemetry.SetGauge(float32(gInfo.GasWanted), "tx", "gas", "wanted")
 	}()
 
-<<<<<<< HEAD
-	gInfo, result, anteEvents, err := app.runTx(runTxModeDeliver, req.Tx)
-=======
-	gInfo, result, _, err := app.runTx(runTxModeDeliver, req.Tx)
->>>>>>> eff7dd7b11a9569860ce8f0dcf51007365bda9f2
+	gInfo, result, anteEvents, _, err := app.runTx(runTxModeDeliver, req.Tx)
 	if err != nil {
 		resultStr = "failed"
 		return sdkerrors.ResponseDeliverTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, anteEvents, app.trace)
