@@ -39,6 +39,11 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Provenance Specific releases
 
+## [v0.45-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-2)
+
+* [\#10466](https://github.com/cosmos/cosmos-sdk/issues/10466) Fixes error with simulation tests when genesis start time is randomly created after the year 2262
+* [\#10468](https://github.com/cosmos/cosmos-sdk/pull/10468) Allow futureOps to queue additional operations in simulations
+
 ## [v0.45-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-1.8.rc1)
 
 * Updated baseapp and added custom fee handler to support provenance message fee module [354](https://github.com/provenance-io/provenance/issues/354), for upstream cosmos-sdk release [v0.45.0](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.45.0) 
@@ -79,7 +84,6 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * (types) [\#10076](https://github.com/cosmos/cosmos-sdk/pull/10076) Significantly speedup and lower allocations for `Coins.String()`.
 * (auth) [\#10022](https://github.com/cosmos/cosmos-sdk/pull/10022) `AuthKeeper` interface in `x/auth` now includes a function `HasAccount`.
 * [\#10393](https://github.com/cosmos/cosmos-sdk/pull/10393) Add `HasSupply` method to bank keeper to ensure that input denom actually exists on chain.
-* [\#10468](https://github.com/cosmos/cosmos-sdk/pull/10468) Allow futureOps to queue additional operations in simulations
 
 ### Bug Fixes
 
