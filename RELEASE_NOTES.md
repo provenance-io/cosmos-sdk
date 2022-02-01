@@ -1,3 +1,7 @@
+# Cosmos SDK v0.44.5 Release Notes
+
+This release adds the updates from cosmos-sdk upstream v0.44.4 and v0.44.5 to the msg fee and rosetta fixes added into the Provenanced fork at v0.45
+
 # Cosmos SDK v0.45.0 Release Notes
 
 Cosmos SDK v0.45.0 is a logical continuation of the v0.44.\* series, but brings a couple of state- and API-breaking changes requested by the community.
@@ -29,3 +33,4 @@ Finally, when using the `SetOrder*` functions in simapp, e.g. `SetOrderBeginBloc
 - Copied and updated `server.GenerateCoinKey` and `server.GenerateServerCoinKey` functions to the `testutil` package. These functions in `server` package are marked deprecated and will be removed in the next release. In the `testutil.GenerateServerCoinKey` version we  added support for custom mnemonics in in-process testing network.
 
 See our [CHANGELOG](./CHANGELOG.md) for the exhaustive list of all changes, or a full [commit diff](https://github.com/cosmos/cosmos-sdk/compare/v0.44.5...v0.45.0).
+
