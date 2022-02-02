@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/plugin"
 	"github.com/cosmos/cosmos-sdk/plugin/plugins/trace/service"
 	serverTypes "github.com/cosmos/cosmos-sdk/server/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/store/types"
 )
 
 // Plugin name and version
@@ -28,8 +28,8 @@ const (
 	// KEYS_PARAM is a list of the StoreKeys we want to expose for this streaming service
 	KEYS_PARAM = "keys"
 
-	// DELIVERED_BLOCK_TIMEOUT_SECONDS is the timeout setting used in the implementation of ABCIListener.ListenSuccess()
-	DELIVERED_BLOCK_TIMEOUT_SECONDS = "deliveredBlockTimeoutSeconds"
+	// DELIVER_BLOCK_WAIT_LIMIT is the timeout setting used in the implementation of ABCIListener.ListenSuccess()
+	DELIVER_BLOCK_WAIT_LIMIT = "deliver_block_wait_limit"
 )
 
 // Plugins is the exported symbol for loading this plugin
@@ -38,7 +38,7 @@ var Plugins = []plugin.Plugin{
 }
 
 type streamingServicePlugin struct {
-	kss  *service.TraceStreamingService
+	tss  *service.TraceStreamingService
 	opts serverTypes.AppOptions
 }
 
@@ -61,43 +61,43 @@ func (ssp *streamingServicePlugin) Init(env serverTypes.AppOptions) error {
 }
 
 // Register satisfies the plugin.StateStreamingPlugin interface
-func (ssp *streamingServicePlugin) Register(bApp *baseapp.BaseApp, marshaller codec.BinaryCodec, keys map[string]*sdk.KVStoreKey) error {
+func (ssp *streamingServicePlugin) Register(bApp *baseapp.BaseApp, marshaller codec.BinaryCodec, keys map[string]*types.KVStoreKey) error {
 	// load all the params required for this plugin from the provided AppOptions
-	deliveredBlockTimeoutSeconds := cast.ToDuration(ssp.opts.Get(fmt.Sprintf("%s.%s.%s.%s", plugin.PLUGIN_TOML_KEY, plugin.STREAMING_TOML_KEY, PLUGIN_NAME, DELIVERED_BLOCK_TIMEOUT_SECONDS)))
+	deliverBlockWaitLimit := cast.ToDuration(ssp.opts.Get(fmt.Sprintf("%s.%s.%s.%s", plugin.PLUGINS_TOML_KEY, plugin.STREAMING_TOML_KEY, PLUGIN_NAME, DELIVER_BLOCK_WAIT_LIMIT)))
 	// get the store keys allowed to be exposed for this streaming service
-	exposeKeyStrings := cast.ToStringSlice(ssp.opts.Get(fmt.Sprintf("%s.%s.%s.%s", plugin.PLUGIN_TOML_KEY, plugin.STREAMING_TOML_KEY, PLUGIN_NAME, KEYS_PARAM)))
-	var exposeStoreKeys []sdk.StoreKey
+	exposeKeyStrings := cast.ToStringSlice(ssp.opts.Get(fmt.Sprintf("%s.%s.%s.%s", plugin.PLUGINS_TOML_KEY, plugin.STREAMING_TOML_KEY, PLUGIN_NAME, KEYS_PARAM)))
+	var exposeStoreKeys []types.StoreKey
 
 	if len(exposeKeyStrings) > 0 {
-		exposeStoreKeys = make([]sdk.StoreKey, 0, len(exposeKeyStrings))
+		exposeStoreKeys = make([]types.StoreKey, 0, len(exposeKeyStrings))
 		for _, keyStr := range exposeKeyStrings {
 			if storeKey, ok := keys[keyStr]; ok {
 				exposeStoreKeys = append(exposeStoreKeys, storeKey)
 			}
 		}
 	} else { // if none are specified, we expose all the keys
-		exposeStoreKeys = make([]sdk.StoreKey, 0, len(keys))
+		exposeStoreKeys = make([]types.StoreKey, 0, len(keys))
 		for _, storeKey := range keys {
 			exposeStoreKeys = append(exposeStoreKeys, storeKey)
 		}
 	}
 
 	var err error
-	ssp.kss, err = service.NewTraceStreamingService(exposeStoreKeys, marshaller, deliveredBlockTimeoutSeconds)
+	ssp.tss, err = service.NewTraceStreamingService(exposeStoreKeys, marshaller, deliverBlockWaitLimit)
 	if err != nil {
 		return err
 	}
 	// register the streaming service with the BaseApp
-	bApp.SetStreamingService(ssp.kss)
+	bApp.SetStreamingService(ssp.tss)
 	return nil
 }
 
 // Start satisfies the plugin.StateStreamingPlugin interface
-func (ssp *streamingServicePlugin) Start(wg *sync.WaitGroup) {
-	ssp.kss.Stream(wg)
+func (ssp *streamingServicePlugin) Start(wg *sync.WaitGroup) error {
+	return ssp.tss.Stream(wg)
 }
 
 // Close satisfies io.Closer
 func (ssp *streamingServicePlugin) Close() error {
-	return ssp.kss.Close()
+	return ssp.tss.Close()
 }

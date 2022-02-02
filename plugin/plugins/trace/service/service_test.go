@@ -98,8 +98,9 @@ var (
 	mockKey3   = []byte{3, 4, 5}
 	mockValue3 = []byte{5, 4, 3}
 
-	// a global wait limit for receiving positive acknowledgement of message receipt
-	deliveredBlockTimeoutSeconds = time.Duration(2)
+	// maximum amount of time ListenSuccess() will wait receipt
+	// that all current block messages were delivered to the service.
+	deliverBlockWaitLimit = time.Duration(1000)
 )
 
 func TestIntermediateWriter(t *testing.T) {
@@ -124,7 +125,7 @@ func TestIntermediateWriter(t *testing.T) {
 func TestKafkaStreamingService(t *testing.T) {
 	loggerContext = emptyContext.WithLogger(log.TestingLogger())
 	testKeys := []types.StoreKey{mockStoreKey1, mockStoreKey2}
-	tss, err := NewTraceStreamingService(testKeys, testMarshaller, deliveredBlockTimeoutSeconds)
+	tss, err := NewTraceStreamingService(testKeys, testMarshaller, deliverBlockWaitLimit)
 	testStreamingService = tss
 	require.Nil(t, err)
 	require.IsType(t, &TraceStreamingService{}, testStreamingService)

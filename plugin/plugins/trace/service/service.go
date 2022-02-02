@@ -41,17 +41,17 @@ const (
 // TraceStreamingService is a concrete implementation of streaming.Service that writes state changes to log file.
 type TraceStreamingService struct {
 	listeners                    map[types.StoreKey][]types.WriteListener // the listeners that will be initialized with BaseApp
-	srcChan                      <-chan []byte                          // the channel that all of the WriteListeners write their data out to
-	codec                        codec.BinaryCodec                      // binary marshaller used for re-marshalling the ABCI messages to write them out to the destination files
-	stateCache                   [][]byte                               // cache the protobuf binary encoded StoreKVPairs in the order they are received
-	stateCacheLock               *sync.Mutex                            // mutex for the state cache
-	currentBlockNumber           int64                                  // the current block number
-	currentTxIndex               int64                                  // the index of the current tx
-	quitChan                     chan struct{}                          // channel used for synchronize closure
-	successChan                  chan bool                              // channel used for signaling success or failure of message delivery to external service
-	deliveredMessages            bool                                   // True if messages were delivered, false otherwise.
-	deliveredBlockChan           chan struct{}                          // channel used for signaling the delivery of all messages for the current block.
-	deliveredBlockTimeoutSeconds time.Duration                          // the time to wait for service to deliver current block messages before timing out.
+	srcChan               <-chan []byte                                   // the channel that all of the WriteListeners write their data out to
+	codec                 codec.BinaryCodec                               // binary marshaller used for re-marshalling the ABCI messages to write them out to the destination files
+	stateCache            [][]byte                                        // cache the protobuf binary encoded StoreKVPairs in the order they are received
+	stateCacheLock        *sync.Mutex                                     // mutex for the state cache
+	currentBlockNumber    int64                                           // the current block number
+	currentTxIndex        int64                                           // the index of the current tx
+	quitChan              chan struct{}                                   // channel used for synchronize closure
+	successChan           chan bool                                       // channel used for signaling success or failure of message delivery to external service
+	deliveredMessages     bool                                            // True if messages were delivered, false otherwise.
+	deliveredBlockChan    chan struct{}                                   // channel used for signaling the delivery of all messages for the current block.
+	deliverBlockWaitLimit time.Duration                                   // the time to wait for service to deliver current block messages before timing out.
 }
 
 // IntermediateWriter is used so that we do not need to update the underlying io.Writer inside the StoreKVPairWriteListener
@@ -73,11 +73,12 @@ func (iw *IntermediateWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-// NewTraceStreamingService creates a new TraceStreamingService for the provided producerConfig, topicPrefix, and storeKeys
+// NewTraceStreamingService creates a new TraceStreamingService for the provided
+// storeKeys, BinaryCodec and deliverBlockWaitLimit (in milliseconds)
 func NewTraceStreamingService(
-	storeKeys                    []types.StoreKey,
-	c                            codec.BinaryCodec,
-	deliveredBlockTimeoutSeconds time.Duration,
+	storeKeys             []types.StoreKey,
+	c                     codec.BinaryCodec,
+	deliverBlockWaitLimit time.Duration,
 ) (*TraceStreamingService, error) {
 	successChan := make(chan bool, 1)
 	listenChan := make(chan []byte)
@@ -90,14 +91,14 @@ func NewTraceStreamingService(
 	}
 
 	tss := &TraceStreamingService{
-		listeners:                    listeners,
-		srcChan:                      listenChan,
-		codec:                        c,
-		stateCache:                   make([][]byte, 0),
-		stateCacheLock:               new(sync.Mutex),
-		successChan:                  successChan,
-		deliveredMessages:            true,
-		deliveredBlockTimeoutSeconds: deliveredBlockTimeoutSeconds,
+		listeners:             listeners,
+		srcChan:               listenChan,
+		codec:                 c,
+		stateCache:            make([][]byte, 0),
+		stateCacheLock:        new(sync.Mutex),
+		successChan:           successChan,
+		deliveredMessages:     true,
+		deliverBlockWaitLimit: deliverBlockWaitLimit,
 	}
 
 	return tss, nil
@@ -227,7 +228,7 @@ func (tss *TraceStreamingService) ListenSuccess() <-chan bool {
 	// Synchronize the work between app.Commit() and message writes for the current block.
 	// Wait until ListenEndBlock() is finished or timeout is reached before responding back.
 	var deliveredBlock bool
-	maxWait := time.NewTicker(tss.deliveredBlockTimeoutSeconds * time.Second)
+	maxWait := time.NewTicker(tss.deliverBlockWaitLimit)
 	defer maxWait.Stop()
 	loop:
 		for {
