@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -342,6 +343,7 @@ func (app *BaseApp) Commit() (res abci.ResponseCommit) {
 	// but the BaseApp also imposes a global wait limit
 	if app.globalWaitLimit > 0 {
 		maxWait := time.NewTicker(app.globalWaitLimit)
+		defer maxWait.Stop()
 		for _, lis := range app.abciListeners {
 			select {
 			case success := <-lis.ListenSuccess():
