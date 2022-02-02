@@ -28,8 +28,8 @@ const (
 	// KEYS_PARAM is a list of the StoreKeys we want to expose for this streaming service
 	KEYS_PARAM = "keys"
 
-	// DELIVER_BLOCK_WAIT_LIMIT is the timeout setting used in the implementation of ABCIListener.ListenSuccess()
-	DELIVER_BLOCK_WAIT_LIMIT = "deliver_block_wait_limit"
+	// DELIVER_BLOCK_WAIT_LIMIT_PARAM is the timeout setting used in the implementation of ABCIListener.ListenSuccess()
+	DELIVER_BLOCK_WAIT_LIMIT_PARAM = "deliver_block_wait_limit"
 )
 
 // Plugins is the exported symbol for loading this plugin
@@ -63,7 +63,7 @@ func (ssp *streamingServicePlugin) Init(env serverTypes.AppOptions) error {
 // Register satisfies the plugin.StateStreamingPlugin interface
 func (ssp *streamingServicePlugin) Register(bApp *baseapp.BaseApp, marshaller codec.BinaryCodec, keys map[string]*types.KVStoreKey) error {
 	// load all the params required for this plugin from the provided AppOptions
-	deliverBlockWaitLimit := cast.ToDuration(ssp.opts.Get(fmt.Sprintf("%s.%s.%s.%s", plugin.PLUGINS_TOML_KEY, plugin.STREAMING_TOML_KEY, PLUGIN_NAME, DELIVER_BLOCK_WAIT_LIMIT)))
+	deliverBlockWaitLimit := cast.ToDuration(ssp.opts.Get(fmt.Sprintf("%s.%s.%s.%s", plugin.PLUGINS_TOML_KEY, plugin.STREAMING_TOML_KEY, PLUGIN_NAME, DELIVER_BLOCK_WAIT_LIMIT_PARAM)))
 	// get the store keys allowed to be exposed for this streaming service
 	exposeKeyStrings := cast.ToStringSlice(ssp.opts.Get(fmt.Sprintf("%s.%s.%s.%s", plugin.PLUGINS_TOML_KEY, plugin.STREAMING_TOML_KEY, PLUGIN_NAME, KEYS_PARAM)))
 	var exposeStoreKeys []types.StoreKey
