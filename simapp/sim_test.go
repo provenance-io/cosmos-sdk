@@ -324,14 +324,12 @@ func TestAppStateDeterminism(t *testing.T) {
 
 			// load up plugin options
 			appOpts := loadAppOptions()
-			// todo: this should be an opt-in approach
-			//disabledPlugins := cast.ToStringSlice(appOpts.Get(fmt.Sprintf("%s.%s", plugin.PLUGINS_TOML_KEY, plugin.PLUGINS_ON_TOML_KEY)))
-			//kafkaPluginName := cast.ToString(appOpts.Get(fmt.Sprintf("%s.%s.%s", plugin.PLUGINS_TOML_KEY, plugin.STREAMING_TOML_KEY, kafkaplugin.PLUGIN_NAME)))
-			//for _, p := range disabledPlugins {
-			//	if kafkaPluginName == p {
+			enabledPlugins := cast.ToStringSlice(appOpts.Get(fmt.Sprintf("%s.%s", plugin.PLUGINS_TOML_KEY, plugin.PLUGINS_ENABLED_TOML_KEY)))
+			for _, p := range enabledPlugins {
+				if kafkaplugin.PLUGIN_NAME == p {
 					prepKafkaTopics(appOpts)
-			//	}
-			//}
+				}
+			}
 
 			db := dbm.NewMemDB()
 			app := NewSimApp(logger, db, nil, true, map[int64]bool{}, DefaultNodeHome, FlagPeriodValue, MakeTestEncodingConfig(), appOpts, interBlockCacheOpt())
