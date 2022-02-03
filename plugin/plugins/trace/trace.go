@@ -30,6 +30,8 @@ const (
 
 	// DELIVER_BLOCK_WAIT_LIMIT_PARAM is the timeout setting used in the implementation of ABCIListener.ListenSuccess()
 	DELIVER_BLOCK_WAIT_LIMIT_PARAM = "deliver_block_wait_limit"
+
+	PRINT_DATA_TO_STDOUT_PARAM = "print_data_to_stdout"
 )
 
 // Plugins is the exported symbol for loading this plugin
@@ -64,6 +66,7 @@ func (ssp *streamingServicePlugin) Init(env serverTypes.AppOptions) error {
 func (ssp *streamingServicePlugin) Register(bApp *baseapp.BaseApp, marshaller codec.BinaryCodec, keys map[string]*types.KVStoreKey) error {
 	// load all the params required for this plugin from the provided AppOptions
 	deliverBlockWaitLimit := cast.ToDuration(ssp.opts.Get(fmt.Sprintf("%s.%s.%s.%s", plugin.PLUGINS_TOML_KEY, plugin.STREAMING_TOML_KEY, PLUGIN_NAME, DELIVER_BLOCK_WAIT_LIMIT_PARAM)))
+	printDataToStdout := cast.ToBool(ssp.opts.Get(fmt.Sprintf("%s.%s.%s.%s", plugin.PLUGINS_TOML_KEY, plugin.STREAMING_TOML_KEY, PLUGIN_NAME, PRINT_DATA_TO_STDOUT_PARAM)))
 	// get the store keys allowed to be exposed for this streaming service
 	exposeKeyStrings := cast.ToStringSlice(ssp.opts.Get(fmt.Sprintf("%s.%s.%s.%s", plugin.PLUGINS_TOML_KEY, plugin.STREAMING_TOML_KEY, PLUGIN_NAME, KEYS_PARAM)))
 	var exposeStoreKeys []types.StoreKey
@@ -83,7 +86,7 @@ func (ssp *streamingServicePlugin) Register(bApp *baseapp.BaseApp, marshaller co
 	}
 
 	var err error
-	ssp.tss, err = service.NewTraceStreamingService(exposeStoreKeys, marshaller, deliverBlockWaitLimit)
+	ssp.tss, err = service.NewTraceStreamingService(exposeStoreKeys, marshaller, deliverBlockWaitLimit, printDataToStdout)
 	if err != nil {
 		return err
 	}

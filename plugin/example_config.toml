@@ -8,9 +8,9 @@
 on = true
 
 # List of plugin names to disable
-disabled = ["file", "trace"]
+disabled = ["file", "kafka"]
 
-# The directory to load non-preloaded plugins from; defaults to ./plugin/plugins
+# The directory to load non-preloaded plugins from; defaults $GOPATH/src/github.com/cosmos/cosmos-sdk/plugin/plugins
 dir = ""
 
 # a mapping of plugin-specific streaming service parameters, mapped to their pluginFileName
@@ -18,7 +18,7 @@ dir = ""
 
 # maximum amount of time the BaseApp will await positive acknowledgement of message receipt from all streaming services
 # in milliseconds
-global_ack_wait_limit = 500
+global_ack_wait_limit = 1000
 
 ###############################################################################
 ###                      File plugin configuration                          ###
@@ -56,7 +56,10 @@ keys = []
 # Note: This setting MUST be less then `plugins.global_ack_wait_limit`.
 #       Otherwise, the application will halt without committing blocks.
 # In milliseconds.
-deliver_block_wait_limit = 1000
+deliver_block_wait_limit = 500
+
+# In addition to block event info, print the data to stdout as well.
+print_data_to_stdout = true
 
 ###############################################################################
 ###                       Kafka Plugin configuration                        ###
@@ -80,7 +83,7 @@ flush_timeout_ms = 1500
 # Note: This setting MUST be less then `plugins.global_ack_wait_limit`.
 #       Otherwise, the application will halt without committing blocks.
 # In milliseconds.
-deliver_block_wait_limit = 1000
+deliver_block_wait_limit = 500
 
 # Producer configuration properties.
 # The plugin uses confluent-kafka-go which is a lightweight wrapper around librdkafka.

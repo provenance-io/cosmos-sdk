@@ -40,18 +40,19 @@ const (
 
 // TraceStreamingService is a concrete implementation of streaming.Service that writes state changes to log file.
 type TraceStreamingService struct {
-	listeners                    map[types.StoreKey][]types.WriteListener // the listeners that will be initialized with BaseApp
-	srcChan               <-chan []byte                                   // the channel that all of the WriteListeners write their data out to
-	codec                 codec.BinaryCodec                               // binary marshaller used for re-marshalling the ABCI messages to write them out to the destination files
-	stateCache            [][]byte                                        // cache the protobuf binary encoded StoreKVPairs in the order they are received
-	stateCacheLock        *sync.Mutex                                     // mutex for the state cache
-	currentBlockNumber    int64                                           // the current block number
-	currentTxIndex        int64                                           // the index of the current tx
-	quitChan              chan struct{}                                   // channel used for synchronize closure
-	successChan           chan bool                                       // channel used for signaling success or failure of message delivery to external service
-	deliveredMessages     bool                                            // True if messages were delivered, false otherwise.
-	deliveredBlockChan    chan struct{}                                   // channel used for signaling the delivery of all messages for the current block.
-	deliverBlockWaitLimit time.Duration                                   // the time to wait for service to deliver current block messages before timing out.
+	listeners             map[types.StoreKey][]types.WriteListener // the listeners that will be initialized with BaseApp
+	srcChan               <-chan []byte                            // the channel that all of the WriteListeners write their data out to
+	codec                 codec.BinaryCodec                        // binary marshaller used for re-marshalling the ABCI messages to write them out to the destination files
+	stateCache            [][]byte                                 // cache the protobuf binary encoded StoreKVPairs in the order they are received
+	stateCacheLock        *sync.Mutex                              // mutex for the state cache
+	currentBlockNumber    int64                                    // the current block number
+	currentTxIndex        int64                                    // the index of the current tx
+	quitChan              chan struct{}                            // channel used for synchronize closure
+	successChan           chan bool                                // channel used for signaling success or failure of message delivery to external service
+	deliveredMessages     bool                                     // True if messages were delivered, false otherwise.
+	deliveredBlockChan    chan struct{}                            // channel used for signaling the delivery of all messages for the current block.
+	deliverBlockWaitLimit time.Duration                            // the time to wait for service to deliver current block messages before timing out.
+	printDataToStdout     bool                                     // Print types.StoreKVPair data stored in each event to stdout.
 }
 
 // IntermediateWriter is used so that we do not need to update the underlying io.Writer inside the StoreKVPairWriteListener
@@ -79,6 +80,7 @@ func NewTraceStreamingService(
 	storeKeys             []types.StoreKey,
 	c                     codec.BinaryCodec,
 	deliverBlockWaitLimit time.Duration,
+	printDataToStdout     bool,
 ) (*TraceStreamingService, error) {
 	successChan := make(chan bool, 1)
 	listenChan := make(chan []byte)
@@ -99,6 +101,7 @@ func NewTraceStreamingService(
 		successChan:           successChan,
 		deliveredMessages:     true,
 		deliverBlockWaitLimit: deliverBlockWaitLimit,
+		printDataToStdout:     printDataToStdout,
 	}
 
 	return tss, nil
@@ -304,6 +307,10 @@ func (tss *TraceStreamingService) writeStateChange(ctx sdk.Context, event string
 }
 
 func (tss *TraceStreamingService) writeEventReqRes(ctx sdk.Context, key string, data proto.Message) error {
-	ctx.Logger().Debug(fmt.Sprintf("%v => data:omitted", key))
+	var m = fmt.Sprintf("%v => data:omitted", key)
+	if tss.printDataToStdout {
+		m = fmt.Sprintf("%v => data:%v", key, data)
+	}
+	ctx.Logger().Debug(m)
 	return nil
 }
