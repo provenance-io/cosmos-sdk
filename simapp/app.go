@@ -232,8 +232,8 @@ func NewSimApp(
 	// not include this key.
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey, "testingkey")
 
-	pluginsOnKey := fmt.Sprintf("%s.%s", plugin.PLUGINS_TOML_KEY, plugin.PLUGINS_ON_TOML_KEY)
-	if cast.ToBool(appOpts.Get(pluginsOnKey)) {
+	pluginsOn := cast.ToBool(appOpts.Get(fmt.Sprintf("%s.%s", plugin.PLUGINS_TOML_KEY, plugin.PLUGINS_ON_TOML_KEY)))
+	if pluginsOn {
 		// set the global wait limit for state streaming plugin message receipt acknowledgement
 		globalWaitLimitKey := fmt.Sprintf("%s.%s.%s", plugin.PLUGINS_TOML_KEY, plugin.STREAMING_TOML_KEY, plugin.GLOBAL_ACK_WAIT_LIMIT_TOML_KEY)
 		globalWaitLimit := cast.ToDuration(appOpts.Get(globalWaitLimitKey))
