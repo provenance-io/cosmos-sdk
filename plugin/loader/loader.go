@@ -97,8 +97,8 @@ func NewPluginLoader(opts serverTypes.AppOptions, logger logging.Logger) (*Plugi
 			return nil, err
 		}
 	}
-	loader.disabled = cast.ToStringSlice(opts.Get(plugin.PLUGINS_DISABLED_TOML_KEY))
-	pluginDir := cast.ToString(opts.Get(plugin.PLUGINS_DIR_TOML_KEY))
+	loader.disabled = cast.ToStringSlice(opts.Get(fmt.Sprintf("%s.%s", plugin.PLUGINS_TOML_KEY, plugin.PLUGINS_DISABLED_TOML_KEY)))
+	pluginDir := cast.ToString(opts.Get(fmt.Sprintf("%s.%s", plugin.PLUGINS_TOML_KEY, plugin.PLUGINS_DIR_TOML_KEY)))
 	if pluginDir == "" {
 		pluginDir = filepath.Join(os.Getenv("GOPATH"), plugin.DEFAULT_PLUGINS_DIRECTORY)
 	}
