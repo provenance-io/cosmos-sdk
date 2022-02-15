@@ -37,17 +37,14 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
-### Improvements
-
-* (types) [\#10948](https://github.com/cosmos/cosmos-sdk/issues/10948) Use Tendermint `db_backend` config value instead of compile-time `types.DBBackend` value.
-
 # Provenance Specific releases
 
-## [v0.45-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-2)
+## [v0.45-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-2) - 2022-02-15
 
 * [\#10466](https://github.com/cosmos/cosmos-sdk/issues/10466) Fixes error with simulation tests when genesis start time is randomly created after the year 2262
 * [\#10468](https://github.com/cosmos/cosmos-sdk/pull/10468) Allow futureOps to queue additional operations in simulations
 * (deps) [\#9987](https://github.com/cosmos/cosmos-sdk/pull/9987) Bump Go version minimum requirement to `1.17`
+* (types) [\#10948](https://github.com/cosmos/cosmos-sdk/issues/10948) Use Tendermint `db_backend` config value instead of compile-time `types.DBBackend` value.
 
 ## [v0.45-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-1.8.rc1)
 
