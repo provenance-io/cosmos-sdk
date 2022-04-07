@@ -178,7 +178,7 @@ func (st *Store) Set(key, value []byte) {
 // Implements types.KVStore.
 func (st *Store) Get(key []byte) []byte {
 	defer telemetry.MeasureSince(time.Now(), "store", "iavl", "get")
-	_, value := st.tree.Get(key)
+	value := st.tree.Get(key)
 	return value
 }
 
@@ -212,7 +212,7 @@ func (st *Store) Iterator(start, end []byte) types.Iterator {
 		iTree = tree.ImmutableTree
 	}
 
-	return newIAVLIterator(iTree, start, end, true)
+	return iavl.NewIterator(start, end, true, iTree)
 }
 
 // Implements types.KVStore.
@@ -226,7 +226,7 @@ func (st *Store) ReverseIterator(start, end []byte) types.Iterator {
 		iTree = tree.ImmutableTree
 	}
 
-	return newIAVLIterator(iTree, start, end, false)
+	return iavl.NewIterator(start, end, false, iTree)
 }
 
 // SetInitialVersion sets the initial version of the IAVL tree. It is used when
@@ -301,7 +301,7 @@ func (st *Store) Query(req abci.RequestQuery) (res abci.ResponseQuery) {
 			break
 		}
 
-		_, res.Value = tree.GetVersioned(key, res.Height)
+		res.Value = tree.GetVersioned(key, res.Height)
 		if !req.Prove {
 			break
 		}
@@ -385,13 +385,3 @@ type iavlIterator struct {
 }
 
 var _ types.Iterator = (*iavlIterator)(nil)
-
-// newIAVLIterator will create a new iavlIterator.
-// CONTRACT: Caller must release the iavlIterator, as each one creates a new
-// goroutine.
-func newIAVLIterator(tree *iavl.ImmutableTree, start, end []byte, ascending bool) *iavlIterator {
-	iter := &iavlIterator{
-		Iterator: tree.Iterator(start, end, ascending),
-	}
-	return iter
-}
