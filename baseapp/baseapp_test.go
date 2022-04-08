@@ -192,6 +192,12 @@ func setupBaseAppWithSnapshots(t *testing.T, blocks uint, blockTxs int, options 
 	return app, teardown
 }
 
+func shouldPanic(t *testing.T, msg string, f func()) {
+	defer func() { recover() }()
+	f()
+	t.Errorf(msg)
+}
+
 func TestMountStores(t *testing.T) {
 	app := setupBaseApp(t)
 
@@ -548,6 +554,12 @@ func TestSetMinGasPrices(t *testing.T) {
 	minGasPrices := sdk.DecCoins{sdk.NewInt64DecCoin("stake", 5000)}
 	app := newBaseApp(t.Name(), SetMinGasPrices(minGasPrices.String()))
 	require.Equal(t, minGasPrices, app.minGasPrices)
+}
+
+func TestSetMinGasPricesPanics(t *testing.T) {
+	shouldPanic(t, "Setting negative minimum gas price should panic", func() {
+		SetMinGasPrices("-5000stake")
+	})
 }
 
 func TestInitChainer(t *testing.T) {
@@ -2039,4 +2051,20 @@ func TestBaseApp_EndBlock(t *testing.T) {
 	require.Len(t, res.GetValidatorUpdates(), 1)
 	require.Equal(t, int64(100), res.GetValidatorUpdates()[0].Power)
 	require.Equal(t, cp.Block.MaxGas, res.ConsensusParamUpdates.Block.MaxGas)
+}
+
+func TestMessageServiceRouter(t *testing.T) {
+	require.Fail(t, "Not yet implemented")
+}
+
+func TestMountKVStores(t *testing.T) {
+	require.Fail(t, "Not yet implemented")
+}
+
+func TestMountTransientStores(t *testing.T) {
+	require.Fail(t, "Not yet implemented")
+}
+
+func TestDefaultStoreLoader(t *testing.T) {
+	require.Fail(t, "Not yet implemented")
 }
