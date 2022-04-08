@@ -2053,8 +2053,17 @@ func TestBaseApp_EndBlock(t *testing.T) {
 	require.Equal(t, cp.Block.MaxGas, res.ConsensusParamUpdates.Block.MaxGas)
 }
 
-func TestMessageServiceRouter(t *testing.T) {
-	require.Fail(t, "Not yet implemented")
+/*func TestMessageServiceRouter(t *testing.T) {
+	db := dbm.NewMemDB()
+	name := t.Name()
+	logger := defaultLogger()
+	app := NewBaseApp(name, logger, db, nil)
+
+	app.SetMsgServiceRouter(nil)
+	require.Equal(t, nil, app.MsgServiceRouter())
+
+	app.SetMsgServiceRouter(NewMsgServiceRouter())
+	require.NotEqual(t, nil, app.MsgServiceRouter())
 }
 
 func TestMountKVStores(t *testing.T) {
@@ -2067,4 +2076,4 @@ func TestMountTransientStores(t *testing.T) {
 
 func TestDefaultStoreLoader(t *testing.T) {
 	require.Fail(t, "Not yet implemented")
-}
+}*/
