@@ -2122,5 +2122,19 @@ func TestMountTransientStores(t *testing.T) {
 }
 
 func TestDefaultStoreLoader(t *testing.T) {
-	require.Fail(t, "Not yet implemented")
+	db := dbm.NewMemDB()
+	name := t.Name()
+	logger := defaultLogger()
+	app := NewBaseApp(name, logger, db, nil)
+
+	keys := sdk.NewKVStoreKeys("acc")
+
+	app.MountKVStores(keys)
+	DefaultStoreLoader(app.cms)
+
+	// This will panic if DefaultStoreLoader doens't correctly work
+	for _, key := range keys {
+		store := app.cms.GetCommitKVStore(key)
+		require.Equal(t, sdk.StoreTypeIAVL, store.GetStoreType())
+	}
 }
