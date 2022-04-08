@@ -30,6 +30,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
 var (
@@ -2086,7 +2087,7 @@ func TestMountKVStores(t *testing.T) {
 
 	for _, key := range keys {
 		store := app.cms.GetCommitKVStore(key)
-		require.Equal(t, store.GetStoreType(), sdk.StoreTypeIAVL)
+		require.Equal(t, sdk.StoreTypeIAVL, store.GetStoreType())
 	}
 
 	app = NewBaseApp(name, logger, db, nil)
@@ -2098,12 +2099,26 @@ func TestMountKVStores(t *testing.T) {
 	app.cms.LoadLatestVersion()
 	for _, key := range keys {
 		store := app.cms.GetCommitKVStore(key)
-		require.Equal(t, store.GetStoreType(), sdk.StoreTypeDB)
+		require.Equal(t, sdk.StoreTypeDB, store.GetStoreType())
 	}
 }
 
 func TestMountTransientStores(t *testing.T) {
-	require.Fail(t, "Not yet implemented")
+	db := dbm.NewMemDB()
+	name := t.Name()
+	logger := defaultLogger()
+	app := NewBaseApp(name, logger, db, nil)
+
+	// Test everything is mounted
+	// Test all stores have the correct type
+	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
+	app.MountTransientStores(tkeys)
+	app.cms.LoadLatestVersion()
+
+	for _, key := range tkeys {
+		store := app.cms.GetCommitKVStore(key)
+		require.Equal(t, sdk.StoreTypeTransient, store.GetStoreType())
+	}
 }
 
 func TestDefaultStoreLoader(t *testing.T) {
