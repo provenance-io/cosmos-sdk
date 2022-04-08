@@ -2053,7 +2053,7 @@ func TestBaseApp_EndBlock(t *testing.T) {
 	require.Equal(t, cp.Block.MaxGas, res.ConsensusParamUpdates.Block.MaxGas)
 }
 
-/*func TestMessageServiceRouter(t *testing.T) {
+func TestMessageServiceRouter(t *testing.T) {
 	db := dbm.NewMemDB()
 	name := t.Name()
 	logger := defaultLogger()
@@ -2067,7 +2067,39 @@ func TestBaseApp_EndBlock(t *testing.T) {
 }
 
 func TestMountKVStores(t *testing.T) {
-	require.Fail(t, "Not yet implemented")
+	db := dbm.NewMemDB()
+	name := t.Name()
+	logger := defaultLogger()
+	app := NewBaseApp(name, logger, db, nil)
+
+	keys := sdk.NewKVStoreKeys(
+		"acc", "bank", "staking",
+		"mint", "distribution", "slashing",
+		"gov", "params", "upgrade", "feegrant",
+		"evidence", "capability", "authz",
+	)
+
+	// Test everything is mounted
+	// Test all stores have the correct type
+	app.MountKVStores(keys)
+	app.cms.LoadLatestVersion()
+
+	for _, key := range keys {
+		store := app.cms.GetCommitKVStore(key)
+		require.Equal(t, store.GetStoreType(), sdk.StoreTypeIAVL)
+	}
+
+	app = NewBaseApp(name, logger, db, nil)
+	app.fauxMerkleMode = true
+
+	// Test everything is mounted
+	// Test all stores have the correct type
+	app.MountKVStores(keys)
+	app.cms.LoadLatestVersion()
+	for _, key := range keys {
+		store := app.cms.GetCommitKVStore(key)
+		require.Equal(t, store.GetStoreType(), sdk.StoreTypeDB)
+	}
 }
 
 func TestMountTransientStores(t *testing.T) {
@@ -2076,4 +2108,4 @@ func TestMountTransientStores(t *testing.T) {
 
 func TestDefaultStoreLoader(t *testing.T) {
 	require.Fail(t, "Not yet implemented")
-}*/
+}
