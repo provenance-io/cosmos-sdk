@@ -1,15 +1,24 @@
+<<<<<<< HEAD
 # Cosmos SDK v0.44.5 Release Notes
 
 This release adds the updates from cosmos-sdk upstream v0.44.4 and v0.44.5 to the msg fee and rosetta fixes added into the Provenanced fork at v0.45
 
 # Cosmos SDK v0.45.0 Release Notes
+=======
+# Cosmos SDK v0.45.3 Release Notes
+>>>>>>> v0.45.3
 
-Cosmos SDK v0.45.0 is a logical continuation of the v0.44.\* series, but brings a couple of state- and API-breaking changes requested by the community.
+This release introduces a Tendermint dependency update to v0.34.19 which
+itself includes two bug fixes related to consensus. See the full changelog from
+v0.34.17-v0.34.19 [here](https://github.com/tendermint/tendermint/blob/v0.34.19/CHANGELOG.md#v0.34.19).
 
-### State-Breaking Changes
+In addition, it includes a change to `ScheduleUpgrade` to allow upgrades without
+requiring a governance proposal process.
 
-There are few important changes in **gas consumption**, which improve the gas economics:
+See the [Cosmos SDK v0.45.3 Changelog](https://github.com/cosmos/cosmos-sdk/blob/v0.45.3/CHANGELOG.md)
+for the exhaustive list of all changes.
 
+<<<<<<< HEAD
 - We now charge gas in two new places: on `.Seek()` even if there are no entries, and for the key length (on top of the value length).
 - When block gas limit is exceeded, we consume the maximum gas possible (to charge for the performed computation). We also fixed the bug when the last transaction in a block exceeds the block gas limit, it returns an error result, but the tx is actually committed successfully.
 
@@ -55,3 +64,6 @@ Highlights:
 See the [Cosmos SDK v0.45.2 Changelog](https://github.com/cosmos/cosmos-sdk/blob/v0.45.2/CHANGELOG.md) for the exhaustive list of all changes and check other fixes in the 0.45.x release series.
 
 **Full Commit History**: https://github.com/cosmos/cosmos-sdk/compare/v0.45.1...v0.45.2
+=======
+**Full Commit History**: https://github.com/cosmos/cosmos-sdk/compare/v0.45.2...v0.45.3
+>>>>>>> v0.45.3

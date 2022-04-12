@@ -43,7 +43,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Provenance Specific releases
 
-## [v0.45-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-3) - 2022-04-07
+## [v0.45-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-3) - 2022-04-12
+* [\#611](https://github.com/provenance-io/provenance/issues/611) Sporadic error: "panic: Value missing for hash"
+* Merged updates from Cosmos SDK 0.45.3.
+* Initial support for [ADR-038](https://docs.cosmos.network/master/architecture/adr-038-state-listening.html) KVStore state listening
 
 ## [v0.45-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-2) - 2022-02-15
 
@@ -59,6 +62,16 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ## [v0.44.3-rosetta-fix](https://github.com/provenance-io/cosmos-sdk/tag/v0.44.3-rosetta-fix)
 
 * Upgraded Rosetta to v0.7.2 which includes the following prs to cosmos upstream: [10432](https://github.com/cosmos/cosmos-sdk/pull/10432) and [10707](https://github.com/cosmos/cosmos-sdk/pull/10707)
+
+## [v0.45.3](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.45.3) - 2022-04-12
+
+### Improvements
+
+* [\#11562](https://github.com/cosmos/cosmos-sdk/pull/11562) Updated Tendermint to v0.34.19; `unsafe-reset-all` command has been moved to the `tendermint` sub-command.
+
+### Features
+
+* (x/upgrade) [\#11551](https://github.com/cosmos/cosmos-sdk/pull/11551) Update `ScheduleUpgrade` for chains to schedule an automated upgrade on `BeginBlock` without having to go though governance.
 
 ## [v0.45.2](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.45.2) - 2022-04-05
 
