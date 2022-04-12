@@ -35,18 +35,12 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Changelog
 
-## [Unreleased]
-
-### Features
-
-* [\10639](https://github.com/cosmos/cosmos-sdk/pull/10639) Plugin architecture for ADR-038 + FileStreamingService plugin.
-
 # Provenance Specific releases
 
 ## [v0.45-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-3) - 2022-04-12
+* [\#10639](https://github.com/cosmos/cosmos-sdk/pull/10639) Plugin architecture for ADR-038 + FileStreamingService plugin.
 * [\#611](https://github.com/provenance-io/provenance/issues/611) Sporadic error: "panic: Value missing for hash"
 * Merged updates from Cosmos SDK 0.45.3.
-* Initial support for [ADR-038](https://docs.cosmos.network/master/architecture/adr-038-state-listening.html) KVStore state listening
 
 ## [v0.45-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-2) - 2022-02-15
 
