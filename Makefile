@@ -42,6 +42,14 @@ ifeq ($(LEDGER_ENABLED),true)
   endif
 endif
 
+ifeq (cleveldb,$(findstring cleveldb,$(COSMOS_BUILD_OPTIONS)))
+  build_tags += gcc
+endif
+
+ifeq (secp,$(findstring secp,$(COSMOS_BUILD_OPTIONS)))
+  build_tags += libsecp256k1_sdk
+endif
+
 whitespace :=
 whitespace += $(whitespace)
 comma := ,
@@ -238,6 +246,9 @@ else
 endif
 
 .PHONY: run-tests test test-all $(TEST_TARGETS)
+
+# Sim tests with state listening plugins enabled
+include sim-state-listening.mk
 
 test-sim-nondeterminism:
 	@echo "Running non-determinism test..."
