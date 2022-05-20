@@ -11,15 +11,13 @@ import (
 
 var (
 	// This is set at compile time. Could be cleveldb, defaults is goleveldb.
-	DBBackend = "" // Deprecated: Use tendermint config's DBBackend value instead.
+	DBBackend = ""
 	backend   = dbm.GoLevelDBBackend
 )
 
 func init() {
 	if len(DBBackend) != 0 {
 		backend = dbm.BackendType(DBBackend)
-	} else {
-		DBBackend = string(backend)
 	}
 }
 
@@ -87,8 +85,6 @@ func ParseTimeBytes(bz []byte) (time.Time, error) {
 }
 
 // NewLevelDB instantiate a new LevelDB instance according to DBBackend.
-//
-// Deprecated: Use NewDB instead. Suggested backendType is tendermint config's DBBackend value.
 func NewLevelDB(name, dir string) (db dbm.DB, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -97,27 +93,6 @@ func NewLevelDB(name, dir string) (db dbm.DB, err error) {
 	}()
 
 	return dbm.NewDB(name, backend, dir)
-}
-
-// NewDB instantiate a new DB instance.
-// This differs from the tendermint/tm-db.NewDB function in three ways:
-// 1) Returns an error instead of panicking.
-// 2) Takes in a string for the backend type.
-// 3) If the backendType is an empty string, "goleveldb" is used.
-func NewDB(name, backendType, dir string) (db dbm.DB, err error) {
-	defer func() {
-		r := recover()
-		switch {
-		case r != nil:
-			err = fmt.Errorf("could not create %q db in %s with name %q: %v", backendType, dir, name, r)
-		case err != nil:
-			err = fmt.Errorf("could not create %q db in %s with name %q: %w", backendType, dir, name, err)
-		}
-	}()
-	if len(backendType) == 0 {
-		backendType = string(dbm.GoLevelDBBackend)
-	}
-	return dbm.NewDB(name, dbm.BackendType(backendType), dir)
 }
 
 // copy bytes

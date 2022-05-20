@@ -26,7 +26,7 @@ application.
 			ctx := GetServerContextFromCmd(cmd)
 			cfg := ctx.Config
 			home := cfg.RootDir
-			db, err := openDB(home, cfg.DBBackend)
+			db, err := openDB(home)
 			if err != nil {
 				return err
 			}
