@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -196,6 +197,33 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 	}
 	// set the signed validators for addition to context in deliverTx
 	app.voteInfos = req.LastCommitInfo.GetVotes()
+
+	// call the hooks with the BeginBlock messages
+	wg := new(sync.WaitGroup)
+	for _, streamingListener := range app.abciListeners {
+		streamingListener := streamingListener // https://go.dev/doc/faq#closures_and_goroutines
+		if streamingListener.HaltAppOnDeliveryError() {
+			// increment the wait group counter
+			wg.Add(1)
+			go func() {
+				// decrement the counter when the go routine completes
+				defer wg.Done()
+				if err := streamingListener.ListenBeginBlock(app.deliverState.ctx, req, res); err != nil {
+					app.logger.Error("BeginBlock listening hook failed", "height", req.Header.Height, "err", err)
+					app.halt()
+				}
+			}()
+		} else {
+			go func() {
+				if err := streamingListener.ListenBeginBlock(app.deliverState.ctx, req, res); err != nil {
+					app.logger.Error("BeginBlock listening hook failed", "height", req.Header.Height, "err", err)
+				}
+			}()
+		}
+	}
+	// wait for all the listener calls to finish
+	wg.Wait()
+
 	return res
 }
 
@@ -215,6 +243,32 @@ func (app *BaseApp) EndBlock(req abci.RequestEndBlock) (res abci.ResponseEndBloc
 	if cp := app.GetConsensusParams(app.deliverState.ctx); cp != nil {
 		res.ConsensusParamUpdates = cp
 	}
+
+	// call the hooks with the BeginBlock messages
+	wg := new(sync.WaitGroup)
+	for _, streamingListener := range app.abciListeners {
+		streamingListener := streamingListener // https://go.dev/doc/faq#closures_and_goroutines
+		if streamingListener.HaltAppOnDeliveryError() {
+			// increment the wait group counter
+			wg.Add(1)
+			go func() {
+				// decrement the counter when the go routine completes
+				defer wg.Done()
+				if err := streamingListener.ListenEndBlock(app.deliverState.ctx, req, res); err != nil {
+					app.logger.Error("EndBlock listening hook failed", "height", req.Height, "err", err)
+					app.halt()
+				}
+			}()
+		} else {
+			go func() {
+				if err := streamingListener.ListenEndBlock(app.deliverState.ctx, req, res); err != nil {
+					app.logger.Error("EndBlock listening hook failed", "height", req.Height, "err", err)
+				}
+			}()
+		}
+	}
+	// wait for all the listener calls to finish
+	wg.Wait()
 
 	return res
 }
@@ -266,26 +320,55 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx 
 	gInfo := sdk.GasInfo{}
 	resultStr := "successful"
 
+	var abciRes abci.ResponseDeliverTx
 	defer func() {
 		telemetry.IncrCounter(1, "tx", "count")
 		telemetry.IncrCounter(1, "tx", resultStr)
 		telemetry.SetGauge(float32(gInfo.GasUsed), "tx", "gas", "used")
 		telemetry.SetGauge(float32(gInfo.GasWanted), "tx", "gas", "wanted")
+		// call the hooks with the BeginBlock messages
+		wg := new(sync.WaitGroup)
+		for _, streamingListener := range app.abciListeners {
+			streamingListener := streamingListener // https://go.dev/doc/faq#closures_and_goroutines
+			if streamingListener.HaltAppOnDeliveryError() {
+				// increment the wait group counter
+				wg.Add(1)
+				go func() {
+					// decrement the counter when the go routine completes
+					defer wg.Done()
+					if err := streamingListener.ListenDeliverTx(app.deliverState.ctx, req, abciRes); err != nil {
+						app.logger.Error("DeliverTx listening hook failed", "err", err)
+						app.halt()
+					}
+				}()
+			} else {
+				go func() {
+					if err := streamingListener.ListenDeliverTx(app.deliverState.ctx, req, abciRes); err != nil {
+						app.logger.Error("DeliverTx listening hook failed", "err", err)
+					}
+				}()
+			}
+		}
+		// wait for all the listener calls to finish
+		wg.Wait()
 	}()
 
 	gInfo, result, anteEvents, _, err := app.runTx(runTxModeDeliver, req.Tx)
 	if err != nil {
 		resultStr = "failed"
-		return sdkerrors.ResponseDeliverTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, anteEvents, app.trace)
+		abciRes = sdkerrors.ResponseDeliverTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, anteEvents, app.trace)
+		return abciRes
 	}
 
-	return abci.ResponseDeliverTx{
+	abciRes = abci.ResponseDeliverTx{
 		GasWanted: int64(gInfo.GasWanted), // TODO: Should type accept unsigned ints?
 		GasUsed:   int64(gInfo.GasUsed),   // TODO: Should type accept unsigned ints?
 		Log:       result.Log,
 		Data:      result.Data,
 		Events:    sdk.MarkEventsToIndex(result.Events, app.indexEvents),
 	}
+
+	return abciRes
 }
 
 // Commit implements the ABCI interface. It will commit all state that exists in

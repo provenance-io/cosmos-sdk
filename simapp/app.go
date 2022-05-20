@@ -2,10 +2,12 @@ package simapp
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -21,6 +23,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/plugin"
+	"github.com/cosmos/cosmos-sdk/plugin/loader"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -212,6 +216,32 @@ func NewSimApp(
 	// NOTE: The testingkey is just mounted for testing purposes. Actual applications should
 	// not include this key.
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey, "testingkey")
+
+	pluginsOnKey := fmt.Sprintf("%s.%s", plugin.PLUGINS_TOML_KEY, plugin.PLUGINS_ON_TOML_KEY)
+	if cast.ToBool(appOpts.Get(pluginsOnKey)) {
+		// this loads the preloaded and any plugins found in `plugins.dir`
+		// if their names match those in the `plugins.enabled` list.
+		pluginLoader, err := loader.NewPluginLoader(appOpts, logger)
+		if err != nil {
+			tmos.Exit(err.Error())
+		}
+
+		// initialize the loaded plugins
+		if err := pluginLoader.Initialize(); err != nil {
+			tmos.Exit(err.Error())
+		}
+
+		// register the plugin(s) with the BaseApp
+		if err := pluginLoader.Inject(bApp, appCodec, keys); err != nil {
+			tmos.Exit(err.Error())
+		}
+
+		// start the plugin services, optionally use wg to synchronize shutdown using io.Closer
+		wg := new(sync.WaitGroup)
+		if err := pluginLoader.Start(wg); err != nil {
+			tmos.Exit(err.Error())
+		}
+	}
 
 	app := &SimApp{
 		BaseApp:           bApp,

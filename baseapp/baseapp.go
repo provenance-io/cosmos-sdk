@@ -54,7 +54,7 @@ type BaseApp struct { // nolint: maligned
 	router            sdk.Router           // handle any kind of message
 	queryRouter       sdk.QueryRouter      // router for redirecting query calls
 	grpcQueryRouter   *GRPCQueryRouter     // router for redirecting gRPC query calls
-	msgServiceRouter  *MsgServiceRouter    // router for redirecting Msg service messages
+	msgServiceRouter  IMsgServiceRouter    // router for redirecting Msg service messages
 	interfaceRegistry types.InterfaceRegistry
 	txDecoder         sdk.TxDecoder // unmarshal []byte into sdk.Tx
 
@@ -134,6 +134,10 @@ type BaseApp struct { // nolint: maligned
 	indexEvents map[string]struct{}
 
 	feeHandler sdk.FeeHandler
+
+	// abciListeners for hooking into the ABCI message processing of the BaseApp
+	// and exposing the requests and responses to external consumers
+	abciListeners []ABCIListener
 }
 
 // NewBaseApp returns a reference to an initialized BaseApp. It accepts a
@@ -196,8 +200,13 @@ func (app *BaseApp) Trace() bool {
 	return app.trace
 }
 
+// sets MsgServiceRouter of the BaseApp.
+func (app *BaseApp) SetMsgServiceRouter(msgServiceRouter IMsgServiceRouter) {
+	app.msgServiceRouter = msgServiceRouter
+}
+
 // MsgServiceRouter returns the MsgServiceRouter of a BaseApp.
-func (app *BaseApp) MsgServiceRouter() *MsgServiceRouter { return app.msgServiceRouter }
+func (app *BaseApp) MsgServiceRouter() IMsgServiceRouter { return app.msgServiceRouter }
 
 // MountStores mounts all IAVL or DB stores to the provided keys in the BaseApp
 // multistore.
