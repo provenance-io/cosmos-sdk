@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"io"
 
-	dbm "github.com/tendermint/tm-db"
-
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	dbm "github.com/tendermint/tm-db"
 )
 
 // File for storing in-package BaseApp optional functions,
@@ -241,4 +240,13 @@ func (app *BaseApp) SetInterfaceRegistry(registry types.InterfaceRegistry) {
 	app.interfaceRegistry = registry
 	app.grpcQueryRouter.SetInterfaceRegistry(registry)
 	app.msgServiceRouter.SetInterfaceRegistry(registry)
+}
+
+// SetFeeHandler sets the FeeHandler which if set will change the behavior of fee handling
+func (app *BaseApp) SetFeeHandler(feeHandler sdk.FeeHandler) {
+	if app.sealed {
+		panic("SetKeeperHandler() on sealed BaseApp")
+	}
+
+	app.feeHandler = feeHandler
 }
