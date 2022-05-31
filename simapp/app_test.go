@@ -105,7 +105,8 @@ func TestRunMigrations(t *testing.T) {
 	testCases := []struct {
 		name         string
 		moduleName   string
-		forVersion   uint64
+		fromVersion  uint64
+		toVersion    uint64
 		expRegErr    bool // errors while registering migration
 		expRegErrMsg string
 		expRunErr    bool // errors while running migration
@@ -114,22 +115,22 @@ func TestRunMigrations(t *testing.T) {
 	}{
 		{
 			"cannot register migration for version 0",
-			"bank", 0,
+			"bank", 0, 1,
 			true, "module migration versions should start at 1: invalid version", false, "", 0,
 		},
 		{
 			"throws error on RunMigrations if no migration registered for bank",
-			"", 1,
+			"", 1, 2,
 			false, "", true, "no migrations found for module bank: not found", 0,
 		},
 		{
 			"can register and run migration handler for x/bank",
-			"bank", 1,
-			false, "", false, "", 1,
+			"bank", 1, bank.AppModule{}.ConsensusVersion(),
+			false, "", false, "", int(bank.AppModule{}.ConsensusVersion() - 1),
 		},
 		{
-			"cannot register migration handler for same module & forVersion",
-			"bank", 1,
+			"cannot register migration handler for same module & fromVersion",
+			"bank", 1, 2,
 			true, "another migration for module bank and version 1 already exists: internal logic error", false, "", 0,
 		},
 	}
@@ -145,20 +146,24 @@ func TestRunMigrations(t *testing.T) {
 			called := 0
 
 			if tc.moduleName != "" {
-				// Register migration for module from version `forVersion` to `forVersion+1`.
-				err = app.configurator.RegisterMigration(tc.moduleName, tc.forVersion, func(sdk.Context) error {
-					called++
+				// Register migrations for module from version `fromVersion` to `toVersion`.
+				for i := tc.fromVersion; i < tc.toVersion; i++ {
+					err = app.configurator.RegisterMigration(tc.moduleName, i, func(sdk.Context) error {
+						called++
 
-					return nil
-				})
+						return nil
+					})
 
-				if tc.expRegErr {
-					require.EqualError(t, err, tc.expRegErrMsg)
+					if tc.expRegErr {
+						require.EqualErrorf(t, err, tc.expRegErrMsg, "Registering Migration %d", i)
 
-					return
+						return
+					} else {
+						require.NoErrorf(t, err, "Registering Migration %d", i)
+					}
+
 				}
 			}
-			require.NoError(t, err)
 
 			// Run migrations only for bank. That's why we put the initial
 			// version for bank as 1, and for all other modules, we put as
@@ -185,11 +190,11 @@ func TestRunMigrations(t *testing.T) {
 				},
 			)
 			if tc.expRunErr {
-				require.EqualError(t, err, tc.expRunErrMsg)
+				require.EqualError(t, err, tc.expRunErrMsg, "Running migrations")
 			} else {
 				require.NoError(t, err)
 				// Make sure bank's migration is called.
-				require.Equal(t, tc.expCalled, called)
+				require.Equal(t, tc.expCalled, called, "migration count")
 			}
 		})
 	}
