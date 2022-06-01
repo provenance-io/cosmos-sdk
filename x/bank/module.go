@@ -104,7 +104,15 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
 	m := keeper.NewMigrator(am.keeper.(keeper.BaseKeeper))
-	cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2)
+	if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+		panic(fmt.Sprintf("failed to migrate x/bank from version 1 to 2: %v", err))
+	}
+	// Note: In this provenance fork, this is the 2nd migration. it's still named Migrate3to4 to match the Cosmos SDK though.
+	// The Cosmos SDK 2nd migration is in v0.46.0 and shortens the denom metadata key lengths.
+	// For our provenance fork of v0.46.0, we'll need to keep this one as 2, and change that other one to 3.
+	if err := cfg.RegisterMigration(types.ModuleName, 2, m.Migrate3to4); err != nil {
+		panic(fmt.Sprintf("failed to migrate x/bank from version 3 to 4: %v", err))
+	}
 }
 
 // NewAppModule creates a new AppModule object
@@ -157,7 +165,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 2 }
+func (AppModule) ConsensusVersion() uint64 { return 3 }
 
 // BeginBlock performs a no-op.
 func (AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
