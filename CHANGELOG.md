@@ -37,10 +37,32 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Provenance Specific Releases
 
+## Unreleased
+
+### API Breaking Changes
+
+* (x/bank) [\#11859](https://github.com/cosmos/cosmos-sdk/pull/11859) Move the SendEnabled information out of the Params and into the state store directly.
+  The information can now be accessed using the BankKeeper.
+  Setting can be done using MsgSetSendEnabled as a governance proposal.
+  A SendEnabled query has been added to both GRPC and CLI.
+
+### State Machine Breaking
+
+* (x/bank) [\#11859](https://github.com/cosmos/cosmos-sdk/pull/11859) Move the SendEnabled information out of the Params and into the state store directly.
+
+### Deprecated
+
+* (x/bank) [\#11859](https://github.com/cosmos/cosmos-sdk/pull/11859) The Params.SendEnabled field is deprecated and unusable.
+
+---
+
 ## [v0.45-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-3) - 2022-04-12
+
 * [\#10639](https://github.com/cosmos/cosmos-sdk/pull/10639) Plugin architecture for ADR-038 + FileStreamingService plugin.
 * [\#611](https://github.com/provenance-io/provenance/issues/611) Sporadic error: "panic: Value missing for hash"
 * Merged updates from Cosmos SDK 0.45.3.
+
+---
 
 ## [v0.45-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-2) - 2022-02-15
 
@@ -49,9 +71,13 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * (deps) [\#9987](https://github.com/cosmos/cosmos-sdk/pull/9987) Bump Go version minimum requirement to `1.17`
 * (types) [\#10948](https://github.com/cosmos/cosmos-sdk/issues/10948) Use Tendermint `db_backend` config value instead of compile-time `types.DBBackend` value.
 
+---
+
 ## [v0.45-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-1.8.rc1)
 
 * Updated baseapp and added custom fee handler to support provenance message fee module [354](https://github.com/provenance-io/provenance/issues/354), for upstream cosmos-sdk release [v0.45.0](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.45.0) 
+
+---
 
 ## [v0.44.3-rosetta-fix](https://github.com/provenance-io/cosmos-sdk/tag/v0.44.3-rosetta-fix)
 

@@ -217,9 +217,27 @@ $(CHECK_TEST_TARGETS): run-tests
 
 run-tests:
 ifneq (,$(shell which tparse 2>/dev/null))
-	go test -mod=readonly -json $(ARGS) $(EXTRA_ARGS) $(TEST_PACKAGES) | tparse
+	@echo "Starting unit tests"; \
+	finalec=0; \
+	for module in $(SUB_MODULES); do \
+		cd ${CURRENT_DIR}/$$module; \
+		echo "Running unit tests for module $$module"; \
+		go test -mod=readonly -json $(ARGS) $(TEST_PACKAGES) ./... | tparse; \
+		ec=$$?; \
+		if [ "$$ec" -ne '0' ]; then finalec=$$ec; fi; \
+	done; \
+	exit $$finalec
 else
-	go test -mod=readonly $(ARGS)  $(EXTRA_ARGS) $(TEST_PACKAGES)
+	@echo "Starting unit tests"; \
+	finalec=0; \
+	for module in $(SUB_MODULES); do \
+		cd ${CURRENT_DIR}/$$module; \
+		echo "Running unit tests for module $$module"; \
+		go test -mod=readonly $(ARGS) $(TEST_PACKAGES) ./... ; \
+		ec=$$?; \
+		if [ "$$ec" -ne '0' ]; then finalec=$$ec; fi; \
+	done; \
+	exit $$finalec
 endif
 
 .PHONY: run-tests test test-all $(TEST_TARGETS)
