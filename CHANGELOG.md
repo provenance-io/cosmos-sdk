@@ -39,6 +39,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
+* none
+
+## [v0.45.4-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.4-pio-1) - 2022-04-22
+
 ### API Breaking Changes
 
 * (x/bank) [\#11859](https://github.com/cosmos/cosmos-sdk/pull/11859) Move the SendEnabled information out of the Params and into the state store directly.
@@ -56,7 +60,13 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ---
 
-## [v0.45-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-3) - 2022-04-12
+## [v0.45.3-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.3-pio-2) - 2022-04-22
+
+* Order upgrades by block height rather than name to prevent panic.
+
+---
+
+## [v0.45.3-pio](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.3-pio) - 2022-04-13
 
 * [\#10639](https://github.com/cosmos/cosmos-sdk/pull/10639) Plugin architecture for ADR-038 + FileStreamingService plugin.
 * [\#611](https://github.com/provenance-io/provenance/issues/611) Sporadic error: "panic: Value missing for hash"
@@ -64,18 +74,18 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ---
 
-## [v0.45-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-2) - 2022-02-15
+## [v0.45.2-pio-3-adr-038-rc1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.2-pio-3-adr-038-rc1) - 2022-04-11
+
+* Updated baseapp and added custom fee handler to support provenance message fee module [354](https://github.com/provenance-io/provenance/issues/354), for upstream cosmos-sdk release [v0.45.0](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.45.0)
+
+---
+
+## [v0.45.0-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.0-pio-2) - 2022-02-15
 
 * [\#10466](https://github.com/cosmos/cosmos-sdk/issues/10466) Fixes error with simulation tests when genesis start time is randomly created after the year 2262
 * [\#10468](https://github.com/cosmos/cosmos-sdk/pull/10468) Allow futureOps to queue additional operations in simulations
 * (deps) [\#9987](https://github.com/cosmos/cosmos-sdk/pull/9987) Bump Go version minimum requirement to `1.17`
 * (types) [\#10948](https://github.com/cosmos/cosmos-sdk/issues/10948) Use Tendermint `db_backend` config value instead of compile-time `types.DBBackend` value.
-
----
-
-## [v0.45-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45-pio-1.8.rc1)
-
-* Updated baseapp and added custom fee handler to support provenance message fee module [354](https://github.com/provenance-io/provenance/issues/354), for upstream cosmos-sdk release [v0.45.0](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.45.0) 
 
 ---
 
