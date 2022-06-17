@@ -7,7 +7,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -199,30 +198,15 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 	app.voteInfos = req.LastCommitInfo.GetVotes()
 
 	// call the hooks with the BeginBlock messages
-	wg := new(sync.WaitGroup)
 	for _, streamingListener := range app.abciListeners {
 		streamingListener := streamingListener // https://go.dev/doc/faq#closures_and_goroutines
-		if streamingListener.HaltAppOnDeliveryError() {
-			// increment the wait group counter
-			wg.Add(1)
-			go func() {
-				// decrement the counter when the go routine completes
-				defer wg.Done()
-				if err := streamingListener.ListenBeginBlock(app.deliverState.ctx, req, res); err != nil {
-					app.logger.Error("BeginBlock listening hook failed", "height", req.Header.Height, "err", err)
-					app.halt()
-				}
-			}()
-		} else {
-			go func() {
-				if err := streamingListener.ListenBeginBlock(app.deliverState.ctx, req, res); err != nil {
-					app.logger.Error("BeginBlock listening hook failed", "height", req.Header.Height, "err", err)
-				}
-			}()
+		if err := streamingListener.ListenBeginBlock(app.deliverState.ctx, req, res); err != nil {
+			app.logger.Error("BeginBlock listening hook failed", "height", req.Header.Height, "err", err)
+			if streamingListener.HaltAppOnDeliveryError() {
+				app.halt()
+			}
 		}
 	}
-	// wait for all the listener calls to finish
-	wg.Wait()
 
 	return res
 }
@@ -245,30 +229,15 @@ func (app *BaseApp) EndBlock(req abci.RequestEndBlock) (res abci.ResponseEndBloc
 	}
 
 	// call the hooks with the BeginBlock messages
-	wg := new(sync.WaitGroup)
 	for _, streamingListener := range app.abciListeners {
 		streamingListener := streamingListener // https://go.dev/doc/faq#closures_and_goroutines
-		if streamingListener.HaltAppOnDeliveryError() {
-			// increment the wait group counter
-			wg.Add(1)
-			go func() {
-				// decrement the counter when the go routine completes
-				defer wg.Done()
-				if err := streamingListener.ListenEndBlock(app.deliverState.ctx, req, res); err != nil {
-					app.logger.Error("EndBlock listening hook failed", "height", req.Height, "err", err)
-					app.halt()
-				}
-			}()
-		} else {
-			go func() {
-				if err := streamingListener.ListenEndBlock(app.deliverState.ctx, req, res); err != nil {
-					app.logger.Error("EndBlock listening hook failed", "height", req.Height, "err", err)
-				}
-			}()
+		if err := streamingListener.ListenEndBlock(app.deliverState.ctx, req, res); err != nil {
+			app.logger.Error("EndBlock listening hook failed", "height", req.Height, "err", err)
+			if streamingListener.HaltAppOnDeliveryError() {
+				app.halt()
+			}
 		}
 	}
-	// wait for all the listener calls to finish
-	wg.Wait()
 
 	return res
 }
@@ -327,30 +296,15 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx 
 		telemetry.SetGauge(float32(gInfo.GasUsed), "tx", "gas", "used")
 		telemetry.SetGauge(float32(gInfo.GasWanted), "tx", "gas", "wanted")
 		// call the hooks with the BeginBlock messages
-		wg := new(sync.WaitGroup)
 		for _, streamingListener := range app.abciListeners {
 			streamingListener := streamingListener // https://go.dev/doc/faq#closures_and_goroutines
-			if streamingListener.HaltAppOnDeliveryError() {
-				// increment the wait group counter
-				wg.Add(1)
-				go func() {
-					// decrement the counter when the go routine completes
-					defer wg.Done()
-					if err := streamingListener.ListenDeliverTx(app.deliverState.ctx, req, abciRes); err != nil {
-						app.logger.Error("DeliverTx listening hook failed", "err", err)
-						app.halt()
-					}
-				}()
-			} else {
-				go func() {
-					if err := streamingListener.ListenDeliverTx(app.deliverState.ctx, req, abciRes); err != nil {
-						app.logger.Error("DeliverTx listening hook failed", "err", err)
-					}
-				}()
+			if err := streamingListener.ListenDeliverTx(app.deliverState.ctx, req, abciRes); err != nil {
+				app.logger.Error("DeliverTx listening hook failed", "err", err)
+				if streamingListener.HaltAppOnDeliveryError() {
+					app.halt()
+				}
 			}
 		}
-		// wait for all the listener calls to finish
-		wg.Wait()
 	}()
 
 	gInfo, result, anteEvents, _, err := app.runTx(runTxModeDeliver, req.Tx)
