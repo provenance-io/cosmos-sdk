@@ -21,14 +21,15 @@ import (
 
 // Flag names and values
 const (
-	FlagSpendLimit        = "spend-limit"
-	FlagMsgType           = "msg-type"
-	FlagExpiration        = "expiration"
-	FlagAllowedValidators = "allowed-validators"
-	FlagDenyValidators    = "deny-validators"
-	delegate              = "delegate"
-	redelegate            = "redelegate"
-	unbond                = "unbond"
+	FlagSpendLimit            = "spend-limit"
+	FlagMsgType               = "msg-type"
+	FlagExpiration            = "expiration"
+	FlagAllowedValidators     = "allowed-validators"
+	FlagDenyValidators        = "deny-validators"
+	FlagAllowedAuthorizations = "allowed-authorizations"
+	delegate                  = "delegate"
+	redelegate                = "redelegate"
+	unbond                    = "unbond"
 )
 
 // GetTxCmd returns the transaction commands for this module
@@ -53,7 +54,7 @@ func GetTxCmd() *cobra.Command {
 
 func NewCmdGrantAuthorization() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "grant <grantee> <authorization_type=\"send\"|\"generic\"|\"delegate\"|\"unbond\"|\"redelegate\"> --from <granter>",
+		Use:   "grant <grantee> <authorization_type=\"count\"|\"send\"|\"generic\"|\"delegate\"|\"unbond\"|\"redelegate\"> --from <granter>",
 		Short: "Grant authorization to an address",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`grant authorization to an address to execute a transaction on your behalf:
@@ -82,6 +83,22 @@ Examples:
 
 			var authorization authz.Authorization
 			switch args[1] {
+			case "count":
+				msgType, err := cmd.Flags().GetString(FlagMsgType)
+				if err != nil {
+					return err
+				}
+
+				allowedAuthorizations, err := cmd.Flags().GetInt32(FlagAllowedAuthorizations)
+				if err != nil {
+					return err
+				}
+
+				if allowedAuthorizations <= 0 {
+					return fmt.Errorf("allowed-authorizations should be greater than zero")
+				}
+
+				authorization = authz.NewCountAuthorization(msgType, allowedAuthorizations)
 			case "send":
 				limit, err := cmd.Flags().GetString(FlagSpendLimit)
 				if err != nil {
