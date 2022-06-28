@@ -10,10 +10,10 @@ var (
 )
 
 // NewCountAuthorization creates a new CountAuthorization object.
-func NewCountAuthorization(msgTypeURL string, remainingAuthorizations int32) *CountAuthorization {
+func NewCountAuthorization(msgTypeURL string, allowedAuthorizations int32) *CountAuthorization {
 	return &CountAuthorization{
-		Msg: msgTypeURL,
-		AllowedAuthorizations: remainingAuthorizations,
+		Msg:                   msgTypeURL,
+		AllowedAuthorizations: allowedAuthorizations,
 	}
 }
 
@@ -24,8 +24,7 @@ func (a CountAuthorization) MsgTypeURL() string {
 
 // Accept implements Authorization.Accept.
 func (a CountAuthorization) Accept(ctx sdk.Context, msg sdk.Msg) (AcceptResponse, error) {
-	remaining := a.AllowedAuthorizations
-	isNegative := remaining < 0
+	remaining, isNegative := a.decrement()
 	if isNegative {
 		return AcceptResponse{}, sdkerrors.ErrInvalidRequest.Wrapf("allowed authorizations cannot be negative")
 	}
@@ -33,7 +32,7 @@ func (a CountAuthorization) Accept(ctx sdk.Context, msg sdk.Msg) (AcceptResponse
 		return AcceptResponse{Accept: true, Delete: true}, nil
 	}
 
-	return AcceptResponse{Accept: true, Delete: false, Updated: &CountAuthorization{Msg: a.Msg, AllowedAuthorizations: a.AllowedAuthorizations}}, nil
+	return AcceptResponse{Accept: true, Delete: false, Updated: &CountAuthorization{Msg: a.Msg, AllowedAuthorizations: remaining}}, nil
 }
 
 // ValidateBasic implements Authorization.ValidateBasic.
@@ -42,4 +41,9 @@ func (a CountAuthorization) ValidateBasic() error {
 		return sdkerrors.ErrInvalidRequest.Wrapf("allowed authorizations cannot be negative")
 	}
 	return nil
+}
+
+func (a CountAuthorization) decrement() (int32, bool) {
+	cnt := a.AllowedAuthorizations - 1
+	return cnt, cnt < 0
 }

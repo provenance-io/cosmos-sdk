@@ -12,14 +12,14 @@ import (
 
 var (
 	msgTypeURL                = "/cosmos.bank.v1beta1.MsgSend"
-	zeroAllowedAuthorizations = int32(0)
+	oneAllowedAuthorizations  = int32(1)
 	withAllowedAuthorizations = int32(2)
 )
 
 func TestCountAuthorization(t *testing.T) {
 	app := simapp.Setup(false)
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
-	authorization := authz.NewCountAuthorization(msgTypeURL, zeroAllowedAuthorizations)
+	authorization := authz.NewCountAuthorization(msgTypeURL, oneAllowedAuthorizations)
 
 	t.Log("verify authorization returns valid method name")
 	require.Equal(t, authorization.MsgTypeURL(), "/cosmos.bank.v1beta1.MsgSend")
@@ -35,10 +35,17 @@ func TestCountAuthorization(t *testing.T) {
 	require.Equal(t, authorization.MsgTypeURL(), "/cosmos.bank.v1beta1.MsgSend")
 	require.NoError(t, authorization.ValidateBasic())
 
-	t.Log("verify updated authorization returns correct count of allowed authorizations")
+	t.Log("verify updated authorization returns remaining count of allowed authorizations")
 	resp, err = authorization.Accept(ctx, nil)
 	require.NoError(t, err)
 	require.False(t, resp.Delete)
 	require.NotNil(t, resp.Updated)
-	require.Equal(t, authorization.String(), resp.Updated.String())
+	countAuth, _ := resp.Updated.(*authz.CountAuthorization)
+	require.Equal(t, authorization.AllowedAuthorizations - 1, countAuth.AllowedAuthorizations)
+
+	t.Log("expect updated authorization nil after using last authorization")
+	resp, err = resp.Updated.Accept(ctx, nil)
+	require.NoError(t, err)
+	require.True(t, resp.Delete)
+	require.Nil(t, resp.Updated)
 }
