@@ -12,6 +12,7 @@ import (
 
 var (
 	msgTypeURL                = "/cosmos.bank.v1beta1.MsgSend"
+	zeroAllowedAuthorizations  = int32(0)
 	oneAllowedAuthorizations  = int32(1)
 	withAllowedAuthorizations = int32(2)
 )
@@ -30,6 +31,11 @@ func TestCountAuthorization(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, resp.Delete)
 	require.Nil(t, resp.Updated)
+
+	t.Log("verify allowed authorizations set to 0 fail ValidateBasic")
+	authorization = authz.NewCountAuthorization(msgTypeURL, zeroAllowedAuthorizations)
+	require.Equal(t, authorization.MsgTypeURL(), "/cosmos.bank.v1beta1.MsgSend")
+	require.Error(t, authorization.ValidateBasic())
 
 	authorization = authz.NewCountAuthorization(msgTypeURL, withAllowedAuthorizations)
 	require.Equal(t, authorization.MsgTypeURL(), "/cosmos.bank.v1beta1.MsgSend")

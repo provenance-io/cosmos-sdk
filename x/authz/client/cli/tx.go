@@ -95,13 +95,10 @@ Examples:
 				}
 
 				if allowedAuthorizations <= 0 {
-					return fmt.Errorf("allowed-authorizations should be greater than zero")
+					return fmt.Errorf("allowed-authorizations must be greater than 0")
 				}
 
-				// Increment allowed authorizations by one to ensure the correct desired count.
-				// This is because when the 'Msg' is dispatched to authz's 'Keeper.DispatchAction()'
-				// it calls 'CountAuthorization.Accept()' which first decrements allowedAuthorizations than validates.
-				authorization = authz.NewCountAuthorization(msgType, allowedAuthorizations + 1)
+				authorization = authz.NewCountAuthorization(msgType, allowedAuthorizations)
 			case "send":
 				limit, err := cmd.Flags().GetString(FlagSpendLimit)
 				if err != nil {
