@@ -3,6 +3,9 @@ package config_test
 import (
 	"bytes"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -25,9 +28,12 @@ const (
 // initClientContext initiates client Context for tests
 func initClientContext(t *testing.T, envVar string) (client.Context, func()) {
 	home := t.TempDir()
+	registry := types.NewInterfaceRegistry()
+	cryptocodec.RegisterInterfaces(registry)
 	clientCtx := client.Context{}.
 		WithHomeDir(home).
-		WithViper("")
+		WithViper("").
+		WithCodec(codec.NewProtoCodec(registry))
 
 	clientCtx.Viper.BindEnv(nodeEnv)
 	if envVar != "" {
