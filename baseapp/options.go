@@ -2,14 +2,12 @@ package baseapp
 
 import (
 	"fmt"
-	"io"
-
-	dbm "github.com/tendermint/tm-db"
-
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	dbm "github.com/tendermint/tm-db"
+	"io"
 )
 
 // File for storing in-package BaseApp optional functions,
@@ -250,4 +248,15 @@ func (app *BaseApp) SetFeeHandler(feeHandler sdk.FeeHandler) {
 	}
 
 	app.feeHandler = feeHandler
+}
+
+// SetStreamingService is used to set a streaming service into the BaseApp hooks and load the listeners into the multistore
+func (app *BaseApp) SetStreamingService(s StreamingService) {
+	// add the listeners for each StoreKey
+	for key, lis := range s.Listeners() {
+		app.cms.AddListeners(key, lis)
+	}
+	// register the StreamingService within the BaseApp
+	// BaseApp will pass BeginBlock, DeliverTx, and EndBlock requests and responses to the streaming services to update their ABCI context
+	app.abciListeners = append(app.abciListeners, s)
 }

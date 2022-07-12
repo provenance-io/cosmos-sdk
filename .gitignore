@@ -43,6 +43,8 @@ vagrant
 # IDE
 .idea
 *.iml
+*.ipr
+*.iws
 .dir-locals.el
 .vscode
 

@@ -76,6 +76,42 @@ func (k BaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllBalances
 	return &types.QueryAllBalancesResponse{Balances: balances, Pagination: pageRes}, nil
 }
 
+// SpendableBalances implements a gRPC query handler for retrieving an account's
+// spendable balances.
+func (k BaseKeeper) SpendableBalances(ctx context.Context, req *types.QuerySpendableBalancesRequest) (*types.QuerySpendableBalancesResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	addr, err := sdk.AccAddressFromBech32(req.Address)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err.Error())
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	balances := sdk.NewCoins()
+	accountStore := k.getAccountStore(sdkCtx, addr)
+	zeroAmt := sdk.ZeroInt()
+
+	pageRes, err := query.Paginate(accountStore, req.Pagination, func(key, value []byte) error {
+		balances = append(balances, sdk.NewCoin(string(key), zeroAmt))
+		return nil
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
+	}
+
+	result := sdk.NewCoins()
+	spendable := k.SpendableCoins(sdkCtx, addr)
+
+	for _, c := range balances {
+		result = append(result, sdk.NewCoin(c.Denom, spendable.AmountOf(c.Denom)))
+	}
+
+	return &types.QuerySpendableBalancesResponse{Balances: result, Pagination: pageRes}, nil
+}
+
 // TotalSupply implements the Query/TotalSupply gRPC method
 func (k BaseKeeper) TotalSupply(ctx context.Context, req *types.QueryTotalSupplyRequest) (*types.QueryTotalSupplyResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -163,4 +199,37 @@ func (k BaseKeeper) DenomMetadata(c context.Context, req *types.QueryDenomMetada
 	return &types.QueryDenomMetadataResponse{
 		Metadata: metadata,
 	}, nil
+}
+
+func (k BaseKeeper) SendEnabled(goCtx context.Context, req *types.QuerySendEnabledRequest) (*types.QuerySendEnabledResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	resp := &types.QuerySendEnabledResponse{}
+	if len(req.Denoms) > 0 {
+		store := ctx.KVStore(k.storeKey)
+		for _, denom := range req.Denoms {
+			if se, ok := k.getSendEnabled(store, denom); ok {
+				resp.SendEnabled = append(resp.SendEnabled, types.NewSendEnabled(denom, se))
+			}
+		}
+	} else {
+		store := k.getSendEnabledPrefixStore(ctx)
+		var err error
+		resp.Pagination, err = query.FilteredPaginate(
+			store,
+			req.Pagination,
+			func(key []byte, value []byte, accumulate bool) (bool, error) {
+				if accumulate {
+					resp.SendEnabled = append(resp.SendEnabled, types.NewSendEnabled(string(key), types.IsTrueB(value)))
+				}
+				return true, nil
+			},
+		)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+	return resp, nil
 }

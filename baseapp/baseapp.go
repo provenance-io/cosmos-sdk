@@ -6,13 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/gogo/protobuf/proto"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
-
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -20,6 +13,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
+	"github.com/gogo/protobuf/proto"
+	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/crypto/tmhash"
+	"github.com/tendermint/tendermint/libs/log"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
 )
 
 const (
@@ -135,6 +134,10 @@ type BaseApp struct { // nolint: maligned
 	indexEvents map[string]struct{}
 
 	feeHandler sdk.FeeHandler
+
+	// abciListeners for hooking into the ABCI message processing of the BaseApp
+	// and exposing the requests and responses to external consumers
+	abciListeners []ABCIListener
 }
 
 // NewBaseApp returns a reference to an initialized BaseApp. It accepts a
@@ -278,6 +281,22 @@ func (app *BaseApp) LoadLatestVersion() error {
 // DefaultStoreLoader will be used by default and loads the latest version
 func DefaultStoreLoader(ms sdk.CommitMultiStore) error {
 	return ms.LoadLatestVersion()
+}
+
+// CommitMultiStore returns the root multi-store.
+// App constructor can use this to access the `cms`.
+// UNSAFE: only safe to use during app initialization.
+func (app *BaseApp) CommitMultiStore() sdk.CommitMultiStore {
+	if app.sealed {
+		panic("cannot call CommitMultiStore() after baseapp is sealed")
+	}
+	return app.cms
+}
+
+// SnapshotManager returns the snapshot manager.
+// application use this to register extra extension snapshotters.
+func (app *BaseApp) SnapshotManager() *snapshots.Manager {
+	return app.snapshotManager
 }
 
 // LoadVersion loads the BaseApp application version. It will panic if called

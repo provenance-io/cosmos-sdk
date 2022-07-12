@@ -1,0 +1,96 @@
+###############################################################################
+###                      Plugin system configuration                        ###
+###############################################################################
+
+[plugins]
+
+# turn the plugin system, as a whole, on or off
+on = true
+
+# List of plugin names to enable from the plugin/plugins/*
+enabled = ["kafka"]
+
+# The directory to load non-preloaded plugins from; defaults $GOPATH/src/github.com/cosmos/cosmos-sdk/plugin/plugins
+dir = ""
+
+# a mapping of plugin-specific streaming service parameters, mapped to their pluginFileName
+[plugins.streaming]
+
+###############################################################################
+###                      File plugin configuration                          ###
+###############################################################################
+
+# the specific parameters for the file streaming service plugin
+[plugins.streaming.file]
+
+# List of store keys to expose to this streaming service.
+# Leaving this blank will include all store keys.
+keys = []
+
+# Path to the write directory
+write_dir = ""
+
+# Optional prefix to prepend to the generated file names
+prefix = ""
+
+# Whether or not to halt the application when plugin fails to deliver message(s).
+halt_app_on_delivery_error = true
+
+###############################################################################
+###                       Trace Plugin configuration                        ###
+###############################################################################
+
+# The specific parameters for the Kafka streaming service plugin
+[plugins.streaming.trace]
+
+# List of store keys we want to expose for this streaming service.
+keys = []
+
+# In addition to block event info, print the data to stdout as well.
+print_data_to_stdout = false
+
+# Whether or not to halt the application when plugin fails to deliver message(s).
+halt_app_on_delivery_error = true
+
+###############################################################################
+###                       Kafka Plugin configuration                        ###
+###############################################################################
+
+# The specific parameters for the Kafka streaming service plugin
+[plugins.streaming.kafka]
+
+# List of store keys we want to expose for this streaming service.
+keys = []
+
+# Optional topic prefix for the topic(s) where data will be stored
+topic_prefix = "block"
+
+# Flush and wait for outstanding messages and requests to complete delivery. (milliseconds)
+flush_timeout_ms = 1500
+
+# Whether or not to halt the application when plugin fails to deliver message(s).
+halt_app_on_delivery_error = true
+
+# Producer configuration properties.
+# The plugin uses confluent-kafka-go which is a lightweight wrapper around librdkafka.
+# For a full list of producer configuration properties
+# see https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
+[plugins.streaming.kafka.producer]
+
+# Initial list of brokers as a comma seperated list of broker host or host:port[, host:port[,...]]
+bootstrap_servers = "localhost:9092"
+
+# Client identifier
+client_id = "my-app-id"
+
+# This field indicates the number of acknowledgements the leader
+# broker must receive from ISR brokers before responding to the request
+acks = "all"
+
+# When set to true, the producer will ensure that messages
+# are successfully produced exactly once and in the original produce order.
+# The following configuration properties are adjusted automatically (if not modified by the user)
+# when idempotence is enabled: max.in.flight.requests.per.connection=5 (must be less than or equal to 5),
+# retries=INT32_MAX (must be greater than 0), acks=all, queuing.strategy=fifo.
+# Producer instantation will fail if user-supplied configuration is incompatible.
+enable_idempotence = true
