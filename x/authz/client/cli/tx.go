@@ -191,7 +191,7 @@ Examples:
 	cmd.Flags().StringSlice(FlagAllowedValidators, []string{}, "Allowed validators addresses separated by ,")
 	cmd.Flags().StringSlice(FlagDenyValidators, []string{}, "Deny validators addresses separated by ,")
 	cmd.Flags().Int64(FlagExpiration, time.Now().AddDate(1, 0, 0).Unix(), "The Unix timestamp. Default is one year.")
-	cmd.Flags().String(FlagAllowedAuthorizations, "", "Allowed authorizations for Count Authorization")
+	cmd.Flags().Int32(FlagAllowedAuthorizations, 0, "Allowed authorizations for a Count Authorization")
 	return cmd
 }
 
