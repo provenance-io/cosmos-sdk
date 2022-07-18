@@ -43,6 +43,14 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ---
 
+## [v0.45.4-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.4-pio-3) - 2022-07-18
+
+# Features
+
+* (x/authz) [\#807](https://github.com/provenance-io/provenance/issues/807) Create a CountAuthorization type.
+
+---
+
 ## [v0.45.4-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.4-pio-2) - 2022-07-12
 
 ### Bug Fixes
