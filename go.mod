@@ -19,7 +19,7 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-alpha7
 	github.com/cosmos/cosmos-sdk/db v1.0.0-beta.1
 	github.com/cosmos/go-bip39 v1.0.0
-	github.com/cosmos/iavl v0.18.0
+	github.com/cosmos/iavl v0.19.0
 	github.com/cosmos/ledger-cosmos-go v0.11.1
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/gogo/gateway v1.1.0
@@ -65,7 +65,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require github.com/cosmos/cosmos-sdk/store/tools/ics23 v0.0.0-20220715131951-9c90f980d21d
+require github.com/cosmos/cosmos-sdk/store/tools/ics23 v0.0.0-00010101000000-000000000000
 
 require (
 	4d63.com/gochecknoglobals v0.1.0 // indirect
