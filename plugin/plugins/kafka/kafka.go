@@ -3,9 +3,10 @@ package file
 import (
 	"errors"
 	"fmt"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"strings"
 	"sync"
+
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 
 	"github.com/spf13/cast"
 
@@ -103,21 +104,22 @@ func (ssp *streamingServicePlugin) Register(
 	}
 
 	// Validate minimum producer config properties
-	producerConfigKey := fmt.Sprintf("%s.%s.%s.%s", tomlKeyPrefix, PRODUCER_CONFIG_PARAM)
+	// TODO: Verify that this is as expected. Updated from "%s.%s.%s.%s" to "%s.%s" since tomlKeyPrefix has "%s.%s.%s".
+	producerConfigKey := fmt.Sprintf("%s.%s", tomlKeyPrefix, PRODUCER_CONFIG_PARAM)
 
 	if len(producerConfig) == 0 {
-		m := fmt.Sprintf("Failed to register plugin. Empty properties for '%s': " +
+		m := fmt.Sprintf("Failed to register plugin. Empty properties for '%s': "+
 			"client will not be able to connect to Kafka cluster", producerConfigKey)
 		return errors.New(m)
 	} else {
 		bootstrapServers := cast.ToString(producerConfig["bootstrap_servers"])
 		if len(bootstrapServers) == 0 {
-			m := fmt.Sprintf("Failed to register plugin. No \"%s.%s\" configured:" +
+			m := fmt.Sprintf("Failed to register plugin. No \"%s.%s\" configured:"+
 				" client will not be able to connect to Kafka cluster", producerConfigKey, "bootstrap_servers")
 			return errors.New(m)
 		}
 		if strings.TrimSpace(bootstrapServers) == "" {
-			m := fmt.Sprintf("Failed to register plugin. Empty \"%s.%s\" configured:" +
+			m := fmt.Sprintf("Failed to register plugin. Empty \"%s.%s\" configured:"+
 				" client will not be able to connect to Kafka cluster", producerConfigKey, "bootstrap_servers")
 			return errors.New(m)
 		}
