@@ -1,10 +1,12 @@
 package service
 
+// In order for these tests to pass, you need to have kafka running locally.
+// You can start it up by running this command from the root of this repo:
+// $ docker-compose -f plugin/plugins/kafka/docker-compose.yml up -d zookeeper broker
+
 import (
 	"context"
 	"fmt"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/tendermint/tendermint/libs/log"
 	"os"
 	"os/signal"
 	"sync"
@@ -17,8 +19,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/log"
 	types1 "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
@@ -110,12 +115,12 @@ var (
 	}
 
 	producerConfig = kafka.ConfigMap{
-		"bootstrap.servers": bootstrapServers,
-		"client.id":         "testKafkaStreamService",
-		"security.protocol": "PLAINTEXT",
+		"bootstrap.servers":  bootstrapServers,
+		"client.id":          "testKafkaStreamService",
+		"security.protocol":  "PLAINTEXT",
 		"enable.idempotence": "true",
 		// Best practice for Kafka producer to prevent data loss
-		"acks":              "all",
+		"acks": "all",
 	}
 
 	// mock state changes
@@ -148,7 +153,7 @@ func TestIntermediateWriter(t *testing.T) {
 
 // change this to write to in-memory io.Writer (e.g. bytes.Buffer)
 func TestKafkaStreamingService(t *testing.T) {
-	 testingCtx = sdk.NewContext(nil, types1.Header{}, false, log.TestingLogger())
+	testingCtx = sdk.NewContext(nil, types1.Header{}, false, log.TestingLogger())
 	testKeys := []types.StoreKey{mockStoreKey1, mockStoreKey2}
 	kss, err := NewKafkaStreamingService(producerConfig, topicPrefix, flushTimeoutMs, testKeys, testMarshaller, true)
 	testStreamingService = kss
@@ -162,15 +167,15 @@ func TestKafkaStreamingService(t *testing.T) {
 	testListener2 = testStreamingService.listeners[mockStoreKey2][0]
 	wg := new(sync.WaitGroup)
 	testStreamingService.Stream(wg)
-	testListenBeginBlock(t)
-	testListenDeliverTx1(t)
-	testListenDeliverTx2(t)
-	testListenEndBlock(t)
+	t.Run("testListenBeginBlock", testListenBeginBlock)
+	t.Run("testListenDeliverTx1", testListenDeliverTx1)
+	t.Run("testListenDeliverTx2", testListenDeliverTx2)
+	t.Run("testListenEndBlock", testListenEndBlock)
 	testStreamingService.Close()
 	wg.Wait()
 }
 
-func  testListenBeginBlock(t *testing.T) {
+func testListenBeginBlock(t *testing.T) {
 	expectedBeginBlockReqBytes, err := testMarshaller.MarshalJSON(&testBeginBlockReq)
 	require.Nil(t, err)
 	expectedBeginBlockResBytes, err := testMarshaller.MarshalJSON(&testBeginBlockRes)
@@ -214,11 +219,43 @@ func  testListenBeginBlock(t *testing.T) {
 	require.Nil(t, err)
 
 	// validate data stored in Kafka
-	require.Equal(t, expectedBeginBlockReqBytes, getMessageValueForTopic(msgs, string(BeginBlockReqTopic), 0))
-	require.Equal(t, expectedKVPair1, getMessageValueForTopic(msgs, StateChangeTopic, 0))
-	require.Equal(t, expectedKVPair2, getMessageValueForTopic(msgs, StateChangeTopic, 1))
-	require.Equal(t, expectedKVPair3, getMessageValueForTopic(msgs, StateChangeTopic, 2))
-	require.Equal(t, expectedBeginBlockResBytes, getMessageValueForTopic(msgs, BeginBlockResTopic, 0))
+	tests := []struct {
+		topic    EventTypeValueTypeTopic
+		offset   int64
+		expected []byte
+	}{
+		{
+			topic:    BeginBlockReqTopic,
+			offset:   0,
+			expected: expectedBeginBlockReqBytes,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   0,
+			expected: expectedKVPair1,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   1,
+			expected: expectedKVPair2,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   2,
+			expected: expectedKVPair3,
+		},
+		{
+			topic:    BeginBlockResTopic,
+			offset:   0,
+			expected: expectedBeginBlockResBytes,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("%s %d", tc.topic, tc.offset), func(tt *testing.T) {
+			actual := getMessageValueForTopic(msgs, string(tc.topic), tc.offset)
+			assert.Equal(tt, string(tc.expected), string(actual))
+		})
+	}
 }
 
 func testListenDeliverTx1(t *testing.T) {
@@ -265,11 +302,43 @@ func testListenDeliverTx1(t *testing.T) {
 	require.Nil(t, err)
 
 	// validate data stored in Kafka
-	require.Equal(t, expectedDeliverTxReq1Bytes, getMessageValueForTopic(msgs, DeliverTxReqTopic, 0))
-	require.Equal(t, expectedKVPair1, getMessageValueForTopic(msgs, StateChangeTopic, 3))
-	require.Equal(t, expectedKVPair2, getMessageValueForTopic(msgs, StateChangeTopic, 4))
-	require.Equal(t, expectedKVPair3, getMessageValueForTopic(msgs, StateChangeTopic, 5))
-	require.Equal(t, expectedDeliverTxRes1Bytes, getMessageValueForTopic(msgs, DeliverTxResTopic, 0))
+	tests := []struct {
+		topic    EventTypeValueTypeTopic
+		offset   int64
+		expected []byte
+	}{
+		{
+			topic:    DeliverTxReqTopic,
+			offset:   0,
+			expected: expectedDeliverTxReq1Bytes,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   3,
+			expected: expectedKVPair1,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   4,
+			expected: expectedKVPair2,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   5,
+			expected: expectedKVPair3,
+		},
+		{
+			topic:    DeliverTxResTopic,
+			offset:   0,
+			expected: expectedDeliverTxRes1Bytes,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("%s %d", tc.topic, tc.offset), func(tt *testing.T) {
+			actual := getMessageValueForTopic(msgs, string(tc.topic), tc.offset)
+			assert.Equal(tt, string(tc.expected), string(actual))
+		})
+	}
 }
 
 func testListenDeliverTx2(t *testing.T) {
@@ -316,11 +385,43 @@ func testListenDeliverTx2(t *testing.T) {
 	require.Nil(t, err)
 
 	// validate data stored in Kafka
-	require.Equal(t, expectedDeliverTxReq2Bytes, getMessageValueForTopic(msgs, DeliverTxReqTopic, 1))
-	require.Equal(t, expectedKVPair1, getMessageValueForTopic(msgs, StateChangeTopic, 6))
-	require.Equal(t, expectedKVPair2, getMessageValueForTopic(msgs, StateChangeTopic, 7))
-	require.Equal(t, expectedKVPair3, getMessageValueForTopic(msgs, StateChangeTopic, 8))
-	require.Equal(t, expectedDeliverTxRes2Bytes, getMessageValueForTopic(msgs, DeliverTxResTopic, 1))
+	tests := []struct {
+		topic    EventTypeValueTypeTopic
+		offset   int64
+		expected []byte
+	}{
+		{
+			topic:    DeliverTxReqTopic,
+			offset:   1,
+			expected: expectedDeliverTxReq2Bytes,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   6,
+			expected: expectedKVPair1,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   7,
+			expected: expectedKVPair2,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   8,
+			expected: expectedKVPair3,
+		},
+		{
+			topic:    DeliverTxResTopic,
+			offset:   1,
+			expected: expectedDeliverTxRes2Bytes,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("%s %d", tc.topic, tc.offset), func(tt *testing.T) {
+			actual := getMessageValueForTopic(msgs, string(tc.topic), tc.offset)
+			assert.Equal(tt, string(tc.expected), string(actual))
+		})
+	}
 }
 
 func testListenEndBlock(t *testing.T) {
@@ -367,11 +468,43 @@ func testListenEndBlock(t *testing.T) {
 	require.Nil(t, err)
 
 	// validate data stored in Kafka
-	require.Equal(t, expectedEndBlockReqBytes, getMessageValueForTopic(msgs, EndBlockReqTopic, 0))
-	require.Equal(t, expectedKVPair1, getMessageValueForTopic(msgs, StateChangeTopic, 9))
-	require.Equal(t, expectedKVPair2, getMessageValueForTopic(msgs, StateChangeTopic, 10))
-	require.Equal(t, expectedKVPair3, getMessageValueForTopic(msgs, StateChangeTopic, 11))
-	require.Equal(t, expectedEndBlockResBytes, getMessageValueForTopic(msgs, EndBlockResTopic, 0))
+	tests := []struct {
+		topic    EventTypeValueTypeTopic
+		offset   int64
+		expected []byte
+	}{
+		{
+			topic:    EndBlockReqTopic,
+			offset:   0,
+			expected: expectedEndBlockReqBytes,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   9,
+			expected: expectedKVPair1,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   10,
+			expected: expectedKVPair2,
+		},
+		{
+			topic:    StateChangeTopic,
+			offset:   11,
+			expected: expectedKVPair3,
+		},
+		{
+			topic:    EndBlockResTopic,
+			offset:   0,
+			expected: expectedEndBlockResBytes,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("%s %d", tc.topic, tc.offset), func(tt *testing.T) {
+			actual := getMessageValueForTopic(msgs, string(tc.topic), tc.offset)
+			assert.Equal(tt, string(tc.expected), string(actual))
+		})
+	}
 }
 
 func getMessageValueForTopic(msgs []*kafka.Message, topic string, offset int64) []byte {
@@ -391,7 +524,7 @@ func poll(bootstrapServers string, topics []string, expectedMsgCnt int) ([]*kafk
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers":      bootstrapServers,
+		"bootstrap.servers": bootstrapServers,
 		// Avoid connecting to IPv6 brokers:
 		// This is needed for the ErrAllBrokersDown show-case below
 		// when using localhost brokers on OSX, since the OSX resolver
