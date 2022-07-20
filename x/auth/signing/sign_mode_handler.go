@@ -1,6 +1,7 @@
 package signing
 
 import (
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 )
@@ -23,6 +24,11 @@ type SignModeHandler interface {
 // SignerData is the specific information needed to sign a transaction that generally
 // isn't included in the transaction body itself
 type SignerData struct {
+	// The address of the signer.
+	//
+	// In case of multisigs, this should be the multisig's address.
+	Address string
+
 	// ChainID is the chain that this transaction is targeted
 	ChainID string
 
@@ -34,4 +40,10 @@ type SignerData struct {
 	// since in SIGN_MODE_DIRECT the account sequence is already in the signer
 	// info.
 	Sequence uint64
+
+	// PubKey is the public key of the signer.
+	//
+	// In case of multisigs, this should be the pubkey of the member of the
+	// multisig that is signing the current sign doc.
+	PubKey cryptotypes.PubKey
 }
