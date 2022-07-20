@@ -196,6 +196,7 @@ test-all: test-unit test-ledger-mock test-race test-cover
 TEST_PACKAGES=./...
 TEST_TARGETS := test-unit test-unit-amino test-unit-proto test-ledger-mock test-race test-ledger test-race
 
+test_tags += dynamic
 # Test runs-specific rules. To add a new test target, just add
 # a new rule, customise ARGS or TEST_PACKAGES ad libitum, and
 # append the new rule to the TEST_TARGETS list.
