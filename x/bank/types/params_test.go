@@ -82,7 +82,7 @@ func Test_ParamsString(t *testing.T) {
 		{
 			name:     "default true one false send enabled",
 			params:   Params{[]*SendEnabled{{"barcoin", false}}, true},
-			expected: "default_send_enabled: true\nsend_enabled:\n- denom: barcoin\n",
+			expected: "default_send_enabled: true\nsend_enabled:\n- denom: barcoin\n  enabled: false\n",
 		},
 	}
 	for _, tc := range tests {
