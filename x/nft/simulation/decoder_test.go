@@ -21,7 +21,7 @@ var (
 )
 
 func TestDecodeStore(t *testing.T) {
-	cdc := simapp.MakeTestEncodingConfig().Codec
+	cdc := simapp.MakeTestEncodingConfig().Marshaler
 	dec := simulation.NewDecodeStore(cdc)
 
 	class := nft.Class{

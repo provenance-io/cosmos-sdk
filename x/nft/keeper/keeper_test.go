@@ -35,7 +35,7 @@ type TestSuite struct {
 }
 
 func (s *TestSuite) SetupTest() {
-	app := simapp.Setup(s.T(), false)
+	app := simapp.Setup046(s.T(), false)
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 	ctx = ctx.WithBlockHeader(tmproto.Header{Time: tmtime.Now()})
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, app.InterfaceRegistry())

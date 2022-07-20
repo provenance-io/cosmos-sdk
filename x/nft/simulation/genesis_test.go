@@ -15,7 +15,7 @@ import (
 )
 
 func TestRandomizedGenState(t *testing.T) {
-	app := simapp.Setup(t, false)
+	app := simapp.Setup046(t, false)
 
 	s := rand.NewSource(1)
 	r := rand.New(s)
@@ -26,7 +26,7 @@ func TestRandomizedGenState(t *testing.T) {
 		Rand:         r,
 		NumBonded:    3,
 		Accounts:     simtypes.RandomAccounts(r, 3),
-		InitialStake: sdk.NewInt(1000),
+		InitialStake: 1000,
 		GenState:     make(map[string]json.RawMessage),
 	}
 
