@@ -39,7 +39,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* nothing
+### Features
+
+* (x/nft) [\#958](https://github.com/provenance-io/provenance/issues/956) Backport x/nft module from release/v0.46.x.
 
 ---
 
