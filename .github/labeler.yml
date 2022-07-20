@@ -20,6 +20,8 @@
   - x/gov/**/*
 "C:x/mint":
   - x/mint/**/*
+"C:x/nft":
+  - x/nft/**/*
 "C:x/params":
   - x/params/**/*
 "C:Simulations":
@@ -52,3 +54,5 @@
   - x/*/client/**/*
 "Type: ADR":
   - docs/architecture/**/*
+"C:Store":
+  - store/**/*
