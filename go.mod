@@ -7,7 +7,7 @@ require (
 	cosmossdk.io/core v0.0.0
 	cosmossdk.io/depinject v1.0.0-alpha.4
 	cosmossdk.io/errors v1.0.0-beta.7
-	cosmossdk.io/math v1.0.0-beta.2
+	cosmossdk.io/math v1.0.0-beta.3
 	github.com/99designs/keyring v1.2.1
 	github.com/armon/go-metrics v0.4.0
 	github.com/bgentry/speakeasy v0.1.0
@@ -65,7 +65,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require github.com/cosmos/cosmos-sdk/store/tools/ics23 v0.0.0-20220715131951-9c90f980d21d
+require github.com/cosmos/cosmos-sdk/store/tools/ics23 v0.0.0-00010101000000-000000000000
 
 require (
 	4d63.com/gochecknoglobals v0.1.0 // indirect
