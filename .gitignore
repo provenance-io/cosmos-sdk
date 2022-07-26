@@ -27,12 +27,14 @@ artifacts
 # Data - ideally these don't exist
 baseapp/data/*
 client/lcd/keys/*
-mytestnet
+.testnets
 
 # Testing
 coverage.txt
 profile.out
 sim_log_file
+x/genutil/config
+x/genutil/data
 
 # Vagrant
 .vagrant/
@@ -43,8 +45,6 @@ vagrant
 # IDE
 .idea
 *.iml
-*.ipr
-*.iws
 .dir-locals.el
 .vscode
 
@@ -55,3 +55,5 @@ dependency-graph.png
 *.aux
 *.out
 *.synctex.gz
+/x/genutil/config/priv_validator_key.json
+/x/genutil/data/priv_validator_state.json
