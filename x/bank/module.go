@@ -102,13 +102,15 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
 		panic(fmt.Sprintf("failed to migrate x/bank from version 1 to 2: %v", err))
 	}
-
-	if err := cfg.RegisterMigration(types.ModuleName, 2, m.Migrate2to3); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/bank from version 2 to 3: %v", err))
+	// Note: In this provenance fork, this is the 2nd migration. it's still named Migrate3to4 to match the Cosmos SDK though.
+	// The Cosmos SDK 2nd migration is in v0.46.0 and shortens the denom metadata key lengths.
+	// For our provenance fork of v0.46.0, we'll need to keep this one as 2, and change that other one to 3.
+	if err := cfg.RegisterMigration(types.ModuleName, 2, m.Migrate3to4); err != nil {
+		panic(fmt.Sprintf("failed to migrate x/bank from version 3 to 4: %v", err))
 	}
 
-	if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/bank from version 3 to 4: %v", err))
+	if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate2to3); err != nil {
+		panic(fmt.Sprintf("failed to migrate x/bank from version 2 to 3: %v", err))
 	}
 }
 
