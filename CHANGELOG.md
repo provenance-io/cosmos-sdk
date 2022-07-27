@@ -39,6 +39,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
+### Features
+
+* (x/authz) [#12648](https://github.com/cosmos/cosmos-sdk/pull/12648) Add an allow list, an optional list of addresses allowed to receive bank assests via authz MsgSend grant.
+
 ### Improvements
 
 * Bring in Cosmos-SDK [v0.46.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.5) changes [#365](https://github.com/provenance-io/cosmos-sdk/pull/365).
