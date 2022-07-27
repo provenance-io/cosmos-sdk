@@ -43,6 +43,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 * (x/authz) [\#807](https://github.com/provenance-io/provenance/issues/807) Create a CountAuthorization type.
 
+### Bug Fixes
+
+* (store/rootmulti) [#12487](https://github.com/cosmos/cosmos-sdk/pull/12487) Fix non-deterministic map iteration.
+
 ---
 
 ## [v0.46.0](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.0) - 2022-07-26
