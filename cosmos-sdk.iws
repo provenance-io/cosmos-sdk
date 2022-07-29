@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="fe9fa848-684a-4878-b405-11a674714b57" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/cosmos-sdk.ipr" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/cosmos-sdk.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/baseapp/abci.go" beforeDir="false" afterPath="$PROJECT_DIR$/baseapp/abci.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/baseapp/options.go" beforeDir="false" afterPath="$PROJECT_DIR$/baseapp/options.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/baseapp/streaming.go" beforeDir="false" afterPath="$PROJECT_DIR$/baseapp/streaming.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/architecture/adr-038-state-listening.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/architecture/adr-038-state-listening.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/Rules.mk" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/example_config.toml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/loader/Rules.mk" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/loader/load_nocgo.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/loader/load_noplugin.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/loader/load_unix.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/loader/loader.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/loader/preload.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/loader/preload.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/loader/preload_list" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugin.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/Rules.mk" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/file/file.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/file/service/service.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/file/service/service_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/gen_main.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/kafka/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/kafka/docker-compose.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/kafka/kafka.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/kafka/proto/msg_key.proto" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/kafka/service/msg_key.pb.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/kafka/service/service.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/kafka/service/service_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/trace/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/trace/service/service.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/trace/service/service_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugins/trace/trace.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/streaming.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/sim-state-listening.mk" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/simapp/app.go" beforeDir="false" afterPath="$PROJECT_DIR$/simapp/app.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/simapp/sim_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/simapp/sim_test.go" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CodeStyleSettingsInfer">
+    <option name="done" value="true" />
+  </component>
+  <component name="GOROOT" url="file:///usr/local/Cellar/go/1.18.4/libexec" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
+  <component name="GoLibraries">
+    <option name="indexEntireGoPath" value="false" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/baseapp/abci.go" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/go.mod" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/proto/cosmos/authz/v1beta1/authz.proto" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/store/listenkv/store.go" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/store/types/listening.go" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/types/context.go" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/x/authz/client/cli/tx.go" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/x/authz/keeper/keeper.go" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/x/authz/simulation/operations.go" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/x/bank/types/send_authorization.go" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/x/bank/types/send_authorization_test.go" root0="FORCE_HIGHLIGHTING" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectCodeStyleSettingsMigration">
+    <option name="version" value="2" />
+  </component>
+  <component name="ProjectId" id="29Zzf3YONLxiARriesk5f88BJjy" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.go.format.on.save.advertiser.fired&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.vendoring.notification.had.been.shown&quot;: &quot;true&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/x/authz" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Go Test.service_test.go">
+    <configuration name="TestCountAuthorization in github.com/cosmos/cosmos-sdk/x/authz" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="cosmos-sdk" />
+      <working_directory value="$PROJECT_DIR$/x/authz" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/cosmos/cosmos-sdk/x/authz" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestCountAuthorization\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="count_authorization_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="cosmos-sdk" />
+      <working_directory value="$PROJECT_DIR$/x/authz" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <package value="github.com/cosmos/cosmos-sdk" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/x/authz/count_authorization_test.go" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <configuration name="service_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="cosmos-sdk" />
+      <working_directory value="$PROJECT_DIR$/plugin/plugins/kafka/service" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/plugin/plugins/kafka/service/service_test.go" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Test.service_test.go" />
+        <item itemvalue="Go Test.TestCountAuthorization in github.com/cosmos/cosmos-sdk/x/authz" />
+        <item itemvalue="Go Test.count_authorization_test.go" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="fe9fa848-684a-4878-b405-11a674714b57" name="Default Changelist" comment="" />
+      <created>1653335496320</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1653335496320</updated>
+      <workItem from="1653335497924" duration="24000" />
+      <workItem from="1653335550868" duration="1622000" />
+      <workItem from="1654795345229" duration="7479000" />
+      <workItem from="1655479901214" duration="3818000" />
+      <workItem from="1655839735262" duration="51028000" />
+      <workItem from="1657638025682" duration="35000" />
+      <workItem from="1657638112324" duration="376000" />
+      <workItem from="1657658945320" duration="89000" />
+      <workItem from="1657659664819" duration="15461000" />
+      <workItem from="1658159536168" duration="329000" />
+      <workItem from="1658176796310" duration="17950000" />
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+        <option value="Space.CommitStatus" />
+      </list>
+    </option>
+  </component>
+  <component name="VgoProject">
+    <settings-migrated>true</settings-migrated>
+  </component>
+</project>

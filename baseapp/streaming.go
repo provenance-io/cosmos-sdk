@@ -18,13 +18,6 @@ type ABCIListener interface {
 	ListenEndBlock(ctx types.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error
 	// ListenDeliverTx updates the steaming service with the latest DeliverTx messages
 	ListenDeliverTx(ctx types.Context, req abci.RequestDeliverTx, res abci.ResponseDeliverTx) error
-	// HaltAppOnDeliveryError returns true if the application has been configured to halt when
-	// ListenBeginBlock, ListenEndBlock, ListenDeliverTx fail to process messages and false when
-	// the application has been configured to send messages to ListenBeginBlock, ListenEndBlock, ListenDeliverTx
-	// in fire-and-forget fashion.
-	//
-	// This behavior is controlled by a corresponding app config setting.
-	HaltAppOnDeliveryError() bool
 }
 
 // StreamingService interface for registering WriteListeners with the BaseApp and updating the service with the ABCI messages using the hooks
