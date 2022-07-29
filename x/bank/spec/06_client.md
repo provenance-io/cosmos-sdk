@@ -114,7 +114,7 @@ send_enabled:
 - denom: barcoin
 pagination:
   next-key: null
-  total: 2 
+  total: 2
 ```
 
 ### Transactions

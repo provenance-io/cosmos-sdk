@@ -348,11 +348,6 @@ func (k BaseSendKeeper) BlockedAddr(addr sdk.AccAddress) bool {
 	return k.blockedAddrs[addr.String()]
 }
 
-// GetBlockedAddresses returns the full list of addresses restricted from receiving funds.
-func (k BaseSendKeeper) GetBlockedAddresses() map[string]bool {
-	return k.blockedAddrs
-}
-
 // IsSendEnabledDenom returns the current SendEnabled status of the provided denom.
 func (k BaseSendKeeper) IsSendEnabledDenom(ctx sdk.Context, denom string) bool {
 	return k.getSendEnabledOrDefault(ctx.KVStore(k.storeKey), denom, func() bool { return k.GetParams(ctx).DefaultSendEnabled })
