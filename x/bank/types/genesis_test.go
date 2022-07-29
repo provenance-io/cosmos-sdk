@@ -181,8 +181,6 @@ func TestMigrateSendEnabled(t *testing.T) {
 					Display:     "meta",
 					Name:        "foo",
 					Symbol:      "META",
-					URI:         "",
-					URIHash:     "",
 				}},
 			},
 			newState: &GenesisState{
@@ -199,8 +197,6 @@ func TestMigrateSendEnabled(t *testing.T) {
 					Display:     "meta",
 					Name:        "foo",
 					Symbol:      "META",
-					URI:         "",
-					URIHash:     "",
 				}},
 			},
 		},
