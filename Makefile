@@ -196,25 +196,30 @@ test-all: test-unit test-ledger-mock test-race test-cover
 TEST_PACKAGES=./...
 TEST_TARGETS := test-unit test-unit-amino test-unit-proto test-ledger-mock test-race test-ledger test-race
 
+test_tags += dynamic
 # Test runs-specific rules. To add a new test target, just add
 # a new rule, customise ARGS or TEST_PACKAGES ad libitum, and
 # append the new rule to the TEST_TARGETS list.
-test-unit: ARGS=-tags='cgo ledger test_ledger_mock norace'
-test-unit-amino: ARGS=-tags='ledger test_ledger_mock test_amino norace'
-test-ledger: ARGS=-tags='cgo ledger norace'
-test-ledger-mock: ARGS=-tags='ledger test_ledger_mock norace'
-test-race: ARGS=-race -tags='cgo ledger test_ledger_mock'
+test-unit: test_tags += cgo ledger test_ledger_mock norace
+test-unit-amino: test_tags += ledger test_ledger_mock test_amino norace
+test-ledger: test_tags += cgo ledger norace
+test-ledger-mock: test_tags += ledger test_ledger_mock norace
+test-race: test_tags += cgo ledger test_ledger_mock
+test-race: ARGS=-race
 test-race: TEST_PACKAGES=$(PACKAGES_NOSIMULATION)
 $(TEST_TARGETS): run-tests
 
 # check-* compiles and collects tests without running them
 # note: go test -c doesn't support multiple packages yet (https://github.com/golang/go/issues/15513)
 CHECK_TEST_TARGETS := check-test-unit check-test-unit-amino
-check-test-unit: ARGS=-tags='cgo ledger test_ledger_mock norace'
-check-test-unit-amino: ARGS=-tags='ledger test_ledger_mock test_amino norace'
+check-test-unit: test_tags += cgo ledger test_ledger_mock norace
+check-test-unit-amino: test_tags += ledger test_ledger_mock test_amino norace
 $(CHECK_TEST_TARGETS): EXTRA_ARGS=-run=none
 $(CHECK_TEST_TARGETS): run-tests
 
+ARGS += -tags "$(test_tags)"
+SUB_MODULES = $(shell find . -type f -name 'go.mod' -print0 | xargs -0 -n1 dirname | sort)
+CURRENT_DIR = $(shell pwd)
 run-tests:
 ifneq (,$(shell which tparse 2>/dev/null))
 	@echo "Starting unit tests"; \
@@ -241,9 +246,6 @@ else
 endif
 
 .PHONY: run-tests test test-all $(TEST_TARGETS)
-
-# Sim tests with state listening plugins enabled
-include sim-state-listening.mk
 
 test-sim-nondeterminism:
 	@echo "Running non-determinism test..."
@@ -381,7 +383,7 @@ devdoc-update:
 ###                                Protobuf                                 ###
 ###############################################################################
 
-containerProtoVer=v0.2
+containerProtoVer=v0.7
 containerProtoImage=tendermintdev/sdk-proto-gen:$(containerProtoVer)
 containerProtoGen=cosmos-sdk-proto-gen-$(containerProtoVer)
 containerProtoGenSwagger=cosmos-sdk-proto-gen-swagger-$(containerProtoVer)

@@ -39,7 +39,42 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* none
+* nothing
+
+---
+
+## [v0.45.5-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.5-pio-1) - 2022-08-01
+
+### API Breaking Changes
+
+* [#215](https://github.com/provenance-io/cosmos-sdk/pull/215) Remove ADR-038 plugin system due to `AppHash` error.
+  The current [ADR 038: State Listening](https://github.com/provenance-io/cosmos-sdk/blob/egaxhaj-figure/adr-038-plugin-system/docs/architecture/adr-038-state-listening.md) implementation leads to an `AppHash` mismatch error that causes the node to crash when State Listening is enabled.
+
+---
+
+## [v0.45.4-pio-4](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.4-pio-4) - 2022-07-19
+
+### Bug Fixes
+
+* (x/authz) [\#194](https://github.com/provenance-io/cosmos-sdk/pull/194) Register the CountAuthorization model with the codec.
+
+---
+
+## [v0.45.4-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.4-pio-3) - 2022-07-18
+
+# Features
+
+* (x/authz) [\#807](https://github.com/provenance-io/provenance/issues/807) Create a CountAuthorization type.
+
+---
+
+## [v0.45.4-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.4-pio-2) - 2022-07-12
+
+### Bug Fixes
+
+* (store/rootmulti) [#12487](https://github.com/cosmos/cosmos-sdk/pull/12487) Fix non-deterministic map iteration.
+
+---
 
 ## [v0.45.4-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.4-pio-1) - 2022-04-22
 
