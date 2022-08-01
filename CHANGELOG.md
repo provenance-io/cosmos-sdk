@@ -39,6 +39,12 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
+* nothing
+
+---
+
+## [v0.45.5-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.5-pio-1) - 2022-08-01
+
 ### API Breaking Changes
 
 * [#215](https://github.com/provenance-io/cosmos-sdk/pull/215) Remove ADR-038 plugin system due to `AppHash` error.
