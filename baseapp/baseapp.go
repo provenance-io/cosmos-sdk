@@ -713,22 +713,27 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 
 		// apply fee logic calls
 		feeEvents, errFromFeeInvoker := FeeInvoke(mode, app, runMsgCtx)
-		// if err from FeeInvoke then don't write to cache
-		switch {
-		case errFromFeeInvoker != nil:
+		// Only write the cache if FeeInvoke didn't return an error.
+		if errFromFeeInvoker == nil {
+			// Only write the cache if we're in deliver mode.
+			if mode == runTxModeDeliver {
+				msCache.Write()
+			}
+			// If we're in deliver or simulate mode, update the events.
+			if mode == runTxModeDeliver || mode == runTxModeSimulate {
+				// these are the ante events propagated only on success, that now means that fee charging has happened successfully.
+				if len(anteEvents) > 0 {
+					// append the events in the order of occurrence
+					result.Events = append(anteEvents, result.Events...)
+				}
+				// additional fee events
+				if len(feeEvents) > 0 {
+					// append the fee events at the end of the other events, since they get charged at the end of the Tx
+					result.Events = append(result.Events, feeEvents.ToABCIEvents()...)
+				}
+			}
+		} else {
 			err = errFromFeeInvoker
-		case mode == runTxModeDeliver || mode == runTxModeSimulate:
-			msCache.Write()
-			// these are the ante events propagated only on success, that now means that fee charging has happened successfully.
-			if len(anteEvents) > 0 {
-				// append the events in the order of occurrence
-				result.Events = append(anteEvents, result.Events...)
-			}
-			// additional fee events
-			if len(feeEvents) > 0 {
-				// append the fee events at the end of the other events, since they get charged at the end of the Tx
-				result.Events = append(result.Events, feeEvents.ToABCIEvents()...)
-			}
 		}
 	}
 
