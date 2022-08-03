@@ -704,36 +704,34 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 			result.Events = append(result.Events, newCtx.EventManager().ABCIEvents()...)
 		}
 
+		var feeEvents sdk.Events
 		if mode == runTxModeDeliver {
 			// When block gas exceeds, it'll panic and won't commit the cached store.
 			// this should be called before we charge additional fee( otherwise would
 			// defy the whole point of charging additional fee at the end)
 			consumeBlockGas()
+
+			// apply fee logic calls
+			feeEvents, err = FeeInvoke(mode, app, runMsgCtx)
+			if err != nil {
+				return gInfo, nil, nil, priority, ctx, err
+			}
+			// Only write the cache if FeeInvoke didn't return an error.
+			msCache.Write()
 		}
 
-		// apply fee logic calls
-		feeEvents, errFromFeeInvoker := FeeInvoke(mode, app, runMsgCtx)
-		// Only write the cache if FeeInvoke didn't return an error.
-		if errFromFeeInvoker == nil {
-			// Only write the cache if we're in deliver mode.
-			if mode == runTxModeDeliver {
-				msCache.Write()
+		// If we're in deliver or simulate mode, update the events.
+		if mode == runTxModeDeliver || mode == runTxModeSimulate {
+			// these are the ante events propagated only on success, that now means that fee charging has happened successfully.
+			if len(anteEvents) > 0 {
+				// append the events in the order of occurrence
+				result.Events = append(anteEvents, result.Events...)
 			}
-			// If we're in deliver or simulate mode, update the events.
-			if mode == runTxModeDeliver || mode == runTxModeSimulate {
-				// these are the ante events propagated only on success, that now means that fee charging has happened successfully.
-				if len(anteEvents) > 0 {
-					// append the events in the order of occurrence
-					result.Events = append(anteEvents, result.Events...)
-				}
-				// additional fee events
-				if len(feeEvents) > 0 {
-					// append the fee events at the end of the other events, since they get charged at the end of the Tx
-					result.Events = append(result.Events, feeEvents.ToABCIEvents()...)
-				}
+			// additional fee events
+			if len(feeEvents) > 0 {
+				// append the fee events at the end of the other events, since they get charged at the end of the Tx
+				result.Events = append(result.Events, feeEvents.ToABCIEvents()...)
 			}
-		} else {
-			err = errFromFeeInvoker
 		}
 	}
 
