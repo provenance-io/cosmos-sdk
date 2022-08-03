@@ -719,14 +719,16 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 		if errFromFeeInvoker == nil {
 			msCache.Write()
 			// these are the ante events propagated only on success, that now means that fee charging has happened successfully.
-			if len(anteEvents) > 0 && (mode == runTxModeDeliver || mode == runTxModeSimulate) {
-				// append the events in the order of occurrence
-				result.Events = append(anteEvents, result.Events...)
-			}
-			// additional fee events
-			if len(feeEvents) > 0 {
-				// append the fee events at the end of the other events, since they get charged at the end of the Tx
-				result.Events = append(result.Events, feeEvents.ToABCIEvents()...)
+			if mode == runTxModeDeliver || mode == runTxModeSimulate {
+				if len(anteEvents) > 0 {
+					// append the events in the order of occurrence
+					result.Events = append(anteEvents, result.Events...)
+				}
+				// additional fee events
+				if len(feeEvents) > 0 {
+					// append the fee events at the end of the other events, since they get charged at the end of the Tx
+					result.Events = append(result.Events, feeEvents.ToABCIEvents()...)
+				}
 			}
 		} else {
 			err = errFromFeeInvoker
