@@ -38,6 +38,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 # Provenance Specific Releases
 
 ## Unreleased
+
+# Features
+
 * Add support for event data injection into end block handlers (https://github.com/provenance-io/provenance/issues/626)
   Currently the Cosmos SDK End block methods are only provided with the block height as a parameter, this feature would inject the events from block processing to support more advanced reactive features.
 
