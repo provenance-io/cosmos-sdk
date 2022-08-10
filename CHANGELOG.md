@@ -39,7 +39,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* nothing
+### Improvements
+
+* (baseapp) Undo the change to runTx that added the context as a return value [224](https://github.com/provenance-io/cosmos-sdk/pull/224).
 
 ---
 
