@@ -419,6 +419,7 @@ func (app *BaseApp) setDeliverState(header tmproto.Header) {
 	app.deliverState = &state{
 		ms:  ms,
 		ctx: sdk.NewContext(ms, header, false, app.logger),
+		eventHistory: []abci.Event{},
 	}
 }
 
@@ -722,6 +723,8 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 				// append the fee events at the end of the other events, since they get charged at the end of the Tx
 				result.Events = append(result.Events, feeEvents.ToABCIEvents()...)
 			}
+			app.deliverState.eventHistory = append(app.deliverState.eventHistory, result.Events...)
+
 		} else {
 			err = errFromFeeInvoker
 		}
@@ -804,7 +807,6 @@ func (app *BaseApp) runMsgs(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*s
 		// Note: Each message result's data must be length-prefixed in order to
 		// separate each result.
 		events = events.AppendEvents(msgEvents)
-
 		txMsgData.Data = append(txMsgData.Data, &sdk.MsgData{MsgType: sdk.MsgTypeURL(msg), Data: msgResult.Data})
 		msgLogs = append(msgLogs, sdk.NewABCIMessageLog(uint32(i), msgResult.Log, msgEvents))
 	}

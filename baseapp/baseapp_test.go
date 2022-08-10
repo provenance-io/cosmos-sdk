@@ -30,6 +30,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
 var (
@@ -190,6 +191,12 @@ func setupBaseAppWithSnapshots(t *testing.T, blocks uint, blockTxs int, options 
 	}
 
 	return app, teardown
+}
+
+func shouldPanic(t *testing.T, msg string, f func()) {
+	defer func() { recover() }()
+	f()
+	t.Errorf(msg)
 }
 
 func TestMountStores(t *testing.T) {
@@ -548,6 +555,12 @@ func TestSetMinGasPrices(t *testing.T) {
 	minGasPrices := sdk.DecCoins{sdk.NewInt64DecCoin("stake", 5000)}
 	app := newBaseApp(t.Name(), SetMinGasPrices(minGasPrices.String()))
 	require.Equal(t, minGasPrices, app.minGasPrices)
+}
+
+func TestSetMinGasPricesPanics(t *testing.T) {
+	shouldPanic(t, "Setting negative minimum gas price should panic", func() {
+		SetMinGasPrices("-5000stake")
+	})
 }
 
 func TestInitChainer(t *testing.T) {
@@ -2039,4 +2052,89 @@ func TestBaseApp_EndBlock(t *testing.T) {
 	require.Len(t, res.GetValidatorUpdates(), 1)
 	require.Equal(t, int64(100), res.GetValidatorUpdates()[0].Power)
 	require.Equal(t, cp.Block.MaxGas, res.ConsensusParamUpdates.Block.MaxGas)
+}
+
+func TestMessageServiceRouter(t *testing.T) {
+	db := dbm.NewMemDB()
+	name := t.Name()
+	logger := defaultLogger()
+	app := NewBaseApp(name, logger, db, nil)
+
+	app.SetMsgServiceRouter(nil)
+	require.Equal(t, nil, app.MsgServiceRouter())
+
+	app.SetMsgServiceRouter(NewMsgServiceRouter())
+	require.NotEqual(t, nil, app.MsgServiceRouter())
+}
+
+func TestMountKVStores(t *testing.T) {
+	db := dbm.NewMemDB()
+	name := t.Name()
+	logger := defaultLogger()
+	app := NewBaseApp(name, logger, db, nil)
+
+	keys := sdk.NewKVStoreKeys(
+		"acc", "bank", "staking",
+		"mint", "distribution", "slashing",
+		"gov", "params", "upgrade", "feegrant",
+		"evidence", "capability", "authz",
+	)
+
+	// Test everything is mounted
+	// Test all stores have the correct type
+	app.MountKVStores(keys)
+	app.cms.LoadLatestVersion()
+
+	for _, key := range keys {
+		store := app.cms.GetCommitKVStore(key)
+		require.Equal(t, sdk.StoreTypeIAVL, store.GetStoreType())
+	}
+
+	app = NewBaseApp(name, logger, db, nil)
+	app.fauxMerkleMode = true
+
+	// Test everything is mounted
+	// Test all stores have the correct type
+	app.MountKVStores(keys)
+	app.cms.LoadLatestVersion()
+	for _, key := range keys {
+		store := app.cms.GetCommitKVStore(key)
+		require.Equal(t, sdk.StoreTypeDB, store.GetStoreType())
+	}
+}
+
+func TestMountTransientStores(t *testing.T) {
+	db := dbm.NewMemDB()
+	name := t.Name()
+	logger := defaultLogger()
+	app := NewBaseApp(name, logger, db, nil)
+
+	// Test everything is mounted
+	// Test all stores have the correct type
+	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
+	app.MountTransientStores(tkeys)
+	app.cms.LoadLatestVersion()
+
+	for _, key := range tkeys {
+		store := app.cms.GetCommitKVStore(key)
+		require.Equal(t, sdk.StoreTypeTransient, store.GetStoreType())
+	}
+}
+
+func TestDefaultStoreLoader(t *testing.T) {
+	db := dbm.NewMemDB()
+	name := t.Name()
+	logger := defaultLogger()
+	app := NewBaseApp(name, logger, db, nil)
+
+	keys := sdk.NewKVStoreKeys("acc")
+
+	app.MountKVStores(keys)
+	DefaultStoreLoader(app.cms)
+
+	// This will panic if DefaultStoreLoader doens't correctly work
+	for _, key := range keys {
+		store := app.cms.GetCommitKVStore(key)
+		require.Equal(t, sdk.StoreTypeIAVL, store.GetStoreType())
+	}
 }
