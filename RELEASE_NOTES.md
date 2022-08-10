@@ -11,4 +11,4 @@
 
 ### Full Commit History
 
-https://github.com/provenance-io/cosmos-sdk/compare/v0.45.5-pio-1...v0.45.5-pio-2
+https://github.com/provenance-io/cosmos-sdk/compare/release-pio/v0.45.5-pio-1..release-pio/v0.45.5-pio-2
