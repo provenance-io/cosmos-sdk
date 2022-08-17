@@ -42,6 +42,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Bug Fixes
 
 * (x/auth) Add the missing account number case to the sim state decoder. TODO: link PR.
+* (x/auth) Handle missing account numbers during InitGenesis. TODO: link PR.
 
 ---
 
