@@ -39,7 +39,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* nothing
+### Bug Fixes
+
+* (x/auth) Add the missing account number case to the sim state decoder. TODO: link PR.
 
 ---
 
