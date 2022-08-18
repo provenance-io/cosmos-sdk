@@ -18,10 +18,12 @@ func (ak AccountKeeper) InitGenesis(ctx sdk.Context, data types.GenesisState) {
 	}
 	accounts = types.SanitizeGenesisAccounts(accounts)
 
-	lastAccountNumber := uint64(0)
+	var lastAccNum *uint64
 	for _, acc := range accounts {
-		for lastAccountNumber < acc.GetAccountNumber() {
-			lastAccountNumber = ak.GetNextAccountNumber(ctx)
+		accNum := acc.GetAccountNumber()
+		for lastAccNum == nil || *lastAccNum < accNum {
+			n := ak.GetNextAccountNumber(ctx)
+			lastAccNum = &n
 		}
 		ak.SetAccount(ctx, acc)
 	}
