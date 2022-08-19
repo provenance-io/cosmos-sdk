@@ -39,7 +39,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* nothing
+### Improvements
+
+* Updated the swagger files. [1017](https://github.com/provenance-io/provenance/issues/1017)
 
 ---
 
