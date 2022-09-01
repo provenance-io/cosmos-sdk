@@ -5,7 +5,7 @@ module github.com/cosmos/cosmos-sdk
 require (
 	cosmossdk.io/api v0.1.0-alpha9
 	cosmossdk.io/core v0.2.0
-	cosmossdk.io/depinject v1.0.0-alpha.2
+	cosmossdk.io/depinject v1.0.0-alpha.3
 	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/math v1.0.0-beta.3
 	github.com/99designs/keyring v1.2.1
@@ -61,7 +61,7 @@ require (
 	google.golang.org/genproto v0.0.0-20220725144611-272f38e5d71b
 	google.golang.org/grpc v1.49.0
 	google.golang.org/protobuf v1.28.1
-	pgregory.net/rapid v0.4.8
+	pgregory.net/rapid v0.5.2
 	sigs.k8s.io/yaml v1.3.0
 )
 
