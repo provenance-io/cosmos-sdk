@@ -203,10 +203,22 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 	// set the signed validators for addition to context in deliverTx
 	app.voteInfos = req.LastCommitInfo.GetVotes()
 
-	// call the hooks with the BeginBlock messages
-	for _, streamingListener := range app.abciListeners {
-		if err := streamingListener.ListenBeginBlock(app.deliverState.ctx, req, res); err != nil {
+	// call the streaming service hook with the BeginBlock messages
+	if app.abciListener != nil {
+		reqBz, err := req.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		resBz, err := res.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		blockHeight := app.deliverState.ctx.BlockHeight()
+		if err := app.abciListener.ListenBeginBlock(blockHeight, reqBz, resBz); err != nil {
 			app.logger.Error("BeginBlock listening hook failed", "height", req.Header.Height, "err", err)
+			if app.stopNodeOnStreamingErr {
+				panic(err)
+			}
 		}
 	}
 
@@ -230,10 +242,22 @@ func (app *BaseApp) EndBlock(req abci.RequestEndBlock) (res abci.ResponseEndBloc
 		res.ConsensusParamUpdates = cp
 	}
 
-	// call the streaming service hooks with the EndBlock messages
-	for _, streamingListener := range app.abciListeners {
-		if err := streamingListener.ListenEndBlock(app.deliverState.ctx, req, res); err != nil {
+	// call the streaming service hook with the EndBlock messages
+	if app.abciListener != nil {
+		reqBz, err := req.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		resBz, err := res.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		blockHeight := app.deliverState.ctx.BlockHeight()
+		if err := app.abciListener.ListenEndBlock(blockHeight, reqBz, resBz); err != nil {
 			app.logger.Error("EndBlock listening hook failed", "height", req.Height, "err", err)
+			if app.stopNodeOnStreamingErr {
+				panic(err)
+			}
 		}
 	}
 
@@ -284,11 +308,30 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx 
 	gInfo := sdk.GasInfo{}
 	resultStr := "successful"
 
+	var abciRes abci.ResponseDeliverTx
 	defer func() {
 		telemetry.IncrCounter(1, "tx", "count")
 		telemetry.IncrCounter(1, "tx", resultStr)
 		telemetry.SetGauge(float32(gInfo.GasUsed), "tx", "gas", "used")
 		telemetry.SetGauge(float32(gInfo.GasWanted), "tx", "gas", "wanted")
+		// call the streaming service hook with the EndBlock messages
+		if app.abciListener != nil {
+			reqBz, err := req.Marshal()
+			if err != nil {
+				panic(err)
+			}
+			resBz, err := abciRes.Marshal()
+			if err != nil {
+				panic(err)
+			}
+			blockHeight := app.deliverState.ctx.BlockHeight()
+			if err := app.abciListener.ListenDeliverTx(blockHeight, reqBz, resBz); err != nil {
+				app.logger.Error("DeliverTx listening hook failed", "err", err)
+				if app.stopNodeOnStreamingErr {
+					panic(err)
+				}
+			}
+		}
 	}()
 
 	gInfo, result, anteEvents, _, _, err := app.runTx(runTxModeDeliver, req.Tx)
@@ -297,13 +340,16 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx 
 		return sdkerrors.ResponseDeliverTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, sdk.MarkEventsToIndex(anteEvents, app.indexEvents), app.trace)
 	}
 
-	return abci.ResponseDeliverTx{
+	abciRes := abci.ResponseDeliverTx{
 		GasWanted: int64(gInfo.GasWanted), // TODO: Should type accept unsigned ints?
 		GasUsed:   int64(gInfo.GasUsed),   // TODO: Should type accept unsigned ints?
 		Log:       result.Log,
 		Data:      result.Data,
 		Events:    sdk.MarkEventsToIndex(result.Events, app.indexEvents),
 	}
+
+	return abciRes
+
 }
 
 // Commit implements the ABCI interface. It will commit all state that exists in
