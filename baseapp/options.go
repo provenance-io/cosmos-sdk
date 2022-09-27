@@ -243,6 +243,7 @@ func (app *BaseApp) SetStreamingService(s StreamingService) {
 	// register the StreamingService within the BaseApp
 	// BaseApp will pass BeginBlock, DeliverTx, and EndBlock requests and responses to the streaming services to update their ABCI context
 	app.abciListener = s.ABCIListener
+	app.stopNodeOnStreamingErr = s.StopNodeOnErr
 }
 
 // SetFeeHandler sets the FeeHandler which if set will change the behavior of fee handling

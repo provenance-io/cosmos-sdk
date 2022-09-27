@@ -111,6 +111,9 @@ type BaseApp struct { // nolint: maligned
 	// and exposing the requests and responses through gRPC
 	abciListener ABCIListener
 
+	// stopNodeOnStreamingErr halts the node when ABCI streaming service listening results in an error
+	stopNodeOnStreamingErr bool
+
 	feeHandler sdk.FeeHandler
 
 	aggregateEventsFunc func(anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event)
