@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"github.com/cosmos/cosmos-sdk/streaming"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"github.com/cosmos/cosmos-sdk/testutil/testdata_pulsar"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -26,7 +28,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	"github.com/cosmos/cosmos-sdk/store/streaming"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -229,10 +230,18 @@ func NewSimApp(
 	// not include this key.
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey, "testingkey")
 
-	// load state streaming if enabled
-	if _, _, err := streaming.LoadStreamingServices(bApp, appOpts, appCodec, keys); err != nil {
-		fmt.Printf("failed to load state streaming: %s", err)
-		os.Exit(1)
+	// enable streaming?
+	enableKey := fmt.Sprintf("%s.%s", baseapp.StreamingTomlKey, baseapp.StreamingEnableTomlKey)
+	if enable := cast.ToBool(appOpts.Get(enableKey)); enable {
+		pluginKey := fmt.Sprintf("%s.%s", baseapp.StreamingTomlKey, baseapp.StreamingPluginTomlKey)
+		pluginName := cast.ToString(appOpts.Get(pluginKey))
+		plugin, err := streaming.NewStreamingPlugin(pluginName)
+		if err != nil {
+			tmos.Exit(err.Error())
+		}
+		if err := baseapp.RegisterStreamingService(bApp, appOpts, appCodec, keys, plugin); err != nil {
+			tmos.Exit(err.Error())
+		}
 	}
 
 	app := &SimApp{
