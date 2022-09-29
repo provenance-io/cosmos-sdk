@@ -137,7 +137,6 @@ type BaseApp struct { // nolint: maligned
 
 	feeHandler sdk.FeeHandler
 
-	// event filter
 	aggregateEventsFunc func(resultEvents []abci.Event, feeEvents []abci.Event) ([]abci.Event, error)
 }
 
