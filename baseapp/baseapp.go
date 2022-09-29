@@ -726,7 +726,6 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 			}
 			// Only write the cache if FeeInvoke didn't return an error.
 			msCache.Write()
-
 			app.deliverState.eventHistory = append(app.deliverState.eventHistory, result.Events...)
 		}
 
