@@ -137,7 +137,7 @@ type BaseApp struct { // nolint: maligned
 
 	feeHandler sdk.FeeHandler
 
-	aggregateEventsFunc func(anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event, error)
+	aggregateEventsFunc func(anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event)
 }
 
 // NewBaseApp returns a reference to an initialized BaseApp. It accepts a
@@ -744,33 +744,21 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 		}
 	}
 
-	// if result is not nil it has successfully ran the transaction
-	var aggError error
-	if result != nil {
-		aggrAnteEvents, aggrResultEvents, aggrError := AggregateEvents(app, anteEvents, result.Events)
-		if aggrError != nil {
-			anteEvents = aggrAnteEvents
-			result.Events = aggrResultEvents
-		}
-	} else { // transaction failed but ante events need t
-		aggrAnteEvents, _, aggrError := AggregateEvents(app, anteEvents, nil)
-		if aggrError != nil {
-			anteEvents = aggrAnteEvents
-		}
-	}
-	if aggError != nil {
-		ctx.Logger().Error(fmt.Sprintf("AggregateEvents of events failed %v . Continue using original events.", aggError))
+	if result != nil { // tx was successful run aggregator for ante and result events
+		anteEvents, result.Events = AggregateEvents(app, anteEvents, result.Events)
+	} else { // tx failed run aggregator for ante events only since result object is nil
+		anteEvents, _ = AggregateEvents(app, anteEvents, nil)
 	}
 
 	return gInfo, result, anteEvents, priority, ctx, err
 }
 
 // AggregateEvents aggregation logic of result events (ante and postHander events) with feeEvents
-func AggregateEvents(app *BaseApp, anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event, error) {
+func AggregateEvents(app *BaseApp, anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event) {
 	if app.aggregateEventsFunc != nil {
 		return app.aggregateEventsFunc(anteEvents, resultEvents)
 	}
-	return anteEvents, resultEvents, nil
+	return anteEvents, resultEvents
 }
 
 // FeeInvoke apply fee logic and append events
