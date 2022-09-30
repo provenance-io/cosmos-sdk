@@ -250,7 +250,7 @@ func (app *BaseApp) SetFeeHandler(feeHandler sdk.FeeHandler) {
 }
 
 // SetAggregateEventsFunc sets the function that aggregates events from baseapp result events and feehandler events
-func (app *BaseApp) SetAggregateEventsFunc(aggregateEventsFunc func(resultEvents []abci.Event, feeEvents []abci.Event) ([]abci.Event, error)) {
+func (app *BaseApp) SetAggregateEventsFunc(aggregateEventsFunc func(resultEvents []abci.Event, feeEvents []abci.Event) ([]abci.Event, []abci.Event, error)) {
 	if app.sealed {
 		panic("SetAggregateEventsFunc() on sealed BaseApp")
 	}

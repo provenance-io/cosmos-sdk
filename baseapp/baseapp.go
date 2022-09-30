@@ -137,7 +137,7 @@ type BaseApp struct { // nolint: maligned
 
 	feeHandler sdk.FeeHandler
 
-	aggregateEventsFunc func(resultEvents []abci.Event, feeEvents []abci.Event) ([]abci.Event, error)
+	aggregateEventsFunc func(anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event, error)
 }
 
 // NewBaseApp returns a reference to an initialized BaseApp. It accepts a
@@ -736,27 +736,41 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 				// append the events in the order of occurrence
 				result.Events = append(anteEvents, result.Events...)
 			}
-			// additional fee events
-			if len(feeEvents) > 0 {
-				// append the fee events at the end of the other events, since they get charged at the end of the Tx
-				result.Events = AggregateEvents(app, result.Events, feeEvents.ToABCIEvents())
-			}
 		}
+		// additional fee events
+		if len(feeEvents) > 0 {
+			// append the fee events at the end of the other events, since they get charged at the end of the Tx
+			result.Events = append(result.Events, feeEvents.ToABCIEvents()...)
+		}
+	}
+
+	// if result is not nil it has successfully ran the transaction
+	var aggError error
+	if result != nil {
+		aggrAnteEvents, aggrResultEvents, aggrError := AggregateEvents(app, anteEvents, result.Events)
+		if aggrError != nil {
+			anteEvents = aggrAnteEvents
+			result.Events = aggrResultEvents
+		}
+	} else { // transaction failed but ante events need t
+		aggrAnteEvents, _, aggrError := AggregateEvents(app, anteEvents, nil)
+		if aggrError != nil {
+			anteEvents = aggrAnteEvents
+		}
+	}
+	if aggError != nil {
+		ctx.Logger().Error(fmt.Sprintf("AggregateEvents of events failed %v . Continue using original events.", aggError))
 	}
 
 	return gInfo, result, anteEvents, priority, ctx, err
 }
 
 // AggregateEvents aggregation logic of result events (ante and postHander events) with feeEvents
-func AggregateEvents(app *BaseApp, resultEvents []abci.Event, feeEvents []abci.Event) []abci.Event {
+func AggregateEvents(app *BaseApp, anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event, error) {
 	if app.aggregateEventsFunc != nil {
-		feeEventsFiltered, err := app.aggregateEventsFunc(resultEvents, feeEvents)
-		if err != nil {
-			return append(resultEvents, feeEvents...)
-		}
-		return feeEventsFiltered
+		return app.aggregateEventsFunc(anteEvents, resultEvents)
 	}
-	return append(resultEvents, feeEvents...)
+	return anteEvents, resultEvents, nil
 }
 
 // FeeInvoke apply fee logic and append events
