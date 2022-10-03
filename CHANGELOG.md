@@ -41,13 +41,13 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Improvements
 
-* Bring in Cosmos-SDK v0.46.2 changes. [269](https://github.com/provenance-io/cosmos-sdk/pull/269)
+* Bring in Cosmos-SDK v0.46.2 changes. [#269](https://github.com/provenance-io/cosmos-sdk/pull/269)
 
 ## [v0.46.1-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.46.1-pio-1) - 2022-09-30
 
 ### Improvements
 
-* (baseapp) Add a optional function to baseapp to manipulate events [\#1092](https://github.com/provenance-io/provenance/issues/1092)
+* (baseapp) Add a optional function to baseapp to manipulate events [#1092](https://github.com/provenance-io/provenance/issues/1092)
 
 ---
 
@@ -61,7 +61,7 @@ This is the same code as v0.46.0-pio-1-rc5, which was erroneously named.
 
 ### Improvements
 
-* Bring in Cosmos-SDK v0.46.1 changes. [235](https://github.com/provenance-io/cosmos-sdk/pull/235)
+* Bring in Cosmos-SDK v0.46.1 changes. [#235](https://github.com/provenance-io/cosmos-sdk/pull/235)
 
 ---
 
@@ -70,7 +70,7 @@ This is the same code as v0.46.0-pio-1-rc5, which was erroneously named.
 ### Improvements
 
 * Add support for event data injection into end block handlers (https://github.com/provenance-io/provenance/issues/626)
-* Updated the swagger files. [1017](https://github.com/provenance-io/provenance/issues/1017)
+* Updated the swagger files. [#1017](https://github.com/provenance-io/provenance/issues/1017)
 
 ---
 
@@ -78,8 +78,8 @@ This is the same code as v0.46.0-pio-1-rc5, which was erroneously named.
 
 ### Bug Fixes
 
-* (x/auth) Add the missing account number case to the sim state decoder. [228](https://github.com/provenance-io/cosmos-sdk/pull/228)
-* (x/auth) Handle missing account numbers during InitGenesis. [228](https://github.com/provenance-io/cosmos-sdk/pull/228)
+* (x/auth) Add the missing account number case to the sim state decoder. [#228](https://github.com/provenance-io/cosmos-sdk/pull/228)
+* (x/auth) Handle missing account numbers during InitGenesis. [#228](https://github.com/provenance-io/cosmos-sdk/pull/228)
 
 ---
 
@@ -88,7 +88,7 @@ This is the same code as v0.46.0-pio-1-rc5, which was erroneously named.
 ### Improvements
 
 * (x/authz) Create the GetAuthorization to replace the previously removed GetCleanAuthorization. [#222](https://github.com/provenance-io/cosmos-sdk/pull/222)
-* (baseapp) Create the IMsgServiceRouter interface and baseapp.SetMsgServiceRouter function [223](https://github.com/provenance-io/cosmos-sdk/pull/223).
+* (baseapp) Create the IMsgServiceRouter interface and baseapp.SetMsgServiceRouter function [#223](https://github.com/provenance-io/cosmos-sdk/pull/223).
 
 ---
 
@@ -99,12 +99,12 @@ It also contains the customizations that were included in [v0.45.5-pio-1](https:
 
 ### Features
 
-* (x/authz) [\#807](https://github.com/provenance-io/provenance/issues/807) Create a CountAuthorization type.
-* (baseapp) Add custom fee handler [354](https://github.com/provenance-io/provenance/issues/354)
+* (x/authz) [#807](https://github.com/provenance-io/provenance/issues/807) Create a CountAuthorization type.
+* (baseapp) Add custom fee handler [#354](https://github.com/provenance-io/provenance/issues/354)
 
 ### Improvements
 
-* (x/bank) [\#208](https://github.com/provenance-io/cosmos-sdk/pull/208) Apply the SendEnabled fix.
+* (x/bank) [#208](https://github.com/provenance-io/cosmos-sdk/pull/208) Apply the SendEnabled fix.
 
 ### Bug Fixes
 
