@@ -39,6 +39,14 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
+### Improvements
+
+* Bring in Cosmos-SDK v0.46.2 changes. TODO: Add link to PR.
+
+## [v0.46.1-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.46.1-pio-1) - 2022-09-30
+
+### Improvements
+
 * (baseapp) Add a optional function to baseapp to manipulate events [\#1092](https://github.com/provenance-io/provenance/issues/1092)
 
 ---
