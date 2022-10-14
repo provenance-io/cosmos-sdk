@@ -3,10 +3,7 @@ package config_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -15,6 +12,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 )
@@ -64,7 +64,7 @@ func TestConfigCmd(t *testing.T) {
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"node"})
 	cmd.Execute()
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	require.NoError(t, err)
 	require.Equal(t, string(out), testNode1+"\n")
 }
