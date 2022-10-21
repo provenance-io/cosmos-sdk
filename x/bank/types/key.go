@@ -32,6 +32,9 @@ var (
 
 	// SendEnabledPrefix is the prefix for the SendDisabled flags for a Denom.
 	SendEnabledPrefix = []byte{0x04}
+
+	// QuarantineOptInPrefix is the prefix for the quarantine account opt-in flags.
+	QuarantineOptInPrefix = []byte{0x20}
 )
 
 const (
@@ -103,4 +106,19 @@ func ToBoolB(v bool) byte {
 		return TrueB
 	}
 	return FalseB
+}
+
+// CreateQuarantineOptInKey creates the key for a quarantine opt-in record.
+func CreateQuarantineOptInKey(addr sdk.AccAddress) []byte {
+	return append(QuarantineOptInPrefix, address.MustLengthPrefix(addr)...)
+}
+
+// ParseQuarantineOptInKey extracts the account address from the provided quarantine opt-in key.
+func ParseQuarantineOptInKey(key []byte) sdk.AccAddress {
+	// key is of format:
+	// 0x20<addr len><addr bytes>
+	addrLen, addrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
+	addr, _ := sdk.ParseLengthPrefixedBytes(key, addrLenEndIndex+1, int(addrLen[0]))
+
+	return addr
 }
