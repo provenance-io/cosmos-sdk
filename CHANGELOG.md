@@ -45,7 +45,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Improvements
 
-* Bring in changes from Cosmos-SDK for v0.45.10.
+* [#318](https://github.com/provenance-io/cosmos-sdk/pull/318) Bring in changes from Cosmos-SDK for v0.45.10.
 
 ---
 
@@ -53,7 +53,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Improvements
 
-* Bring in changes from Cosmos-SDK for v0.45.4 through v0.45.9. This includes an ics vulnerability fix.
+* [#293](https://github.com/provenance-io/cosmos-sdk/pull/293) Bring in changes from Cosmos-SDK for v0.45.4 through v0.45.9. This includes an ics vulnerability fix.
 
 ---
 
