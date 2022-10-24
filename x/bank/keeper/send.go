@@ -16,6 +16,7 @@ import (
 // between accounts without the possibility of creating coins.
 type SendKeeper interface {
 	ViewKeeper
+	QuarantineKeeper
 
 	InputOutputCoins(ctx sdk.Context, inputs []types.Input, outputs []types.Output) error
 	SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error
@@ -43,6 +44,7 @@ var _ SendKeeper = (*BaseSendKeeper)(nil)
 // creating coins. It implements the SendKeeper interface.
 type BaseSendKeeper struct {
 	BaseViewKeeper
+	BaseQuarantineKeeper
 
 	cdc        codec.BinaryCodec
 	ak         types.AccountKeeper
@@ -57,12 +59,13 @@ func NewBaseSendKeeper(
 	cdc codec.BinaryCodec, storeKey storetypes.StoreKey, ak types.AccountKeeper, paramSpace paramtypes.Subspace, blockedAddrs map[string]bool,
 ) BaseSendKeeper {
 	return BaseSendKeeper{
-		BaseViewKeeper: NewBaseViewKeeper(cdc, storeKey, ak),
-		cdc:            cdc,
-		ak:             ak,
-		storeKey:       storeKey,
-		paramSpace:     paramSpace,
-		blockedAddrs:   blockedAddrs,
+		BaseViewKeeper:       NewBaseViewKeeper(cdc, storeKey, ak),
+		BaseQuarantineKeeper: NewBaseQuarantineKeeper(storeKey),
+		cdc:                  cdc,
+		ak:                   ak,
+		storeKey:             storeKey,
+		paramSpace:           paramSpace,
+		blockedAddrs:         blockedAddrs,
 	}
 }
 
