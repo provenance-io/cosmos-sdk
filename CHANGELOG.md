@@ -43,9 +43,17 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ---
 
+## [v0.45.9-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.9-pio-1) - 2022-10-14
+
+### Improvements
+
+* Bring in changes from Cosmos-SDK for v0.45.x up to v0.45.9. This includes an ics vulnerability fix.
+
+---
+
 ## [v0.45.5-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.5-pio-2) - 2022-08-10
 
-# Features
+### Features
 
 * Add support for event data injection into end block handlers (https://github.com/provenance-io/provenance/issues/626)
   Currently the Cosmos SDK End block methods are only provided with the block height as a parameter, this feature would inject the events from block processing to support more advanced reactive features.
