@@ -8,7 +8,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
-	"github.com/cosmos/cosmos-sdk/store"
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -172,7 +171,7 @@ func NewBaseApp(
 		name:   name,
 		appStore: appStore{
 			db:             db,
-			cms:            store.NewCommitMultiStore(db),
+			cms:            rootmulti.NewStore(db, logger),
 			storeLoader:    DefaultStoreLoader,
 			fauxMerkleMode: false,
 		},
