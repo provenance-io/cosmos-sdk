@@ -39,7 +39,11 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* nothing
+### Bug Fixes
+
+* (store) [#13530](https://github.com/cosmos/cosmos-sdk/pull/13530) Fix app-hash mismatch if upgrade migration commit is interrupted.
+
+---
 
 ## [v0.45.10-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.10-pio-1) - 2022-10-24
 
