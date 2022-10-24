@@ -102,3 +102,43 @@ func (k msgServer) MultiSend(goCtx context.Context, msg *types.MsgMultiSend) (*t
 
 	return &types.MsgMultiSendResponse{}, nil
 }
+
+func (k msgServer) QuarantineOptIn(goCtx context.Context, msg *types.MsgQuarantineOptIn) (*types.MsgQuarantineOptInResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	addr, err := sdk.AccAddressFromBech32(msg.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	k.SetQuarantineOptIn(ctx, addr)
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+		),
+	)
+
+	return &types.MsgQuarantineOptInResponse{}, nil
+}
+
+func (k msgServer) QuarantineOptOut(goCtx context.Context, msg *types.MsgQuarantineOptOut) (*types.MsgQuarantineOptOutResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	addr, err := sdk.AccAddressFromBech32(msg.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	k.SetQuarantineOptOut(ctx, addr)
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+		),
+	)
+
+	return &types.MsgQuarantineOptOutResponse{}, nil
+}
