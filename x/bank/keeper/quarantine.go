@@ -10,8 +10,8 @@ import (
 type QuarantineKeeper interface {
 	IsQuarantined(ctx sdk.Context, addr sdk.AccAddress) bool
 
-	QuarantineOptIn(ctx sdk.Context, addr sdk.AccAddress)
-	QuarantineOptOut(ctx sdk.Context, addr sdk.AccAddress)
+	SetQuarantineOptIn(ctx sdk.Context, addr sdk.AccAddress)
+	SetQuarantineOptOut(ctx sdk.Context, addr sdk.AccAddress)
 
 	IterateQuarantinedAccounts(ctx sdk.Context, cb func(addr sdk.AccAddress) (stop bool))
 }
@@ -36,15 +36,15 @@ func (k BaseQuarantineKeeper) IsQuarantined(ctx sdk.Context, addr sdk.AccAddress
 	return store.Has(key)
 }
 
-// QuarantineOptIn records that an address has opted into quarantine.
-func (k BaseQuarantineKeeper) QuarantineOptIn(ctx sdk.Context, addr sdk.AccAddress) {
+// SetQuarantineOptIn records that an address has opted into quarantine.
+func (k BaseQuarantineKeeper) SetQuarantineOptIn(ctx sdk.Context, addr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.CreateQuarantineOptInKey(addr)
 	store.Set(key, []byte{0x00})
 }
 
-// QuarantineOptOut removes an address' quarantine opt-in record.
-func (k BaseQuarantineKeeper) QuarantineOptOut(ctx sdk.Context, addr sdk.AccAddress) {
+// SetQuarantineOptOut removes an address' quarantine opt-in record.
+func (k BaseQuarantineKeeper) SetQuarantineOptOut(ctx sdk.Context, addr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := types.CreateQuarantineOptInKey(addr)
 	store.Delete(key)
