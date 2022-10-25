@@ -129,7 +129,7 @@ enum QuarantineAutoResponse {
   // QUARANTINE_UNSPECIFIED defines that no automatic action should be taken.
   QUARANTINE_AUTO_RESPONSE_UNSPECIFIED = 0;
   // QUARANTINE_AUTO_ACCEPT defines that sends should be automatically accepted.
-  QUARANTINE_AUTO_RESPONSE_AUTO_ACCEPT = 1;
+  QUARANTINE_AUTO_RESPONSE_ACCEPT = 1;
   // QUARANTINE_AUTO_DECLINE defines that sends should be automatically declined.
-  QUARANTINE_AUTO_RESPONSE_AUTO_DECLINE = 2;
+  QUARANTINE_AUTO_RESPONSE_DECLINE = 2;
 }
