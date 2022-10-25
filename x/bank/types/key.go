@@ -35,6 +35,9 @@ var (
 
 	// QuarantineOptInPrefix is the prefix for the quarantine account opt-in flags.
 	QuarantineOptInPrefix = []byte{0x20}
+
+	// QuarantineAutoResponsePrefix is the prefix for quarantine auto-response settings.
+	QuarantineAutoResponsePrefix = []byte{0x21}
 )
 
 const (
@@ -42,6 +45,13 @@ const (
 	TrueB = byte(0x01)
 	// FalseB is a byte with value 0 that represents false.
 	FalseB = byte(0x00)
+
+	// NoAutoB is a byte with value 0 (corresponding to QUARANTINE_AUTO_RESPONSE_UNSPECIFIED).
+	NoAutoB = byte(0x00)
+	// AutoAcceptB is a byte with value 1 (corresponding to QUARANTINE_AUTO_RESPONSE_ACCEPT).
+	AutoAcceptB = byte(0x01)
+	// AutoDeclineB is a byte with value 2 (corresponding to QUARANTINE_AUTO_RESPONSE_DECLINE).
+	AutoDeclineB = byte(0x02)
 )
 
 // AddressAndDenomFromBalancesStore returns an account address and denom from a balances prefix
@@ -109,16 +119,87 @@ func ToBoolB(v bool) byte {
 }
 
 // CreateQuarantineOptInKey creates the key for a quarantine opt-in record.
-func CreateQuarantineOptInKey(addr sdk.AccAddress) []byte {
-	return append(QuarantineOptInPrefix, address.MustLengthPrefix(addr)...)
+func CreateQuarantineOptInKey(toAddr sdk.AccAddress) []byte {
+	toAddrBz := address.MustLengthPrefix(toAddr)
+	key := make([]byte, len(QuarantineOptInPrefix)+len(toAddrBz))
+	copy(key, QuarantineOptInPrefix)
+	copy(key[len(QuarantineOptInPrefix):], toAddrBz)
+	return key
 }
 
 // ParseQuarantineOptInKey extracts the account address from the provided quarantine opt-in key.
 func ParseQuarantineOptInKey(key []byte) sdk.AccAddress {
 	// key is of format:
-	// 0x20<addr len><addr bytes>
-	addrLen, addrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
-	addr, _ := sdk.ParseLengthPrefixedBytes(key, addrLenEndIndex+1, int(addrLen[0]))
+	// 0x20<to addr len><to addr bytes>
+	toAddrLen, toAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
+	toAddr, _ := sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
 
-	return addr
+	return toAddr
+}
+
+// CreateQuarantineAutoResponseToAddrPrefix creates a prefix for the quarantine auto-responses for a receiving address.
+func CreateQuarantineAutoResponseToAddrPrefix(toAddr sdk.AccAddress) []byte {
+	toAddrBz := address.MustLengthPrefix(toAddr)
+	key := make([]byte, len(QuarantineAutoResponsePrefix)+len(toAddrBz))
+	copy(key, QuarantineAutoResponsePrefix)
+	copy(key[len(QuarantineAutoResponsePrefix):], toAddrBz)
+	return key
+}
+
+// CreateQuarantineAutoResponseKey creates the key for a quarantine auto-response.
+func CreateQuarantineAutoResponseKey(toAddr, fromAddr sdk.AccAddress) []byte {
+	toAddrPreBz := CreateQuarantineAutoResponseToAddrPrefix(toAddr)
+	fromAddrBz := address.MustLengthPrefix(fromAddr)
+	key := make([]byte, len(toAddrPreBz)+len(fromAddrBz))
+	copy(key, toAddrPreBz)
+	copy(key[len(toAddrPreBz):], fromAddrBz)
+	return key
+}
+
+// ParseQuarantineAutoResponseKey extracts the to address and from address from the provided quarantine auto-response key.
+func ParseQuarantineAutoResponseKey(key []byte) (toAddr, fromAddr sdk.AccAddress) {
+	// key is of format:
+	// 0x20<to addr len><to addr bytes><from addr len><from addr bytes>
+	toAddrLen, toAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
+	toAddr, toAddrEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
+
+	fromAddrLen, fromAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrEndIndex+1, 1)
+	fromAddr, _ = sdk.ParseLengthPrefixedBytes(key, fromAddrLenEndIndex+1, int(fromAddrLen[0]))
+
+	return toAddr, fromAddr
+}
+
+// ToAutoB converts a QuarantineAutoResponse into the byte that will represent it.
+func ToAutoB(r QuarantineAutoResponse) byte {
+	switch r {
+	case QUARANTINE_AUTO_RESPONSE_ACCEPT:
+		return AutoAcceptB
+	case QUARANTINE_AUTO_RESPONSE_DECLINE:
+		return AutoDeclineB
+	default:
+		return NoAutoB
+	}
+}
+
+// ToQuarantineAutoResponse returns the QuarantineAutoResponse represented by the provided byte slice.
+func ToQuarantineAutoResponse(bz []byte) QuarantineAutoResponse {
+	if len(bz) == 1 {
+		switch bz[0] {
+		case AutoAcceptB:
+			return QUARANTINE_AUTO_RESPONSE_ACCEPT
+		case AutoDeclineB:
+			return QUARANTINE_AUTO_RESPONSE_DECLINE
+		}
+	}
+	return QUARANTINE_AUTO_RESPONSE_UNSPECIFIED
+}
+
+// IsAutoAcceptB returns true if the provided byte slice has exactly one byte, and it is equal to AutoAccept.
+func IsAutoAcceptB(bz []byte) bool {
+	return len(bz) == 1 && bz[0] == AutoAcceptB
+}
+
+// IsAutoDeclineB returns true if the provided byte slice has exactly one byte, and it is equal to AutoDecline.
+func IsAutoDeclineB(bz []byte) bool {
+	return len(bz) == 1 && bz[0] == AutoDeclineB
 }
