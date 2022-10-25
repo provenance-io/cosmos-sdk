@@ -106,7 +106,7 @@ func (k msgServer) MultiSend(goCtx context.Context, msg *types.MsgMultiSend) (*t
 func (k msgServer) QuarantineOptIn(goCtx context.Context, msg *types.MsgQuarantineOptIn) (*types.MsgQuarantineOptInResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	addr, err := sdk.AccAddressFromBech32(msg.Address)
+	addr, err := sdk.AccAddressFromBech32(msg.ToAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (k msgServer) QuarantineOptIn(goCtx context.Context, msg *types.MsgQuaranti
 func (k msgServer) QuarantineOptOut(goCtx context.Context, msg *types.MsgQuarantineOptOut) (*types.MsgQuarantineOptOutResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	addr, err := sdk.AccAddressFromBech32(msg.Address)
+	addr, err := sdk.AccAddressFromBech32(msg.ToAddress)
 	if err != nil {
 		return nil, err
 	}

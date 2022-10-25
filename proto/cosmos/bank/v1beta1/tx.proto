@@ -67,9 +67,9 @@ message MsgMultiSendResponse {}
 
 // MsgQuarantineOptIn represents a message for opting in to account quarantine.
 message MsgQuarantineOptIn {
-  option (cosmos.msg.v1.signer) = "address";
+  option (cosmos.msg.v1.signer) = "to_address";
 
-  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // MsgQuarantineOptInResponse defines the Msg/QuarantineOpt response type.
@@ -77,9 +77,9 @@ message MsgQuarantineOptInResponse {}
 
 // MsgQuarantineOptIn represents a message for opting in to account quarantine.
 message MsgQuarantineOptOut {
-  option (cosmos.msg.v1.signer) = "address";
+  option (cosmos.msg.v1.signer) = "to_address";
 
-  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // MsgQuarantineOptInResponse defines the Msg/QuarantineOpt response type.
