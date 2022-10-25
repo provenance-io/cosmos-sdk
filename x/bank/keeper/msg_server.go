@@ -142,3 +142,63 @@ func (k msgServer) QuarantineOptOut(goCtx context.Context, msg *types.MsgQuarant
 
 	return &types.MsgQuarantineOptOutResponse{}, nil
 }
+
+func (k msgServer) QuarantineAccept(goCtx context.Context, msg *types.MsgQuarantineAccept) (*types.MsgQuarantineAcceptResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	toAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
+	if err != nil {
+		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %v", err)
+	}
+
+	fromAddr, err := sdk.AccAddressFromBech32(msg.FromAddress)
+	if err != nil {
+		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
+	}
+
+	_, _, _ = ctx, toAddr, fromAddr
+	return nil, sdkerrors.ErrLogic.Wrap("not implemented")
+}
+
+func (k msgServer) QuarantineDecline(goCtx context.Context, msg *types.MsgQuarantineDecline) (*types.MsgQuarantineDeclineResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	toAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
+	if err != nil {
+		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %v", err)
+	}
+
+	fromAddr, err := sdk.AccAddressFromBech32(msg.FromAddress)
+	if err != nil {
+		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
+	}
+
+	_, _, _ = ctx, toAddr, fromAddr
+	return nil, sdkerrors.ErrLogic.Wrap("not implemented")
+}
+
+func (k msgServer) UpdateQuarantineAutoResponses(goCtx context.Context, msg *types.MsgUpdateQuarantineAutoResponses) (*types.MsgUpdateQuarantineAutoResponsesResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	toAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
+	if err != nil {
+		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %v", err)
+	}
+
+	for _, update := range msg.Updates {
+		fromAddr, err := sdk.AccAddressFromBech32(update.FromAddress)
+		if err != nil {
+			return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
+		}
+		k.SetQuarantineAutoResponse(ctx, toAddr, fromAddr, update.Response)
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+		),
+	)
+
+	return &types.MsgUpdateQuarantineAutoResponsesResponse{}, nil
+}
