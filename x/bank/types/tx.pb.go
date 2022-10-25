@@ -244,7 +244,7 @@ func (m *MsgQuarantineOptIn) GetAddress() string {
 	return ""
 }
 
-// MsgQuarantineOptInResponse defines the Msg/MsgQuarantineOptIn response type.
+// MsgQuarantineOptInResponse defines the Msg/QuarantineOpt response type.
 type MsgQuarantineOptInResponse struct {
 }
 
@@ -326,7 +326,7 @@ func (m *MsgQuarantineOptOut) GetAddress() string {
 	return ""
 }
 
-// MsgQuarantineOptInResponse defines the Msg/MsgQuarantineOptIn response type.
+// MsgQuarantineOptInResponse defines the Msg/QuarantineOpt response type.
 type MsgQuarantineOptOutResponse struct {
 }
 
@@ -363,6 +363,300 @@ func (m *MsgQuarantineOptOutResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgQuarantineOptOutResponse proto.InternalMessageInfo
 
+// MsgQuarantineAccept represents a message for accepting quarantined funds.
+type MsgQuarantineAccept struct {
+	FromAddress string `protobuf:"bytes,1,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty"`
+	ToAddress   string `protobuf:"bytes,2,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
+	// permanent, if true, causes current and future sends from from_address to to_address to be automatically accepted.
+	// If false (default), only the currently quarantined funds will be accepted.
+	Permanent bool `protobuf:"varint,3,opt,name=permanent,proto3" json:"permanent,omitempty"`
+}
+
+func (m *MsgQuarantineAccept) Reset()         { *m = MsgQuarantineAccept{} }
+func (m *MsgQuarantineAccept) String() string { return proto.CompactTextString(m) }
+func (*MsgQuarantineAccept) ProtoMessage()    {}
+func (*MsgQuarantineAccept) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1d8cb1613481f5b7, []int{8}
+}
+func (m *MsgQuarantineAccept) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgQuarantineAccept) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgQuarantineAccept.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgQuarantineAccept) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgQuarantineAccept.Merge(m, src)
+}
+func (m *MsgQuarantineAccept) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgQuarantineAccept) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgQuarantineAccept.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgQuarantineAccept proto.InternalMessageInfo
+
+func (m *MsgQuarantineAccept) GetFromAddress() string {
+	if m != nil {
+		return m.FromAddress
+	}
+	return ""
+}
+
+func (m *MsgQuarantineAccept) GetToAddress() string {
+	if m != nil {
+		return m.ToAddress
+	}
+	return ""
+}
+
+func (m *MsgQuarantineAccept) GetPermanent() bool {
+	if m != nil {
+		return m.Permanent
+	}
+	return false
+}
+
+// MsgQuarantineAcceptResponse defines the Msg/QuarantineAccept response type.
+type MsgQuarantineAcceptResponse struct {
+}
+
+func (m *MsgQuarantineAcceptResponse) Reset()         { *m = MsgQuarantineAcceptResponse{} }
+func (m *MsgQuarantineAcceptResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgQuarantineAcceptResponse) ProtoMessage()    {}
+func (*MsgQuarantineAcceptResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1d8cb1613481f5b7, []int{9}
+}
+func (m *MsgQuarantineAcceptResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgQuarantineAcceptResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgQuarantineAcceptResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgQuarantineAcceptResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgQuarantineAcceptResponse.Merge(m, src)
+}
+func (m *MsgQuarantineAcceptResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgQuarantineAcceptResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgQuarantineAcceptResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgQuarantineAcceptResponse proto.InternalMessageInfo
+
+// MsgQuarantineDecline represents a message for declining quarantined funds.
+type MsgQuarantineDecline struct {
+	FromAddress string `protobuf:"bytes,1,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty"`
+	ToAddress   string `protobuf:"bytes,2,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
+	// permanent, if true, causes current and future sends from from_address to to_address to be automatically declined.
+	// If false (default), only the currently quarantined funds will be declined.
+	Permanent bool `protobuf:"varint,3,opt,name=permanent,proto3" json:"permanent,omitempty"`
+}
+
+func (m *MsgQuarantineDecline) Reset()         { *m = MsgQuarantineDecline{} }
+func (m *MsgQuarantineDecline) String() string { return proto.CompactTextString(m) }
+func (*MsgQuarantineDecline) ProtoMessage()    {}
+func (*MsgQuarantineDecline) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1d8cb1613481f5b7, []int{10}
+}
+func (m *MsgQuarantineDecline) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgQuarantineDecline) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgQuarantineDecline.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgQuarantineDecline) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgQuarantineDecline.Merge(m, src)
+}
+func (m *MsgQuarantineDecline) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgQuarantineDecline) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgQuarantineDecline.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgQuarantineDecline proto.InternalMessageInfo
+
+func (m *MsgQuarantineDecline) GetFromAddress() string {
+	if m != nil {
+		return m.FromAddress
+	}
+	return ""
+}
+
+func (m *MsgQuarantineDecline) GetToAddress() string {
+	if m != nil {
+		return m.ToAddress
+	}
+	return ""
+}
+
+func (m *MsgQuarantineDecline) GetPermanent() bool {
+	if m != nil {
+		return m.Permanent
+	}
+	return false
+}
+
+// MsgQuarantineDeclineResponse defines the Msg/QuarantineDecline response type.
+type MsgQuarantineDeclineResponse struct {
+}
+
+func (m *MsgQuarantineDeclineResponse) Reset()         { *m = MsgQuarantineDeclineResponse{} }
+func (m *MsgQuarantineDeclineResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgQuarantineDeclineResponse) ProtoMessage()    {}
+func (*MsgQuarantineDeclineResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1d8cb1613481f5b7, []int{11}
+}
+func (m *MsgQuarantineDeclineResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgQuarantineDeclineResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgQuarantineDeclineResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgQuarantineDeclineResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgQuarantineDeclineResponse.Merge(m, src)
+}
+func (m *MsgQuarantineDeclineResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgQuarantineDeclineResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgQuarantineDeclineResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgQuarantineDeclineResponse proto.InternalMessageInfo
+
+// MsgUpdateQuarantineAutoResponse represents a message for updating quarantine auto-responses for a receiving address.
+type MsgUpdateQuarantineAutoResponses struct {
+	// to_address is the quarantined address that would be accepting or declining funds.
+	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
+	// updates is the list of addresses and actions that should be updated for the to_address.
+	Updates []*QuarantineAutoResponseUpdate `protobuf:"bytes,2,rep,name=updates,proto3" json:"updates,omitempty"`
+}
+
+func (m *MsgUpdateQuarantineAutoResponses) Reset()         { *m = MsgUpdateQuarantineAutoResponses{} }
+func (m *MsgUpdateQuarantineAutoResponses) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdateQuarantineAutoResponses) ProtoMessage()    {}
+func (*MsgUpdateQuarantineAutoResponses) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1d8cb1613481f5b7, []int{12}
+}
+func (m *MsgUpdateQuarantineAutoResponses) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgUpdateQuarantineAutoResponses) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgUpdateQuarantineAutoResponses.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgUpdateQuarantineAutoResponses) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdateQuarantineAutoResponses.Merge(m, src)
+}
+func (m *MsgUpdateQuarantineAutoResponses) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgUpdateQuarantineAutoResponses) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdateQuarantineAutoResponses.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgUpdateQuarantineAutoResponses proto.InternalMessageInfo
+
+func (m *MsgUpdateQuarantineAutoResponses) GetToAddress() string {
+	if m != nil {
+		return m.ToAddress
+	}
+	return ""
+}
+
+func (m *MsgUpdateQuarantineAutoResponses) GetUpdates() []*QuarantineAutoResponseUpdate {
+	if m != nil {
+		return m.Updates
+	}
+	return nil
+}
+
+// MsgUpdateQuarantineAutoResponsesResponse defines the Msg/UpdateQuarantineAutoResponse response type.
+type MsgUpdateQuarantineAutoResponsesResponse struct {
+}
+
+func (m *MsgUpdateQuarantineAutoResponsesResponse) Reset() {
+	*m = MsgUpdateQuarantineAutoResponsesResponse{}
+}
+func (m *MsgUpdateQuarantineAutoResponsesResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdateQuarantineAutoResponsesResponse) ProtoMessage()    {}
+func (*MsgUpdateQuarantineAutoResponsesResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1d8cb1613481f5b7, []int{13}
+}
+func (m *MsgUpdateQuarantineAutoResponsesResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgUpdateQuarantineAutoResponsesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgUpdateQuarantineAutoResponsesResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgUpdateQuarantineAutoResponsesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdateQuarantineAutoResponsesResponse.Merge(m, src)
+}
+func (m *MsgUpdateQuarantineAutoResponsesResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgUpdateQuarantineAutoResponsesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdateQuarantineAutoResponsesResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgUpdateQuarantineAutoResponsesResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgSend)(nil), "cosmos.bank.v1beta1.MsgSend")
 	proto.RegisterType((*MsgSendResponse)(nil), "cosmos.bank.v1beta1.MsgSendResponse")
@@ -372,47 +666,63 @@ func init() {
 	proto.RegisterType((*MsgQuarantineOptInResponse)(nil), "cosmos.bank.v1beta1.MsgQuarantineOptInResponse")
 	proto.RegisterType((*MsgQuarantineOptOut)(nil), "cosmos.bank.v1beta1.MsgQuarantineOptOut")
 	proto.RegisterType((*MsgQuarantineOptOutResponse)(nil), "cosmos.bank.v1beta1.MsgQuarantineOptOutResponse")
+	proto.RegisterType((*MsgQuarantineAccept)(nil), "cosmos.bank.v1beta1.MsgQuarantineAccept")
+	proto.RegisterType((*MsgQuarantineAcceptResponse)(nil), "cosmos.bank.v1beta1.MsgQuarantineAcceptResponse")
+	proto.RegisterType((*MsgQuarantineDecline)(nil), "cosmos.bank.v1beta1.MsgQuarantineDecline")
+	proto.RegisterType((*MsgQuarantineDeclineResponse)(nil), "cosmos.bank.v1beta1.MsgQuarantineDeclineResponse")
+	proto.RegisterType((*MsgUpdateQuarantineAutoResponses)(nil), "cosmos.bank.v1beta1.MsgUpdateQuarantineAutoResponses")
+	proto.RegisterType((*MsgUpdateQuarantineAutoResponsesResponse)(nil), "cosmos.bank.v1beta1.MsgUpdateQuarantineAutoResponsesResponse")
 }
 
 func init() { proto.RegisterFile("cosmos/bank/v1beta1/tx.proto", fileDescriptor_1d8cb1613481f5b7) }
 
 var fileDescriptor_1d8cb1613481f5b7 = []byte{
-	// 550 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0x3f, 0x6f, 0xd3, 0x4c,
-	0x18, 0xb7, 0x9b, 0x2a, 0x51, 0x9e, 0x46, 0xca, 0xfb, 0xba, 0x11, 0x24, 0x6e, 0x70, 0x8a, 0x85,
-	0x44, 0x8a, 0x54, 0xbb, 0x09, 0x03, 0x28, 0x9d, 0x48, 0xa7, 0x22, 0x59, 0x11, 0xa9, 0x04, 0x82,
-	0xa5, 0x72, 0x12, 0x63, 0xac, 0xe0, 0x3b, 0xcb, 0x77, 0xae, 0xca, 0xca, 0x04, 0x1b, 0x13, 0x73,
-	0x67, 0x26, 0x06, 0x3e, 0x44, 0xc7, 0x8a, 0x89, 0x09, 0x50, 0x32, 0xc0, 0xb7, 0x00, 0xf9, 0x7c,
-	0x77, 0x94, 0x24, 0x6d, 0x33, 0x30, 0x39, 0xf1, 0xef, 0xdf, 0xe3, 0xe7, 0xa7, 0x3b, 0xa8, 0x0f,
-	0x31, 0x09, 0x31, 0xb1, 0x07, 0x2e, 0x1a, 0xdb, 0x47, 0xad, 0x81, 0x47, 0xdd, 0x96, 0x4d, 0x8f,
-	0xad, 0x28, 0xc6, 0x14, 0x6b, 0xeb, 0x19, 0x6a, 0xa5, 0xa8, 0xc5, 0x51, 0xbd, 0xe2, 0x63, 0x1f,
-	0x33, 0xdc, 0x4e, 0x7f, 0x65, 0x54, 0xdd, 0x90, 0x46, 0xc4, 0x93, 0x46, 0x43, 0x1c, 0xa0, 0x39,
-	0xfc, 0x5c, 0x10, 0xf3, 0xcd, 0xf0, 0x5a, 0x86, 0x1f, 0x66, 0xc6, 0x3c, 0x37, 0x83, 0xae, 0x73,
-	0x69, 0x48, 0x7c, 0xfb, 0xa8, 0x95, 0x3e, 0x32, 0xc0, 0xfc, 0xa5, 0x42, 0xc1, 0x21, 0xfe, 0x81,
-	0x87, 0x46, 0xda, 0x2e, 0x94, 0x9e, 0xc7, 0x38, 0x3c, 0x74, 0x47, 0xa3, 0xd8, 0x23, 0xa4, 0xaa,
-	0x6e, 0xaa, 0xcd, 0x62, 0xb7, 0xfa, 0xf9, 0xd3, 0x76, 0x85, 0x9b, 0x3d, 0xc8, 0x90, 0x03, 0x1a,
-	0x07, 0xc8, 0xef, 0xaf, 0xa5, 0x6c, 0xfe, 0x4a, 0xbb, 0x07, 0x40, 0xb1, 0x94, 0xae, 0x5c, 0x21,
-	0x2d, 0x52, 0x2c, 0x84, 0x43, 0xc8, 0xbb, 0x21, 0x4e, 0x10, 0xad, 0xe6, 0x36, 0x73, 0xcd, 0xb5,
-	0x76, 0xcd, 0x92, 0x1b, 0x23, 0x9e, 0xd8, 0x98, 0xb5, 0x87, 0x03, 0xd4, 0xdd, 0x39, 0xfd, 0xda,
-	0x50, 0x3e, 0x7c, 0x6b, 0x34, 0xfd, 0x80, 0xbe, 0x48, 0x06, 0xd6, 0x10, 0x87, 0xfc, 0x33, 0xf9,
-	0x63, 0x9b, 0x8c, 0xc6, 0x36, 0x7d, 0x15, 0x79, 0x84, 0x09, 0x48, 0x9f, 0x5b, 0x77, 0x6a, 0x6f,
-	0x4e, 0x1a, 0xca, 0xcf, 0x93, 0x86, 0xf2, 0xfa, 0xc7, 0xc7, 0x3b, 0x7f, 0x7d, 0xa5, 0xf9, 0x3f,
-	0x94, 0xf9, 0x02, 0xfa, 0x1e, 0x89, 0x30, 0x22, 0x9e, 0xf9, 0x5e, 0x85, 0x92, 0x43, 0x7c, 0x27,
-	0x79, 0x49, 0x03, 0xb6, 0x99, 0xfb, 0x90, 0x0f, 0x50, 0x94, 0xd0, 0x74, 0x27, 0xe9, 0x8c, 0xba,
-	0xb5, 0xa0, 0x55, 0x6b, 0x3f, 0xa5, 0x74, 0x57, 0xd3, 0x21, 0xfb, 0x9c, 0xaf, 0xed, 0x42, 0x01,
-	0x27, 0x94, 0x49, 0x57, 0x98, 0x74, 0x63, 0xa1, 0xb4, 0xc7, 0x38, 0x5c, 0x2b, 0x14, 0x9d, 0xb2,
-	0x98, 0x98, 0xbb, 0x99, 0xd7, 0xa0, 0x72, 0x7e, 0x2e, 0x39, 0xf0, 0x63, 0xd0, 0x1c, 0xe2, 0x3f,
-	0x4a, 0xdc, 0xd8, 0x45, 0x34, 0x40, 0x5e, 0x2f, 0xa2, 0xfb, 0x48, 0x6b, 0x43, 0x61, 0xd9, 0x2a,
-	0x05, 0xb1, 0x53, 0x4a, 0xe3, 0xc4, 0x3f, 0xb3, 0x0e, 0xfa, 0xbc, 0xaf, 0x4c, 0x7d, 0x02, 0xeb,
-	0xb3, 0x68, 0x2f, 0xa1, 0xff, 0x20, 0xf6, 0x06, 0x6c, 0x2c, 0x30, 0x16, 0xb9, 0xed, 0xb7, 0x39,
-	0xc8, 0x39, 0xc4, 0xd7, 0x1e, 0xc2, 0x2a, 0x6b, 0xa7, 0xbe, 0x70, 0xa5, 0xbc, 0x54, 0xfd, 0xd6,
-	0x65, 0xa8, 0xf0, 0xd4, 0x9e, 0x42, 0xf1, 0x4f, 0xdd, 0x37, 0x2f, 0x92, 0x48, 0x8a, 0xbe, 0x75,
-	0x25, 0x45, 0x5a, 0x8f, 0xa1, 0x3c, 0xdb, 0xcc, 0xed, 0x8b, 0xd4, 0x33, 0x44, 0xdd, 0x5e, 0x92,
-	0x28, 0xc3, 0x10, 0xfc, 0x37, 0x57, 0x48, 0x73, 0x29, 0x93, 0x5e, 0x42, 0xf5, 0x9d, 0x65, 0x99,
-	0x22, 0xaf, 0xbb, 0x77, 0x3a, 0x31, 0xd4, 0xb3, 0x89, 0xa1, 0x7e, 0x9f, 0x18, 0xea, 0xbb, 0xa9,
-	0xa1, 0x9c, 0x4d, 0x0d, 0xe5, 0xcb, 0xd4, 0x50, 0x9e, 0x6d, 0x5d, 0x7a, 0x48, 0x8f, 0xb3, 0x5b,
-	0x8c, 0x9d, 0xd5, 0x41, 0x9e, 0xdd, 0x45, 0x77, 0x7f, 0x07, 0x00, 0x00, 0xff, 0xff, 0xd0, 0x81,
-	0x0e, 0xba, 0x4a, 0x05, 0x00, 0x00,
+	// 717 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x56, 0x3f, 0x6f, 0xd3, 0x4c,
+	0x18, 0x8f, 0xdb, 0x2a, 0x79, 0xf3, 0xb4, 0x52, 0xde, 0xba, 0xd5, 0xfb, 0xb6, 0x6e, 0xea, 0x94,
+	0x08, 0x89, 0xb4, 0x52, 0xed, 0xa6, 0x08, 0x81, 0x52, 0x31, 0x34, 0x65, 0x29, 0x28, 0x8a, 0x48,
+	0x05, 0x08, 0x96, 0xca, 0x71, 0x0e, 0x63, 0xb5, 0xb9, 0x33, 0xb9, 0x73, 0x55, 0x56, 0xc4, 0xc0,
+	0xc8, 0x02, 0x73, 0x67, 0x26, 0x06, 0x16, 0xe0, 0x0b, 0x74, 0xac, 0x98, 0x98, 0x00, 0xb5, 0x03,
+	0x7c, 0x0b, 0x90, 0xcf, 0xe7, 0x6b, 0x9a, 0xb8, 0x89, 0x85, 0x90, 0x10, 0x53, 0x1c, 0xff, 0xfe,
+	0x3d, 0xcf, 0x9d, 0xef, 0xb1, 0x21, 0x6f, 0x13, 0xda, 0x26, 0xd4, 0x6c, 0x5a, 0x78, 0xc7, 0xdc,
+	0x2b, 0x37, 0x11, 0xb3, 0xca, 0x26, 0xdb, 0x37, 0xbc, 0x0e, 0x61, 0x44, 0x9d, 0x0a, 0x51, 0x23,
+	0x40, 0x0d, 0x81, 0x6a, 0xd3, 0x0e, 0x71, 0x08, 0xc7, 0xcd, 0xe0, 0x2a, 0xa4, 0x6a, 0xba, 0x34,
+	0xa2, 0x48, 0x1a, 0xd9, 0xc4, 0xc5, 0x7d, 0x78, 0x57, 0x10, 0xf7, 0x0d, 0xf1, 0xd9, 0x10, 0xdf,
+	0x0e, 0x8d, 0x45, 0x6e, 0x08, 0xfd, 0x2f, 0xa4, 0x6d, 0xea, 0x98, 0x7b, 0xe5, 0xe0, 0x27, 0x04,
+	0x8a, 0x3f, 0x14, 0xc8, 0xd4, 0xa8, 0xb3, 0x85, 0x70, 0x4b, 0x5d, 0x83, 0x89, 0x87, 0x1d, 0xd2,
+	0xde, 0xb6, 0x5a, 0xad, 0x0e, 0xa2, 0x74, 0x46, 0x59, 0x50, 0x4a, 0xd9, 0xea, 0xcc, 0xc7, 0xb7,
+	0xcb, 0xd3, 0xc2, 0x6c, 0x3d, 0x44, 0xb6, 0x58, 0xc7, 0xc5, 0x4e, 0x63, 0x3c, 0x60, 0x8b, 0x5b,
+	0xea, 0x55, 0x00, 0x46, 0xa4, 0x74, 0x64, 0x88, 0x34, 0xcb, 0x48, 0x24, 0xb4, 0x21, 0x6d, 0xb5,
+	0x89, 0x8f, 0xd9, 0xcc, 0xe8, 0xc2, 0x68, 0x69, 0x7c, 0x75, 0xd6, 0x90, 0x2b, 0x46, 0x51, 0xb4,
+	0x62, 0xc6, 0x06, 0x71, 0x71, 0x75, 0xe5, 0xf0, 0x73, 0x21, 0xf5, 0xfa, 0x4b, 0xa1, 0xe4, 0xb8,
+	0xec, 0x91, 0xdf, 0x34, 0x6c, 0xd2, 0x16, 0x6d, 0x8a, 0x9f, 0x65, 0xda, 0xda, 0x31, 0xd9, 0x13,
+	0x0f, 0x51, 0x2e, 0xa0, 0x0d, 0x61, 0x5d, 0x99, 0x7d, 0x7e, 0x50, 0x48, 0x7d, 0x3f, 0x28, 0xa4,
+	0x9e, 0x7e, 0x7b, 0xb3, 0x74, 0xa6, 0xcb, 0xe2, 0x24, 0xe4, 0xc4, 0x02, 0x34, 0x10, 0xf5, 0x08,
+	0xa6, 0xa8, 0xf8, 0x4a, 0x81, 0x89, 0x1a, 0x75, 0x6a, 0xfe, 0x2e, 0x73, 0xf9, 0xca, 0x5c, 0x83,
+	0xb4, 0x8b, 0x3d, 0x9f, 0x05, 0x6b, 0x12, 0xd4, 0xa8, 0x19, 0x31, 0xbb, 0x6a, 0x6c, 0x06, 0x94,
+	0xea, 0x58, 0x50, 0x64, 0x43, 0xf0, 0xd5, 0x35, 0xc8, 0x10, 0x9f, 0x71, 0xe9, 0x08, 0x97, 0xce,
+	0xc5, 0x4a, 0xeb, 0x9c, 0x23, 0xb4, 0x91, 0xa2, 0x92, 0x8b, 0x2a, 0x16, 0x6e, 0xc5, 0xff, 0x60,
+	0xba, 0xbb, 0x2e, 0x59, 0xf0, 0x5d, 0x50, 0x6b, 0xd4, 0xb9, 0xed, 0x5b, 0x1d, 0x0b, 0x33, 0x17,
+	0xa3, 0xba, 0xc7, 0x36, 0xb1, 0xba, 0x0a, 0x99, 0xa4, 0x5b, 0x19, 0x11, 0x2b, 0x13, 0x41, 0x5c,
+	0xf4, 0xaf, 0x98, 0x07, 0xad, 0xdf, 0x57, 0xa6, 0xde, 0x83, 0xa9, 0x5e, 0xb4, 0xee, 0xb3, 0xdf,
+	0x10, 0x3b, 0x0f, 0x73, 0x31, 0xc6, 0x32, 0xf7, 0xbd, 0xd2, 0x13, 0xbc, 0x6e, 0xdb, 0xc8, 0x63,
+	0x7f, 0xe8, 0xf9, 0xcd, 0x43, 0xd6, 0x43, 0x9d, 0xb6, 0x85, 0x11, 0x7f, 0x84, 0x95, 0xd2, 0x3f,
+	0x8d, 0xd3, 0x1b, 0x95, 0x5c, 0xd0, 0x58, 0x97, 0x73, 0x5f, 0x6f, 0x61, 0xed, 0xb2, 0xb7, 0x0f,
+	0x0a, 0xdf, 0xe2, 0x53, 0xfc, 0x06, 0xb2, 0x77, 0x5d, 0x8c, 0xfe, 0x8e, 0xe6, 0x74, 0xc8, 0xc7,
+	0x15, 0x2f, 0xbb, 0x7b, 0xa7, 0xc0, 0x42, 0x8d, 0x3a, 0x77, 0xbc, 0x96, 0xc5, 0x50, 0xd7, 0x1a,
+	0xf8, 0x8c, 0x44, 0x9c, 0xde, 0x62, 0x95, 0xe4, 0xc5, 0xde, 0x82, 0x8c, 0xcf, 0x9d, 0xa3, 0xb3,
+	0x56, 0x8e, 0x3d, 0x6b, 0xf1, 0xb9, 0x61, 0x4d, 0x8d, 0xc8, 0xa1, 0xbf, 0xb7, 0x25, 0x28, 0x0d,
+	0x2b, 0x3d, 0xba, 0x58, 0x7d, 0x96, 0x86, 0xd1, 0x1a, 0x75, 0xd4, 0x9b, 0x30, 0xc6, 0xe7, 0x47,
+	0x3e, 0xb6, 0x10, 0x31, 0x76, 0xb4, 0x8b, 0x83, 0xd0, 0xc8, 0x53, 0xbd, 0x0f, 0xd9, 0xd3, 0x81,
+	0x74, 0xe1, 0x3c, 0x89, 0xa4, 0x68, 0x8b, 0x43, 0x29, 0xd2, 0x7a, 0x07, 0x72, 0xbd, 0xb3, 0xe3,
+	0xd2, 0x79, 0xea, 0x1e, 0xa2, 0x66, 0x26, 0x24, 0xca, 0x30, 0x0c, 0xff, 0xf6, 0x8d, 0x8c, 0x52,
+	0x22, 0x93, 0xba, 0xcf, 0xb4, 0x95, 0xa4, 0xcc, 0xf8, 0x3c, 0x31, 0x29, 0x12, 0xe4, 0x85, 0xcc,
+	0x24, 0x79, 0x67, 0x4f, 0xb0, 0xfa, 0x18, 0x26, 0xfb, 0x4f, 0xef, 0xe2, 0x70, 0x1b, 0x41, 0xd5,
+	0xca, 0x89, 0xa9, 0x32, 0xf2, 0xa5, 0x02, 0xf3, 0x83, 0xcf, 0xd4, 0x95, 0xf3, 0x4c, 0x07, 0xca,
+	0xb4, 0xeb, 0xbf, 0x24, 0x8b, 0x2e, 0xaa, 0x1b, 0x87, 0xc7, 0xba, 0x72, 0x74, 0xac, 0x2b, 0x5f,
+	0x8f, 0x75, 0xe5, 0xc5, 0x89, 0x9e, 0x3a, 0x3a, 0xd1, 0x53, 0x9f, 0x4e, 0xf4, 0xd4, 0x83, 0xc5,
+	0x81, 0x6f, 0xf0, 0xfd, 0xf0, 0x13, 0x87, 0xbf, 0xc8, 0x9b, 0x69, 0xfe, 0xa1, 0x72, 0xf9, 0x67,
+	0x00, 0x00, 0x00, 0xff, 0xff, 0xbc, 0x84, 0xc8, 0xb6, 0x67, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -434,9 +744,15 @@ type MsgClient interface {
 	// QuarantineOptIn defines a method for opting in to account quarantine.
 	// Funds sent to a quarantined account must be approved before they can be received.
 	QuarantineOptIn(ctx context.Context, in *MsgQuarantineOptIn, opts ...grpc.CallOption) (*MsgQuarantineOptInResponse, error)
-	// QuarantineOptOut defines a method for optiong out of account quarantine.
+	// QuarantineOptOut defines a method for opting out of account quarantine.
 	// Any pending funds for the account must still be accepted, but new sends will no longer be quarantined.
 	QuarantineOptOut(ctx context.Context, in *MsgQuarantineOptOut, opts ...grpc.CallOption) (*MsgQuarantineOptOutResponse, error)
+	// AcceptSend defines a method for accepting quarantined funds.
+	QuarantineAccept(ctx context.Context, in *MsgQuarantineAccept, opts ...grpc.CallOption) (*MsgQuarantineAcceptResponse, error)
+	// DeclineSend defines a method for declining quarantined funds.
+	QuarantineDecline(ctx context.Context, in *MsgQuarantineDecline, opts ...grpc.CallOption) (*MsgQuarantineDeclineResponse, error)
+	// UpdateQuarantineAutoResponses defines a method for updating the auto-response settings for a quarantined address.
+	UpdateQuarantineAutoResponses(ctx context.Context, in *MsgUpdateQuarantineAutoResponses, opts ...grpc.CallOption) (*MsgUpdateQuarantineAutoResponsesResponse, error)
 }
 
 type msgClient struct {
@@ -483,6 +799,33 @@ func (c *msgClient) QuarantineOptOut(ctx context.Context, in *MsgQuarantineOptOu
 	return out, nil
 }
 
+func (c *msgClient) QuarantineAccept(ctx context.Context, in *MsgQuarantineAccept, opts ...grpc.CallOption) (*MsgQuarantineAcceptResponse, error) {
+	out := new(MsgQuarantineAcceptResponse)
+	err := c.cc.Invoke(ctx, "/cosmos.bank.v1beta1.Msg/QuarantineAccept", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) QuarantineDecline(ctx context.Context, in *MsgQuarantineDecline, opts ...grpc.CallOption) (*MsgQuarantineDeclineResponse, error) {
+	out := new(MsgQuarantineDeclineResponse)
+	err := c.cc.Invoke(ctx, "/cosmos.bank.v1beta1.Msg/QuarantineDecline", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) UpdateQuarantineAutoResponses(ctx context.Context, in *MsgUpdateQuarantineAutoResponses, opts ...grpc.CallOption) (*MsgUpdateQuarantineAutoResponsesResponse, error) {
+	out := new(MsgUpdateQuarantineAutoResponsesResponse)
+	err := c.cc.Invoke(ctx, "/cosmos.bank.v1beta1.Msg/UpdateQuarantineAutoResponses", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	// Send defines a method for sending coins from one account to another account.
@@ -492,9 +835,15 @@ type MsgServer interface {
 	// QuarantineOptIn defines a method for opting in to account quarantine.
 	// Funds sent to a quarantined account must be approved before they can be received.
 	QuarantineOptIn(context.Context, *MsgQuarantineOptIn) (*MsgQuarantineOptInResponse, error)
-	// QuarantineOptOut defines a method for optiong out of account quarantine.
+	// QuarantineOptOut defines a method for opting out of account quarantine.
 	// Any pending funds for the account must still be accepted, but new sends will no longer be quarantined.
 	QuarantineOptOut(context.Context, *MsgQuarantineOptOut) (*MsgQuarantineOptOutResponse, error)
+	// AcceptSend defines a method for accepting quarantined funds.
+	QuarantineAccept(context.Context, *MsgQuarantineAccept) (*MsgQuarantineAcceptResponse, error)
+	// DeclineSend defines a method for declining quarantined funds.
+	QuarantineDecline(context.Context, *MsgQuarantineDecline) (*MsgQuarantineDeclineResponse, error)
+	// UpdateQuarantineAutoResponses defines a method for updating the auto-response settings for a quarantined address.
+	UpdateQuarantineAutoResponses(context.Context, *MsgUpdateQuarantineAutoResponses) (*MsgUpdateQuarantineAutoResponsesResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -512,6 +861,15 @@ func (*UnimplementedMsgServer) QuarantineOptIn(ctx context.Context, req *MsgQuar
 }
 func (*UnimplementedMsgServer) QuarantineOptOut(ctx context.Context, req *MsgQuarantineOptOut) (*MsgQuarantineOptOutResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QuarantineOptOut not implemented")
+}
+func (*UnimplementedMsgServer) QuarantineAccept(ctx context.Context, req *MsgQuarantineAccept) (*MsgQuarantineAcceptResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QuarantineAccept not implemented")
+}
+func (*UnimplementedMsgServer) QuarantineDecline(ctx context.Context, req *MsgQuarantineDecline) (*MsgQuarantineDeclineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QuarantineDecline not implemented")
+}
+func (*UnimplementedMsgServer) UpdateQuarantineAutoResponses(ctx context.Context, req *MsgUpdateQuarantineAutoResponses) (*MsgUpdateQuarantineAutoResponsesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateQuarantineAutoResponses not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -590,6 +948,60 @@ func _Msg_QuarantineOptOut_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_QuarantineAccept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgQuarantineAccept)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).QuarantineAccept(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cosmos.bank.v1beta1.Msg/QuarantineAccept",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).QuarantineAccept(ctx, req.(*MsgQuarantineAccept))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_QuarantineDecline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgQuarantineDecline)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).QuarantineDecline(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cosmos.bank.v1beta1.Msg/QuarantineDecline",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).QuarantineDecline(ctx, req.(*MsgQuarantineDecline))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_UpdateQuarantineAutoResponses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgUpdateQuarantineAutoResponses)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).UpdateQuarantineAutoResponses(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cosmos.bank.v1beta1.Msg/UpdateQuarantineAutoResponses",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).UpdateQuarantineAutoResponses(ctx, req.(*MsgUpdateQuarantineAutoResponses))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cosmos.bank.v1beta1.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -609,6 +1021,18 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QuarantineOptOut",
 			Handler:    _Msg_QuarantineOptOut_Handler,
+		},
+		{
+			MethodName: "QuarantineAccept",
+			Handler:    _Msg_QuarantineAccept_Handler,
+		},
+		{
+			MethodName: "QuarantineDecline",
+			Handler:    _Msg_QuarantineDecline_Handler,
+		},
+		{
+			MethodName: "UpdateQuarantineAutoResponses",
+			Handler:    _Msg_UpdateQuarantineAutoResponses_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -869,6 +1293,213 @@ func (m *MsgQuarantineOptOutResponse) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgQuarantineAccept) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgQuarantineAccept) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgQuarantineAccept) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Permanent {
+		i--
+		if m.Permanent {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.ToAddress) > 0 {
+		i -= len(m.ToAddress)
+		copy(dAtA[i:], m.ToAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ToAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.FromAddress) > 0 {
+		i -= len(m.FromAddress)
+		copy(dAtA[i:], m.FromAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.FromAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgQuarantineAcceptResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgQuarantineAcceptResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgQuarantineAcceptResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgQuarantineDecline) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgQuarantineDecline) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgQuarantineDecline) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Permanent {
+		i--
+		if m.Permanent {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.ToAddress) > 0 {
+		i -= len(m.ToAddress)
+		copy(dAtA[i:], m.ToAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ToAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.FromAddress) > 0 {
+		i -= len(m.FromAddress)
+		copy(dAtA[i:], m.FromAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.FromAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgQuarantineDeclineResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgQuarantineDeclineResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgQuarantineDeclineResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUpdateQuarantineAutoResponses) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdateQuarantineAutoResponses) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdateQuarantineAutoResponses) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Updates) > 0 {
+		for iNdEx := len(m.Updates) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Updates[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintTx(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.ToAddress) > 0 {
+		i -= len(m.ToAddress)
+		copy(dAtA[i:], m.ToAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ToAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUpdateQuarantineAutoResponsesResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdateQuarantineAutoResponsesResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdateQuarantineAutoResponsesResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -978,6 +1609,92 @@ func (m *MsgQuarantineOptOut) Size() (n int) {
 }
 
 func (m *MsgQuarantineOptOutResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgQuarantineAccept) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.FromAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ToAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.Permanent {
+		n += 2
+	}
+	return n
+}
+
+func (m *MsgQuarantineAcceptResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgQuarantineDecline) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.FromAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ToAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.Permanent {
+		n += 2
+	}
+	return n
+}
+
+func (m *MsgQuarantineDeclineResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgUpdateQuarantineAutoResponses) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ToAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if len(m.Updates) > 0 {
+		for _, e := range m.Updates {
+			l = e.Size()
+			n += 1 + l + sovTx(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *MsgUpdateQuarantineAutoResponsesResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1599,6 +2316,540 @@ func (m *MsgQuarantineOptOutResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgQuarantineOptOutResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgQuarantineAccept) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgQuarantineAccept: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgQuarantineAccept: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FromAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Permanent", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Permanent = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgQuarantineAcceptResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgQuarantineAcceptResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgQuarantineAcceptResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgQuarantineDecline) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgQuarantineDecline: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgQuarantineDecline: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FromAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Permanent", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Permanent = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgQuarantineDeclineResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgQuarantineDeclineResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgQuarantineDeclineResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdateQuarantineAutoResponses) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdateQuarantineAutoResponses: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdateQuarantineAutoResponses: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Updates", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Updates = append(m.Updates, &QuarantineAutoResponseUpdate{})
+			if err := m.Updates[len(m.Updates)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdateQuarantineAutoResponsesResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdateQuarantineAutoResponsesResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdateQuarantineAutoResponsesResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
