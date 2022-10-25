@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -188,16 +189,16 @@ func ValidateInputsOutputs(inputs []Input, outputs []Output) error {
 var _ sdk.Msg = &MsgQuarantineOptIn{}
 
 // NewMsgQuarantineOptIn creates a new msg to opt in to account quarantine.
-func NewMsgQuarantineOptIn(addr sdk.AccAddress) *MsgQuarantineOptIn {
+func NewMsgQuarantineOptIn(toAddr sdk.AccAddress) *MsgQuarantineOptIn {
 	return &MsgQuarantineOptIn{
-		ToAddress: addr.String(),
+		ToAddress: toAddr.String(),
 	}
 }
 
 // ValidateBasic does simple stateless validation of this Msg.
 func (msg MsgQuarantineOptIn) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
-		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %s", err)
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
 	return nil
 }
@@ -211,16 +212,16 @@ func (msg MsgQuarantineOptIn) GetSigners() []sdk.AccAddress {
 var _ sdk.Msg = &MsgQuarantineOptOut{}
 
 // NewMsgQuarantineOptOut creates a new msg to opt out of account quarantine.
-func NewMsgQuarantineOptOut(addr sdk.AccAddress) *MsgQuarantineOptOut {
+func NewMsgQuarantineOptOut(toAddr sdk.AccAddress) *MsgQuarantineOptOut {
 	return &MsgQuarantineOptOut{
-		ToAddress: addr.String(),
+		ToAddress: toAddr.String(),
 	}
 }
 
 // ValidateBasic does simple stateless validation of this Msg.
 func (msg MsgQuarantineOptOut) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
-		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %s", err)
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
 	return nil
 }
@@ -229,4 +230,108 @@ func (msg MsgQuarantineOptOut) ValidateBasic() error {
 func (msg MsgQuarantineOptOut) GetSigners() []sdk.AccAddress {
 	addr, _ := sdk.AccAddressFromBech32(msg.ToAddress)
 	return []sdk.AccAddress{addr}
+}
+
+var _ sdk.Msg = &MsgQuarantineAccept{}
+
+// NewMsgQuarantineAccept creates a new msg to accept quarantined funds.
+func NewMsgQuarantineAccept(toAddr, fromAddr sdk.AccAddress, permanent bool) *MsgQuarantineAccept {
+	return &MsgQuarantineAccept{
+		FromAddress: fromAddr.String(),
+		ToAddress:   toAddr.String(),
+		Permanent:   permanent,
+	}
+}
+
+// ValidateBasic does simple stateless validation of this Msg.
+func (msg MsgQuarantineAccept) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
+	}
+	if _, err := sdk.AccAddressFromBech32(msg.FromAddress); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %s", err)
+	}
+	return nil
+}
+
+// GetSigners returns the addresses of required signers of this Msg.
+func (msg MsgQuarantineAccept) GetSigners() []sdk.AccAddress {
+	addr, _ := sdk.AccAddressFromBech32(msg.ToAddress)
+	return []sdk.AccAddress{addr}
+}
+
+var _ sdk.Msg = &MsgQuarantineDecline{}
+
+// NewMsgQuarantineDecline creates a new msg to decline quarantined funds.
+func NewMsgQuarantineDecline(toAddr, fromAddr sdk.AccAddress, permanent bool) *MsgQuarantineDecline {
+	return &MsgQuarantineDecline{
+		FromAddress: fromAddr.String(),
+		ToAddress:   toAddr.String(),
+		Permanent:   permanent,
+	}
+}
+
+// ValidateBasic does simple stateless validation of this Msg.
+func (msg MsgQuarantineDecline) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
+	}
+	if _, err := sdk.AccAddressFromBech32(msg.FromAddress); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %s", err)
+	}
+	return nil
+}
+
+// GetSigners returns the addresses of required signers of this Msg.
+func (msg MsgQuarantineDecline) GetSigners() []sdk.AccAddress {
+	addr, _ := sdk.AccAddressFromBech32(msg.ToAddress)
+	return []sdk.AccAddress{addr}
+}
+
+var _ sdk.Msg = &MsgUpdateQuarantineAutoResponses{}
+
+// NewMsgUpdateQuarantineAutoResponses creates a new msg to update quarantined auto-responses.
+func NewMsgUpdateQuarantineAutoResponses(toAddr sdk.AccAddress, updates []*QuarantineAutoResponseUpdate) *MsgUpdateQuarantineAutoResponses {
+	return &MsgUpdateQuarantineAutoResponses{
+		ToAddress: toAddr.String(),
+		Updates:   updates,
+	}
+}
+
+// ValidateBasic does simple stateless validation of this Msg.
+func (msg MsgUpdateQuarantineAutoResponses) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
+	}
+	for i, update := range msg.Updates {
+		if err := update.ValidateBasic(); err != nil {
+			return errors.Wrapf(err, "invalid update %d", i)
+		}
+	}
+	return nil
+}
+
+// GetSigners returns the addresses of required signers of this Msg.
+func (msg MsgUpdateQuarantineAutoResponses) GetSigners() []sdk.AccAddress {
+	addr, _ := sdk.AccAddressFromBech32(msg.ToAddress)
+	return []sdk.AccAddress{addr}
+}
+
+// NewQuarantineAutoResponseUpdate creates a new quarantine auto-response update.
+func NewQuarantineAutoResponseUpdate(fromAddr sdk.AccAddress, response QuarantineAutoResponse) *QuarantineAutoResponseUpdate {
+	return &QuarantineAutoResponseUpdate{
+		FromAddress: fromAddr.String(),
+		Response:    response,
+	}
+}
+
+// ValidateBasic does simple stateless validation of this update.
+func (u QuarantineAutoResponseUpdate) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(u.FromAddress); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %s", err)
+	}
+	if _, found := QuarantineAutoResponse_name[int32(u.Response)]; !found {
+		return ErrInvalidValue.Wrapf("unknown response value: %d", u.Response)
+	}
+	return nil
 }
