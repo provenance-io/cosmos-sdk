@@ -316,22 +316,3 @@ func (msg MsgUpdateQuarantineAutoResponses) GetSigners() []sdk.AccAddress {
 	addr, _ := sdk.AccAddressFromBech32(msg.ToAddress)
 	return []sdk.AccAddress{addr}
 }
-
-// NewQuarantineAutoResponseUpdate creates a new quarantine auto-response update.
-func NewQuarantineAutoResponseUpdate(fromAddr sdk.AccAddress, response QuarantineAutoResponse) *QuarantineAutoResponseUpdate {
-	return &QuarantineAutoResponseUpdate{
-		FromAddress: fromAddr.String(),
-		Response:    response,
-	}
-}
-
-// ValidateBasic does simple stateless validation of this update.
-func (u QuarantineAutoResponseUpdate) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(u.FromAddress); err != nil {
-		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %s", err)
-	}
-	if _, found := QuarantineAutoResponse_name[int32(u.Response)]; !found {
-		return ErrInvalidValue.Wrapf("unknown response value: %d", u.Response)
-	}
-	return nil
-}

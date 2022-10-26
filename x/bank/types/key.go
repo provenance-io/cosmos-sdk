@@ -38,6 +38,9 @@ var (
 
 	// QuarantineAutoResponsePrefix is the prefix for quarantine auto-response settings.
 	QuarantineAutoResponsePrefix = []byte{0x21}
+
+	// QuarantinedFundsPrefix is the prefix for quarantined funds keys.
+	QuarantinedFundsPrefix = []byte{0x22}
 )
 
 const (
@@ -45,13 +48,6 @@ const (
 	TrueB = byte(0x01)
 	// FalseB is a byte with value 0 that represents false.
 	FalseB = byte(0x00)
-
-	// NoAutoB is a byte with value 0 (corresponding to QUARANTINE_AUTO_RESPONSE_UNSPECIFIED).
-	NoAutoB = byte(0x00)
-	// AutoAcceptB is a byte with value 1 (corresponding to QUARANTINE_AUTO_RESPONSE_ACCEPT).
-	AutoAcceptB = byte(0x01)
-	// AutoDeclineB is a byte with value 2 (corresponding to QUARANTINE_AUTO_RESPONSE_DECLINE).
-	AutoDeclineB = byte(0x02)
 )
 
 // AddressAndDenomFromBalancesStore returns an account address and denom from a balances prefix
@@ -159,7 +155,7 @@ func CreateQuarantineAutoResponseKey(toAddr, fromAddr sdk.AccAddress) []byte {
 // ParseQuarantineAutoResponseKey extracts the to address and from address from the provided quarantine auto-response key.
 func ParseQuarantineAutoResponseKey(key []byte) (toAddr, fromAddr sdk.AccAddress) {
 	// key is of format:
-	// 0x20<to addr len><to addr bytes><from addr len><from addr bytes>
+	// 0x21<to addr len><to addr bytes><from addr len><from addr bytes>
 	toAddrLen, toAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
 	toAddr, toAddrEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
 
@@ -169,37 +165,34 @@ func ParseQuarantineAutoResponseKey(key []byte) (toAddr, fromAddr sdk.AccAddress
 	return toAddr, fromAddr
 }
 
-// ToAutoB converts a QuarantineAutoResponse into the byte that will represent it.
-func ToAutoB(r QuarantineAutoResponse) byte {
-	switch r {
-	case QUARANTINE_AUTO_RESPONSE_ACCEPT:
-		return AutoAcceptB
-	case QUARANTINE_AUTO_RESPONSE_DECLINE:
-		return AutoDeclineB
-	default:
-		return NoAutoB
-	}
+// CreateQuarantinedFundsToAddrPrefix creates a prefix for the quarantine funds for a receiving address.
+func CreateQuarantinedFundsToAddrPrefix(toAddr sdk.AccAddress) []byte {
+	toAddrBz := address.MustLengthPrefix(toAddr)
+	key := make([]byte, len(QuarantinedFundsPrefix)+len(toAddrBz))
+	copy(key, QuarantinedFundsPrefix)
+	copy(key[len(QuarantinedFundsPrefix):], toAddrBz)
+	return key
 }
 
-// ToQuarantineAutoResponse returns the QuarantineAutoResponse represented by the provided byte slice.
-func ToQuarantineAutoResponse(bz []byte) QuarantineAutoResponse {
-	if len(bz) == 1 {
-		switch bz[0] {
-		case AutoAcceptB:
-			return QUARANTINE_AUTO_RESPONSE_ACCEPT
-		case AutoDeclineB:
-			return QUARANTINE_AUTO_RESPONSE_DECLINE
-		}
-	}
-	return QUARANTINE_AUTO_RESPONSE_UNSPECIFIED
+// CreateQuarantinedFundsKey creates the key for quarantine funds.
+func CreateQuarantinedFundsKey(toAddr, fromAddr sdk.AccAddress) []byte {
+	toAddrPreBz := CreateQuarantinedFundsToAddrPrefix(toAddr)
+	fromAddrBz := address.MustLengthPrefix(fromAddr)
+	key := make([]byte, len(toAddrPreBz)+len(fromAddrBz))
+	copy(key, toAddrPreBz)
+	copy(key[len(toAddrPreBz):], fromAddrBz)
+	return key
 }
 
-// IsAutoAcceptB returns true if the provided byte slice has exactly one byte, and it is equal to AutoAccept.
-func IsAutoAcceptB(bz []byte) bool {
-	return len(bz) == 1 && bz[0] == AutoAcceptB
-}
+// ParseQuarantinedFundsKey extracts the to address and from address from the provided quarantine funds key.
+func ParseQuarantinedFundsKey(key []byte) (toAddr, fromAddr sdk.AccAddress) {
+	// key is of format:
+	// 0x22<to addr len><to addr bytes><from addr len><from addr bytes>
+	toAddrLen, toAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
+	toAddr, toAddrEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
 
-// IsAutoDeclineB returns true if the provided byte slice has exactly one byte, and it is equal to AutoDecline.
-func IsAutoDeclineB(bz []byte) bool {
-	return len(bz) == 1 && bz[0] == AutoDeclineB
+	fromAddrLen, fromAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrEndIndex+1, 1)
+	fromAddr, _ = sdk.ParseLengthPrefixedBytes(key, fromAddrLenEndIndex+1, int(fromAddrLen[0]))
+
+	return toAddr, fromAddr
 }

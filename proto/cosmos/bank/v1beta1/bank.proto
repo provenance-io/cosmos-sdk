@@ -133,3 +133,12 @@ enum QuarantineAutoResponse {
   // QUARANTINE_AUTO_DECLINE defines that sends should be automatically declined.
   QUARANTINE_AUTO_RESPONSE_DECLINE = 2;
 }
+
+// QuarantinedFunds defines information regarding quarantined funds.
+message QuarantinedFunds {
+  // coins is the amount that has been quarantined.
+  repeated cosmos.base.v1beta1.Coin coins = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  // declined is whether these funds have been declined.
+  bool declined = 2;
+}
