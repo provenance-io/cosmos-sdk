@@ -60,7 +60,7 @@ func NewBaseSendKeeper(
 ) BaseSendKeeper {
 	return BaseSendKeeper{
 		BaseViewKeeper:       NewBaseViewKeeper(cdc, storeKey, ak),
-		BaseQuarantineKeeper: NewBaseQuarantineKeeper(storeKey),
+		BaseQuarantineKeeper: NewBaseQuarantineKeeper(cdc, storeKey),
 		cdc:                  cdc,
 		ak:                   ak,
 		storeKey:             storeKey,

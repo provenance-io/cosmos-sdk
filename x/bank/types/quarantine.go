@@ -69,14 +69,24 @@ func (u QuarantineAutoResponseUpdate) ValidateBasic() error {
 }
 
 // NewQuarantineFunds creates a new quarantine funds object.
-func NewQuarantineFunds(coins sdk.Coins, declined bool) *QuarantineFunds {
-	return &QuarantineFunds{
+func NewQuarantineFunds(coins sdk.Coins, declined bool) *QuarantinedFunds {
+	return &QuarantinedFunds{
 		Coins:    coins,
 		Declined: declined,
 	}
 }
 
 // ValidateBasic does simple stateless validation of these quarantined funds.
-func (f QuarantineFunds) ValidateBasic() error {
+func (f QuarantinedFunds) ValidateBasic() error {
 	return f.Coins.Validate()
+}
+
+// IsZero returns true if this does not have any coins.
+func (f QuarantinedFunds) IsZero() bool {
+	return f.Coins.IsZero()
+}
+
+// Add adds coins to this.
+func (f *QuarantinedFunds) Add(coins ...sdk.Coin) {
+	f.Coins.Add(coins...)
 }
