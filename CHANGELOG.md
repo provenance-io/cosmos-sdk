@@ -39,9 +39,21 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
+* nothing
+
+---
+
+## [v0.45.10-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.10-pio-3) - 2022-10-26
+
 ### Bug Fixes
 
 * (store) [#13530](https://github.com/cosmos/cosmos-sdk/pull/13530) Fix app-hash mismatch if upgrade migration commit is interrupted.
+
+---
+
+## [v0.45.10-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.10-pio-2) - 2022-10-24
+
+Same as v0.45.10-pio-1. Created due to weird go mod proxy cache issue.
 
 ---
 
