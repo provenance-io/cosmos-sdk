@@ -17,7 +17,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/cachemulti"
 	"github.com/cosmos/cosmos-sdk/store/iavl"
 	sdkmaps "github.com/cosmos/cosmos-sdk/store/internal/maps"
-	"github.com/cosmos/cosmos-sdk/store/listenkv"
 	"github.com/cosmos/cosmos-sdk/store/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -625,6 +624,18 @@ func TestSetInitialVersion(t *testing.T) {
 	require.True(t, iavlStore.VersionExists(5))
 }
 
+var (
+	_ types.WriteListener = (*mockListener)(nil)
+)
+
+type mockListener struct {
+	key types.StoreKey
+}
+
+func (m mockListener) OnCommit() {}
+
+func (m mockListener) OnWrite(_ types.StoreKey, _ []byte, _ []byte, _ bool) {}
+
 func TestAddListenersAndListeningEnabled(t *testing.T) {
 	db := dbm.NewMemDB()
 	multi := newMultiStoreWithMounts(db, pruningtypes.NewPruningOptions(pruningtypes.PruningNothing))
@@ -636,9 +647,9 @@ func TestAddListenersAndListeningEnabled(t *testing.T) {
 	enabled = multi.ListeningEnabled(testKey)
 	require.False(t, enabled)
 
-	mockListener := types.NewStoreKVPairWriteListener(nil, nil)
-	multi.AddListeners(testKey, []types.WriteListener{mockListener})
 	wrongTestKey := types.NewKVStoreKey("wrong_listening_test_key")
+	mockListener := mockListener{key: wrongTestKey}
+	multi.AddListeners(testKey, []types.WriteListener{mockListener})
 	enabled = multi.ListeningEnabled(wrongTestKey)
 	require.False(t, enabled)
 
