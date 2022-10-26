@@ -106,12 +106,12 @@ func (k msgServer) MultiSend(goCtx context.Context, msg *types.MsgMultiSend) (*t
 func (k msgServer) QuarantineOptIn(goCtx context.Context, msg *types.MsgQuarantineOptIn) (*types.MsgQuarantineOptInResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	addr, err := sdk.AccAddressFromBech32(msg.ToAddress)
+	toAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	k.SetQuarantineOptIn(ctx, addr)
+	k.SetQuarantineOptIn(ctx, toAddr)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -126,12 +126,12 @@ func (k msgServer) QuarantineOptIn(goCtx context.Context, msg *types.MsgQuaranti
 func (k msgServer) QuarantineOptOut(goCtx context.Context, msg *types.MsgQuarantineOptOut) (*types.MsgQuarantineOptOutResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	addr, err := sdk.AccAddressFromBech32(msg.ToAddress)
+	toAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	k.SetQuarantineOptOut(ctx, addr)
+	k.SetQuarantineOptOut(ctx, toAddr)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -156,8 +156,27 @@ func (k msgServer) QuarantineAccept(goCtx context.Context, msg *types.MsgQuarant
 		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
 	}
 
-	_, _, _ = ctx, toAddr, fromAddr
-	return nil, sdkerrors.ErrLogic.Wrap("not implemented")
+	funds := k.GetQuarantinedFunds(ctx, toAddr, fromAddr)
+	if !funds.IsZero() {
+		if err = k.SendCoinsFromModuleToAccount(ctx, types.ModuleName, toAddr, funds.Coins); err != nil {
+			return nil, err
+		}
+	}
+
+	k.SetQuarantinedFundsAccepted(ctx, toAddr, fromAddr)
+
+	if msg.Permanent {
+		k.SetQuarantineAutoResponse(ctx, toAddr, fromAddr, types.QUARANTINE_AUTO_RESPONSE_ACCEPT)
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+		),
+	)
+
+	return &types.MsgQuarantineAcceptResponse{}, nil
 }
 
 func (k msgServer) QuarantineDecline(goCtx context.Context, msg *types.MsgQuarantineDecline) (*types.MsgQuarantineDeclineResponse, error) {
@@ -173,8 +192,20 @@ func (k msgServer) QuarantineDecline(goCtx context.Context, msg *types.MsgQuaran
 		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
 	}
 
-	_, _, _ = ctx, toAddr, fromAddr
-	return nil, sdkerrors.ErrLogic.Wrap("not implemented")
+	k.SetQuarantinedFundsDeclined(ctx, toAddr, fromAddr)
+
+	if msg.Permanent {
+		k.SetQuarantineAutoResponse(ctx, toAddr, fromAddr, types.QUARANTINE_AUTO_RESPONSE_DECLINE)
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+		),
+	)
+
+	return &types.MsgQuarantineDeclineResponse{}, nil
 }
 
 func (k msgServer) UpdateQuarantineAutoResponses(goCtx context.Context, msg *types.MsgUpdateQuarantineAutoResponses) (*types.MsgUpdateQuarantineAutoResponsesResponse, error) {
