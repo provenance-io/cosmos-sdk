@@ -211,16 +211,26 @@ func (k BaseQuarantineKeeper) SetQuarantineRecordDeclined(ctx sdk.Context, toAdd
 	k.SetQuarantineRecord(ctx, toAddr, fromAddr, &qf)
 }
 
-// mustBzToQuarantineRecord converts the given byte slice into QuarantineRecord or dies trying.
-// If the byte slice is nil or empty, a default QuarantineRecord is returned with zero coins.
-func (k BaseQuarantineKeeper) mustBzToQuarantineRecord(bz []byte) types.QuarantineRecord {
+func (k BaseQuarantineKeeper) bzToQuarantineRecord(bz []byte) (types.QuarantineRecord, error) {
 	qf := types.QuarantineRecord{
 		Coins:    sdk.Coins{},
 		Declined: false,
 	}
 	if len(bz) > 0 {
-		k.cdc.MustUnmarshal(bz, &qf)
-		return qf
+		err := k.cdc.Unmarshal(bz, &qf)
+		if err != nil {
+			return qf, err
+		}
+	}
+	return qf, nil
+}
+
+// mustBzToQuarantineRecord converts the given byte slice into QuarantineRecord or dies trying.
+// If the byte slice is nil or empty, a default QuarantineRecord is returned with zero coins.
+func (k BaseQuarantineKeeper) mustBzToQuarantineRecord(bz []byte) types.QuarantineRecord {
+	qf, err := k.bzToQuarantineRecord(bz)
+	if err != nil {
+		panic(err)
 	}
 	return qf
 }
