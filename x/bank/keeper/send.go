@@ -153,7 +153,7 @@ func (k BaseSendKeeper) InputOutputCoins(ctx sdk.Context, inputs []types.Input, 
 // Otherwise, the coins will be transferred from the fromAddr to the toAddr.
 // An error is returned upon failure.
 func (k BaseSendKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
-	if !k.IsQuarantined(ctx, toAddr) || k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr) == types.QUARANTINE_AUTO_RESPONSE_ACCEPT {
+	if !k.IsQuarantinedAddr(ctx, toAddr) || k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr) == types.QUARANTINE_AUTO_RESPONSE_ACCEPT {
 		return k.SendCoinsBypassQuarantine(ctx, fromAddr, toAddr, amt)
 	}
 

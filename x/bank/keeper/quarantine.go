@@ -13,7 +13,7 @@ import (
 type QuarantineKeeper interface {
 	GetQuarantinedFundsHolder() sdk.AccAddress
 
-	IsQuarantined(ctx sdk.Context, toAddr sdk.AccAddress) bool
+	IsQuarantinedAddr(ctx sdk.Context, toAddr sdk.AccAddress) bool
 	SetQuarantineOptIn(ctx sdk.Context, toAddr sdk.AccAddress)
 	SetQuarantineOptOut(ctx sdk.Context, toAddr sdk.AccAddress)
 	IterateQuarantinedAccounts(ctx sdk.Context, cb func(addr sdk.AccAddress) (stop bool))
@@ -58,8 +58,8 @@ func (k BaseQuarantineKeeper) GetQuarantinedFundsHolder() sdk.AccAddress {
 	return k.quarantinedFundsHolder
 }
 
-// IsQuarantined returns true if the given address has opted into quarantine.
-func (k BaseQuarantineKeeper) IsQuarantined(ctx sdk.Context, toAddr sdk.AccAddress) bool {
+// IsQuarantinedAddr returns true if the given address has opted into quarantine.
+func (k BaseQuarantineKeeper) IsQuarantinedAddr(ctx sdk.Context, toAddr sdk.AccAddress) bool {
 	store := ctx.KVStore(k.storeKey)
 	key := types.CreateQuarantineOptInKey(toAddr)
 	return store.Has(key)
