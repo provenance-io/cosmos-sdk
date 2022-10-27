@@ -68,7 +68,7 @@ func (u QuarantineAutoResponseUpdate) ValidateBasic() error {
 	return nil
 }
 
-// NewQuarantineRecord creates a new quarantine funds object.
+// NewQuarantineRecord creates a new quarantine record object.
 func NewQuarantineRecord(coins sdk.Coins, declined bool) *QuarantineRecord {
 	return &QuarantineRecord{
 		Coins:    coins,
@@ -77,16 +77,36 @@ func NewQuarantineRecord(coins sdk.Coins, declined bool) *QuarantineRecord {
 }
 
 // ValidateBasic does simple stateless validation of these quarantined funds.
-func (f QuarantineRecord) ValidateBasic() error {
-	return f.Coins.Validate()
+func (r QuarantineRecord) ValidateBasic() error {
+	return r.Coins.Validate()
 }
 
 // IsZero returns true if this does not have any coins.
-func (f QuarantineRecord) IsZero() bool {
-	return f.Coins.IsZero()
+func (r QuarantineRecord) IsZero() bool {
+	return r.Coins.IsZero()
 }
 
 // Add adds coins to this.
-func (f *QuarantineRecord) Add(coins ...sdk.Coin) {
-	f.Coins.Add(coins...)
+func (r *QuarantineRecord) Add(coins ...sdk.Coin) {
+	r.Coins.Add(coins...)
+}
+
+// AsQuarantinedFunds creates a new QuarantinedFunds using fields in this and the provided addresses.
+func (r QuarantineRecord) AsQuarantinedFunds(toAddr, fromAddr sdk.AccAddress) *QuarantinedFunds {
+	return &QuarantinedFunds{
+		ToAddress:   toAddr.String(),
+		FromAddress: fromAddr.String(),
+		Coins:       r.Coins,
+		Declined:    r.Declined,
+	}
+}
+
+// NewQuarantinedFunds creates a new quarantined funds object.
+func NewQuarantinedFunds(toAddr, fromAddr sdk.AccAddress, coins sdk.Coins, declined bool) *QuarantinedFunds {
+	return &QuarantinedFunds{
+		ToAddress:   toAddr.String(),
+		FromAddress: fromAddr.String(),
+		Coins:       coins,
+		Declined:    declined,
+	}
 }
