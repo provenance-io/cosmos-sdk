@@ -22,12 +22,12 @@ type QuarantineKeeper interface {
 	SetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, response types.QuarantineAutoResponse)
 	IterateQuarantineAutoResponses(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, response types.QuarantineAutoResponse) (stop bool))
 
-	GetQuarantinedFunds(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) types.QuarantinedFunds
-	SetQuarantinedFunds(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, funds *types.QuarantinedFunds)
-	AddQuarantinedFunds(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, coins sdk.Coins)
-	IterateQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, funds types.QuarantinedFunds) (stop bool))
-	SetQuarantinedFundsAccepted(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress)
-	SetQuarantinedFundsDeclined(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress)
+	GetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) types.QuarantineRecord
+	SetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, funds *types.QuarantineRecord)
+	AddQuarantinedCoins(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, coins sdk.Coins)
+	IterateQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, funds types.QuarantineRecord) (stop bool))
+	SetQuarantineRecordAccepted(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress)
+	SetQuarantineRecordDeclined(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress)
 }
 
 var _ QuarantineKeeper = (*BaseQuarantineKeeper)(nil)
@@ -141,20 +141,20 @@ func (k BaseQuarantineKeeper) IterateQuarantineAutoResponses(ctx sdk.Context, to
 	}
 }
 
-// GetQuarantinedFunds gets the funds that are quarantined to toAddr from fromAddr.
-// If there are no such funds, this will return a QuarantinedFunds with zero coins.
-func (k BaseQuarantineKeeper) GetQuarantinedFunds(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) types.QuarantinedFunds {
+// GetQuarantineRecord gets the funds that are quarantined to toAddr from fromAddr.
+// If there are no such funds, this will return a QuarantineRecord with zero coins.
+func (k BaseQuarantineKeeper) GetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) types.QuarantineRecord {
 	store := ctx.KVStore(k.storeKey)
-	key := types.CreateQuarantinedFundsKey(toAddr, fromAddr)
+	key := types.CreateQuarantineRecordKey(toAddr, fromAddr)
 	bz := store.Get(key)
-	return k.mustBzToQuarantinedFunds(bz)
+	return k.mustBzToQuarantineRecord(bz)
 }
 
-// SetQuarantinedFunds sets a quarantined funds entry.
+// SetQuarantineRecord sets a quarantined funds entry.
 // If funds is nil, this will delete any existing entry.
-func (k BaseQuarantineKeeper) SetQuarantinedFunds(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, funds *types.QuarantinedFunds) {
+func (k BaseQuarantineKeeper) SetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, funds *types.QuarantineRecord) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.CreateQuarantinedFundsKey(toAddr, fromAddr)
+	key := types.CreateQuarantineRecordKey(toAddr, fromAddr)
 	if funds == nil {
 		store.Delete(key)
 	} else {
@@ -163,32 +163,35 @@ func (k BaseQuarantineKeeper) SetQuarantinedFunds(ctx sdk.Context, toAddr, fromA
 	}
 }
 
-// AddQuarantinedFunds records that some new funds have been quarantined.
-func (k BaseQuarantineKeeper) AddQuarantinedFunds(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, coins sdk.Coins) {
-	qf := k.GetQuarantinedFunds(ctx, toAddr, fromAddr)
+// AddQuarantinedCoins records that some new funds have been quarantined.
+func (k BaseQuarantineKeeper) AddQuarantinedCoins(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, coins sdk.Coins) {
+	qf := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
 	qf.Add(coins...)
 	qf.Declined = k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr) == types.QUARANTINE_AUTO_RESPONSE_DECLINE
-	k.SetQuarantinedFunds(ctx, toAddr, fromAddr, &qf)
+	k.SetQuarantineRecord(ctx, toAddr, fromAddr, &qf)
 }
 
-// IterateQuarantinedFunds iterates over the quarantined funds for a given recipient address,
-// or if no address is provided, iterates over all quarantined funds.
-// The callback function should accept a to address, from address, and QuarantinedFunds (in that order).
-// It should return whether to stop iteration early. I.e. false will allow iteration to continue, true will stop iteration.
-func (k BaseQuarantineKeeper) IterateQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, funds types.QuarantinedFunds) (stop bool)) {
-	var pre []byte
+// getQuarantineRecordPrefixStore returns a kv store prefixed for quarantined funds to the given address.
+// If toAddress is empty, it will just be prefixed for quarantined funds.
+func (k BaseQuarantineKeeper) getQuarantineRecordPrefixStore(ctx sdk.Context, toAddr sdk.AccAddress) sdk.KVStore {
 	if len(toAddr) == 0 {
-		pre = types.QuarantinedFundsPrefix
-	} else {
-		pre = types.CreateQuarantinedFundsToAddrPrefix(toAddr)
+		return prefix.NewStore(ctx.KVStore(k.storeKey), types.QuarantineRecordPrefix)
 	}
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), pre)
+	return prefix.NewStore(ctx.KVStore(k.storeKey), types.CreateQuarantineRecordToAddrPrefix(toAddr))
+}
+
+// IterateQuarantineRecords iterates over the quarantined funds for a given recipient address,
+// or if no address is provided, iterates over all quarantined funds.
+// The callback function should accept a to address, from address, and QuarantineRecord (in that order).
+// It should return whether to stop iteration early. I.e. false will allow iteration to continue, true will stop iteration.
+func (k BaseQuarantineKeeper) IterateQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, funds types.QuarantineRecord) (stop bool)) {
+	store := k.getQuarantineRecordPrefixStore(ctx, toAddr)
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
 
 	for ; iter.Valid(); iter.Next() {
-		kToAddr, kFromAddr := types.ParseQuarantinedFundsKey(iter.Key())
-		qf := k.mustBzToQuarantinedFunds(iter.Value())
+		kToAddr, kFromAddr := types.ParseQuarantineRecordKey(iter.Key())
+		qf := k.mustBzToQuarantineRecord(iter.Value())
 
 		if cb(kToAddr, kFromAddr, qf) {
 			break
@@ -196,22 +199,22 @@ func (k BaseQuarantineKeeper) IterateQuarantinedFunds(ctx sdk.Context, toAddr sd
 	}
 }
 
-// SetQuarantinedFundsAccepted marks quarantined funds as accepted.
-func (k BaseQuarantineKeeper) SetQuarantinedFundsAccepted(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) {
-	k.SetQuarantinedFunds(ctx, toAddr, fromAddr, nil)
+// SetQuarantineRecordAccepted marks quarantined funds as accepted.
+func (k BaseQuarantineKeeper) SetQuarantineRecordAccepted(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) {
+	k.SetQuarantineRecord(ctx, toAddr, fromAddr, nil)
 }
 
-// SetQuarantinedFundsDeclined marks some quarantined funds as declined.
-func (k BaseQuarantineKeeper) SetQuarantinedFundsDeclined(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) {
-	qf := k.GetQuarantinedFunds(ctx, toAddr, fromAddr)
+// SetQuarantineRecordDeclined marks some quarantined funds as declined.
+func (k BaseQuarantineKeeper) SetQuarantineRecordDeclined(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) {
+	qf := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
 	qf.Declined = true
-	k.SetQuarantinedFunds(ctx, toAddr, fromAddr, &qf)
+	k.SetQuarantineRecord(ctx, toAddr, fromAddr, &qf)
 }
 
-// mustBzToQuarantinedFunds converts the given byte slice into QuarantinedFunds or dies trying.
-// If the byte slice is nil or empty, a default QuarantinedFunds is returned with zero coins.
-func (k BaseQuarantineKeeper) mustBzToQuarantinedFunds(bz []byte) types.QuarantinedFunds {
-	qf := types.QuarantinedFunds{
+// mustBzToQuarantineRecord converts the given byte slice into QuarantineRecord or dies trying.
+// If the byte slice is nil or empty, a default QuarantineRecord is returned with zero coins.
+func (k BaseQuarantineKeeper) mustBzToQuarantineRecord(bz []byte) types.QuarantineRecord {
+	qf := types.QuarantineRecord{
 		Coins:    sdk.Coins{},
 		Declined: false,
 	}

@@ -156,7 +156,7 @@ func (k msgServer) QuarantineAccept(goCtx context.Context, msg *types.MsgQuarant
 		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
 	}
 
-	funds := k.GetQuarantinedFunds(ctx, toAddr, fromAddr)
+	funds := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
 	if !funds.IsZero() {
 		qHolderAddr := k.GetQuarantinedFundsHolder()
 		if len(qHolderAddr) == 0 {
@@ -168,7 +168,7 @@ func (k msgServer) QuarantineAccept(goCtx context.Context, msg *types.MsgQuarant
 		}
 	}
 
-	k.SetQuarantinedFundsAccepted(ctx, toAddr, fromAddr)
+	k.SetQuarantineRecordAccepted(ctx, toAddr, fromAddr)
 
 	if msg.Permanent {
 		k.SetQuarantineAutoResponse(ctx, toAddr, fromAddr, types.QUARANTINE_AUTO_RESPONSE_ACCEPT)
@@ -197,7 +197,7 @@ func (k msgServer) QuarantineDecline(goCtx context.Context, msg *types.MsgQuaran
 		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
 	}
 
-	k.SetQuarantinedFundsDeclined(ctx, toAddr, fromAddr)
+	k.SetQuarantineRecordDeclined(ctx, toAddr, fromAddr)
 
 	if msg.Permanent {
 		k.SetQuarantineAutoResponse(ctx, toAddr, fromAddr, types.QUARANTINE_AUTO_RESPONSE_DECLINE)

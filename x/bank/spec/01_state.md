@@ -26,5 +26,5 @@ The `x/bank` module manages the following state:
    * `QUARANTINE_AUTO_RESPONSE_DECLINE = 0x02`
    * Note: `QUARANTINE_AUTO_RESPONSE_UNSPECIFIED` is not stored. Absence of an entry conveys that value.
 8. Quarantined funds:
-   * `0x22 | byte(to address length) | byte(to address) | byte(from address length) | byte(from address) -> ProtocolBuffer(QuarantinedFunds)`
+   * `0x22 | byte(to address length) | byte(to address) | byte(from address length) | byte(from address) -> ProtocolBuffer(QuarantineRecord)`
 

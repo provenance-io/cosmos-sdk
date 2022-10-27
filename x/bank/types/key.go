@@ -39,8 +39,8 @@ var (
 	// QuarantineAutoResponsePrefix is the prefix for quarantine auto-response settings.
 	QuarantineAutoResponsePrefix = []byte{0x21}
 
-	// QuarantinedFundsPrefix is the prefix for quarantined funds keys.
-	QuarantinedFundsPrefix = []byte{0x22}
+	// QuarantineRecordPrefix is the prefix for keys with the records of quarantined funds.
+	QuarantineRecordPrefix = []byte{0x22}
 )
 
 const (
@@ -165,18 +165,18 @@ func ParseQuarantineAutoResponseKey(key []byte) (toAddr, fromAddr sdk.AccAddress
 	return toAddr, fromAddr
 }
 
-// CreateQuarantinedFundsToAddrPrefix creates a prefix for the quarantine funds for a receiving address.
-func CreateQuarantinedFundsToAddrPrefix(toAddr sdk.AccAddress) []byte {
+// CreateQuarantineRecordToAddrPrefix creates a prefix for the quarantine funds for a receiving address.
+func CreateQuarantineRecordToAddrPrefix(toAddr sdk.AccAddress) []byte {
 	toAddrBz := address.MustLengthPrefix(toAddr)
-	key := make([]byte, len(QuarantinedFundsPrefix)+len(toAddrBz))
-	copy(key, QuarantinedFundsPrefix)
-	copy(key[len(QuarantinedFundsPrefix):], toAddrBz)
+	key := make([]byte, len(QuarantineRecordPrefix)+len(toAddrBz))
+	copy(key, QuarantineRecordPrefix)
+	copy(key[len(QuarantineRecordPrefix):], toAddrBz)
 	return key
 }
 
-// CreateQuarantinedFundsKey creates the key for quarantine funds.
-func CreateQuarantinedFundsKey(toAddr, fromAddr sdk.AccAddress) []byte {
-	toAddrPreBz := CreateQuarantinedFundsToAddrPrefix(toAddr)
+// CreateQuarantineRecordKey creates the key for quarantine funds.
+func CreateQuarantineRecordKey(toAddr, fromAddr sdk.AccAddress) []byte {
+	toAddrPreBz := CreateQuarantineRecordToAddrPrefix(toAddr)
 	fromAddrBz := address.MustLengthPrefix(fromAddr)
 	key := make([]byte, len(toAddrPreBz)+len(fromAddrBz))
 	copy(key, toAddrPreBz)
@@ -184,8 +184,8 @@ func CreateQuarantinedFundsKey(toAddr, fromAddr sdk.AccAddress) []byte {
 	return key
 }
 
-// ParseQuarantinedFundsKey extracts the to address and from address from the provided quarantine funds key.
-func ParseQuarantinedFundsKey(key []byte) (toAddr, fromAddr sdk.AccAddress) {
+// ParseQuarantineRecordKey extracts the to address and from address from the provided quarantine funds key.
+func ParseQuarantineRecordKey(key []byte) (toAddr, fromAddr sdk.AccAddress) {
 	// key is of format:
 	// 0x22<to addr len><to addr bytes><from addr len><from addr bytes>
 	toAddrLen, toAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)

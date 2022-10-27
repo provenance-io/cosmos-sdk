@@ -166,7 +166,7 @@ func (k BaseSendKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAd
 		return err
 	}
 
-	k.AddQuarantinedFunds(ctx, toAddr, fromAddr, amt)
+	k.AddQuarantinedCoins(ctx, toAddr, fromAddr, amt)
 
 	return nil
 }
