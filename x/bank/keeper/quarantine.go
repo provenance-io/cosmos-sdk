@@ -5,11 +5,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 // QuarantineKeeper defines a module interface that facilitates management of account and fund quarantines.
 type QuarantineKeeper interface {
+	GetQuarantinedFundsHolder() sdk.AccAddress
+
 	IsQuarantined(ctx sdk.Context, toAddr sdk.AccAddress) bool
 	SetQuarantineOptIn(ctx sdk.Context, toAddr sdk.AccAddress)
 	SetQuarantineOptOut(ctx sdk.Context, toAddr sdk.AccAddress)
@@ -33,13 +36,26 @@ var _ QuarantineKeeper = (*BaseQuarantineKeeper)(nil)
 type BaseQuarantineKeeper struct {
 	cdc      codec.BinaryCodec
 	storeKey storetypes.StoreKey
+
+	quarantinedFundsHolder sdk.AccAddress
 }
 
-func NewBaseQuarantineKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) BaseQuarantineKeeper {
-	return BaseQuarantineKeeper{
-		cdc:      cdc,
-		storeKey: storeKey,
+func NewBaseQuarantineKeeper(
+	cdc codec.BinaryCodec, storeKey storetypes.StoreKey, quarantinedFundsHolder sdk.AccAddress,
+) BaseQuarantineKeeper {
+	if len(quarantinedFundsHolder) == 0 {
+		quarantinedFundsHolder = authtypes.NewModuleAddress(types.ModuleName)
 	}
+	return BaseQuarantineKeeper{
+		cdc:                    cdc,
+		storeKey:               storeKey,
+		quarantinedFundsHolder: quarantinedFundsHolder,
+	}
+}
+
+// GetQuarantinedFundsHolder returns the account address that holds quarantined funds.
+func (k BaseQuarantineKeeper) GetQuarantinedFundsHolder() sdk.AccAddress {
+	return k.quarantinedFundsHolder
 }
 
 // IsQuarantined returns true if the given address has opted into quarantine.

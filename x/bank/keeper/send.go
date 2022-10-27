@@ -20,6 +20,7 @@ type SendKeeper interface {
 
 	InputOutputCoins(ctx sdk.Context, inputs []types.Input, outputs []types.Output) error
 	SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error
+	SendCoinsBypassQuarantine(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error
 
 	GetParams(ctx sdk.Context) types.Params
 	SetParams(ctx sdk.Context, params types.Params)
@@ -56,11 +57,12 @@ type BaseSendKeeper struct {
 }
 
 func NewBaseSendKeeper(
-	cdc codec.BinaryCodec, storeKey storetypes.StoreKey, ak types.AccountKeeper, paramSpace paramtypes.Subspace, blockedAddrs map[string]bool,
+	cdc codec.BinaryCodec, storeKey storetypes.StoreKey, ak types.AccountKeeper, paramSpace paramtypes.Subspace,
+	blockedAddrs map[string]bool, quarantinedFundsHolder sdk.AccAddress,
 ) BaseSendKeeper {
 	return BaseSendKeeper{
 		BaseViewKeeper:       NewBaseViewKeeper(cdc, storeKey, ak),
-		BaseQuarantineKeeper: NewBaseQuarantineKeeper(cdc, storeKey),
+		BaseQuarantineKeeper: NewBaseQuarantineKeeper(cdc, storeKey, quarantinedFundsHolder),
 		cdc:                  cdc,
 		ak:                   ak,
 		storeKey:             storeKey,
@@ -146,8 +148,33 @@ func (k BaseSendKeeper) InputOutputCoins(ctx sdk.Context, inputs []types.Input, 
 }
 
 // SendCoins transfers amt coins from a sending account to a receiving account.
+// If the receiving account is quarantined, and not set to auto-accept funds from the sender,
+// the coins will be transferred from the fromAddr to the quarantine funds holder account and be recorded as quarantined.
+// Otherwise, the coins will be transferred from the fromAddr to the toAddr.
 // An error is returned upon failure.
 func (k BaseSendKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+	if !k.IsQuarantined(ctx, toAddr) || k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr) == types.QUARANTINE_AUTO_RESPONSE_ACCEPT {
+		return k.SendCoinsBypassQuarantine(ctx, fromAddr, toAddr, amt)
+	}
+
+	qHolderAddr := k.GetQuarantinedFundsHolder()
+	if len(qHolderAddr) == 0 {
+		return sdkerrors.ErrUnknownAddress.Wrapf("no quarantine holder account defined")
+	}
+
+	if err := k.SendCoinsBypassQuarantine(ctx, fromAddr, qHolderAddr, amt); err != nil {
+		return err
+	}
+
+	k.AddQuarantinedFunds(ctx, toAddr, fromAddr, amt)
+
+	return nil
+}
+
+// SendCoinsBypassQuarantine transfers amt coins from a sending account to a receiving account without consideration
+// of possible quarantine on the toAddr.
+// An error is returned upon failure.
+func (k BaseSendKeeper) SendCoinsBypassQuarantine(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
 	err := k.subUnlockedCoins(ctx, fromAddr, amt)
 	if err != nil {
 		return err

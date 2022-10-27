@@ -158,7 +158,12 @@ func (k msgServer) QuarantineAccept(goCtx context.Context, msg *types.MsgQuarant
 
 	funds := k.GetQuarantinedFunds(ctx, toAddr, fromAddr)
 	if !funds.IsZero() {
-		if err = k.SendCoinsFromModuleToAccount(ctx, types.ModuleName, toAddr, funds.Coins); err != nil {
+		qHolderAddr := k.GetQuarantinedFundsHolder()
+		if len(qHolderAddr) == 0 {
+			return nil, sdkerrors.ErrUnknownAddress.Wrapf("no quarantine holder account defined")
+		}
+
+		if err = k.SendCoinsBypassQuarantine(ctx, qHolderAddr, toAddr, funds.Coins); err != nil {
 			return nil, err
 		}
 	}
