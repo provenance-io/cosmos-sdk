@@ -79,11 +79,16 @@ func (k BaseQuarantineKeeper) SetQuarantineOptOut(ctx sdk.Context, toAddr sdk.Ac
 	store.Delete(key)
 }
 
+// getQuarantinedAccountsPrefixStore returns a kv store prefixed for quarantine opt-in entries.
+func (k BaseQuarantineKeeper) getQuarantinedAccountsPrefixStore(ctx sdk.Context) sdk.KVStore {
+	return prefix.NewStore(ctx.KVStore(k.storeKey), types.QuarantineOptInPrefix)
+}
+
 // IterateQuarantinedAccounts iterates over all quarantine account addresses.
 // The callback function should accept the to address (that has quarantine enabled).
 // It should return whether to stop iteration early. I.e. false will allow iteration to continue, true will stop iteration.
 func (k BaseQuarantineKeeper) IterateQuarantinedAccounts(ctx sdk.Context, cb func(toAddr sdk.AccAddress) (stop bool)) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.QuarantineOptInPrefix)
+	store := k.getQuarantinedAccountsPrefixStore(ctx)
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
 
@@ -117,18 +122,22 @@ func (k BaseQuarantineKeeper) SetQuarantineAutoResponse(ctx sdk.Context, toAddr,
 	}
 }
 
+// getQuarantineAutoResponsesPrefixStore returns a kv store prefixed for quarantine auto-responses to the given address.
+// If toAddr is empty, it will be prefixed for all quarantine auto-responses.
+func (k BaseQuarantineKeeper) getQuarantineAutoResponsesPrefixStore(ctx sdk.Context, toAddr sdk.AccAddress) sdk.KVStore {
+	pre := types.QuarantineAutoResponsePrefix
+	if len(toAddr) > 0 {
+		pre = types.CreateQuarantineAutoResponseToAddrPrefix(toAddr)
+	}
+	return prefix.NewStore(ctx.KVStore(k.storeKey), pre)
+}
+
 // IterateQuarantineAutoResponses iterates over the auto-responses for a given recipient address,
 // or if no address is provided, iterates over all auto-response entries.
 // The callback function should accept a to address, from address, and auto-response setting (in that order).
 // It should return whether to stop iteration early. I.e. false will allow iteration to continue, true will stop iteration.
 func (k BaseQuarantineKeeper) IterateQuarantineAutoResponses(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, response types.QuarantineAutoResponse) (stop bool)) {
-	var pre []byte
-	if len(toAddr) == 0 {
-		pre = types.QuarantineAutoResponsePrefix
-	} else {
-		pre = types.CreateQuarantineAutoResponseToAddrPrefix(toAddr)
-	}
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), pre)
+	store := k.getQuarantineAutoResponsesPrefixStore(ctx, toAddr)
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
 
@@ -171,13 +180,14 @@ func (k BaseQuarantineKeeper) AddQuarantinedCoins(ctx sdk.Context, toAddr, fromA
 	k.SetQuarantineRecord(ctx, toAddr, fromAddr, &qf)
 }
 
-// getQuarantineRecordPrefixStore returns a kv store prefixed for quarantined funds to the given address.
-// If toAddress is empty, it will just be prefixed for quarantined funds.
+// getQuarantineRecordPrefixStore returns a kv store prefixed for quarantine records to the given address.
+// If toAddr is empty, it will be prefixed for all quarantine records.
 func (k BaseQuarantineKeeper) getQuarantineRecordPrefixStore(ctx sdk.Context, toAddr sdk.AccAddress) sdk.KVStore {
-	if len(toAddr) == 0 {
-		return prefix.NewStore(ctx.KVStore(k.storeKey), types.QuarantineRecordPrefix)
+	pre := types.QuarantineRecordPrefix
+	if len(toAddr) > 0 {
+		pre = types.CreateQuarantineRecordToAddrPrefix(toAddr)
 	}
-	return prefix.NewStore(ctx.KVStore(k.storeKey), types.CreateQuarantineRecordToAddrPrefix(toAddr))
+	return prefix.NewStore(ctx.KVStore(k.storeKey), pre)
 }
 
 // IterateQuarantineRecords iterates over the quarantined funds for a given recipient address,
@@ -211,6 +221,8 @@ func (k BaseQuarantineKeeper) SetQuarantineRecordDeclined(ctx sdk.Context, toAdd
 	k.SetQuarantineRecord(ctx, toAddr, fromAddr, &qf)
 }
 
+// bzToQuarantineRecord converts the given byte slice into a QuarantineRecord or returns an error.
+// If the byte slice is nil or empty, a default QuarantineRecord is returned with zero coins.
 func (k BaseQuarantineKeeper) bzToQuarantineRecord(bz []byte) (types.QuarantineRecord, error) {
 	qf := types.QuarantineRecord{
 		Coins:    sdk.Coins{},
@@ -225,8 +237,7 @@ func (k BaseQuarantineKeeper) bzToQuarantineRecord(bz []byte) (types.QuarantineR
 	return qf, nil
 }
 
-// mustBzToQuarantineRecord converts the given byte slice into QuarantineRecord or dies trying.
-// If the byte slice is nil or empty, a default QuarantineRecord is returned with zero coins.
+// mustBzToQuarantineRecord returns bzToQuarantineRecord but panics on error.
 func (k BaseQuarantineKeeper) mustBzToQuarantineRecord(bz []byte) types.QuarantineRecord {
 	qf, err := k.bzToQuarantineRecord(bz)
 	if err != nil {
