@@ -281,7 +281,7 @@ func (k BaseKeeper) QuarantinedFunds(goCtx context.Context, req *types.QueryQuar
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 	if len(req.FromAddress) > 0 && len(req.ToAddress) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "to_address cannot be empty when from_address is not")
+		return nil, status.Error(codes.InvalidArgument, "to address cannot be empty when from address is not")
 	}
 
 	var toAddr, fromAddr sdk.AccAddress
@@ -335,6 +335,27 @@ func (k BaseKeeper) QuarantinedFunds(goCtx context.Context, req *types.QueryQuar
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+	}
+
+	return resp, nil
+}
+
+func (k BaseKeeper) IsQuarantined(goCtx context.Context, req *types.QueryIsQuarantinedRequest) (*types.QueryIsQuarantinedResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	if len(req.ToAddress) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "to address cannot be empty")
+	}
+
+	toAddr, err := sdk.AccAddressFromBech32(req.ToAddress)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid to address: %s", err.Error())
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	resp := &types.QueryIsQuarantinedResponse{
+		IsQuarantined: k.IsQuarantinedAddr(ctx, toAddr),
 	}
 
 	return resp, nil
