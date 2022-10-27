@@ -111,8 +111,8 @@ func NewQuarantinedFunds(toAddr, fromAddr sdk.AccAddress, coins sdk.Coins, decli
 	}
 }
 
-func NewQuarantineAutoResponseResult(toAddr, fromAddr sdk.AccAddress, response QuarantineAutoResponse) *QuarantineAutoResponseResult {
-	return &QuarantineAutoResponseResult{
+func NewQuarantineAutoResponseEntry(toAddr, fromAddr sdk.AccAddress, response QuarantineAutoResponse) *QuarantineAutoResponseEntry {
+	return &QuarantineAutoResponseEntry{
 		ToAddress:   toAddr.String(),
 		FromAddress: fromAddr.String(),
 		Response:    response,

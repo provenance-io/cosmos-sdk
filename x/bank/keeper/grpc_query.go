@@ -383,7 +383,7 @@ func (k BaseKeeper) QuarantineAutoResponses(goCtx context.Context, req *types.Qu
 
 	if len(fromAddr) > 0 {
 		qar := k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr)
-		r := types.NewQuarantineAutoResponseResult(toAddr, fromAddr, qar)
+		r := types.NewQuarantineAutoResponseEntry(toAddr, fromAddr, qar)
 		resp.Results = append(resp.Results, r)
 	} else {
 		store := k.getQuarantineAutoResponsesPrefixStore(ctx, toAddr)
@@ -392,7 +392,7 @@ func (k BaseKeeper) QuarantineAutoResponses(goCtx context.Context, req *types.Qu
 			func(key, value []byte) error {
 				kToAddr, kFromAddr := types.ParseQuarantineAutoResponseKey(key)
 				qar := types.ToQuarantineAutoResponse(value)
-				r := types.NewQuarantineAutoResponseResult(kToAddr, kFromAddr, qar)
+				r := types.NewQuarantineAutoResponseEntry(kToAddr, kFromAddr, qar)
 				resp.Results = append(resp.Results, r)
 				return nil
 			},

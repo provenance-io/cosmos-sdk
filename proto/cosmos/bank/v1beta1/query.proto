@@ -315,19 +315,6 @@ message QueryQuarantinedFundsRequest {
   cosmos.base.query.v1beta1.PageRequest pagination = 99;
 }
 
-// QuarantineRecord defines structure that represents coins that have been quarantined.
-message QuarantinedFunds {
-  // to_address is the intended recipient of the coins that have been quarantined.
-  string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  // from_address is the sender of the coins.
-  string from_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  // coins is the amount currently in quarantined for the two addresses.
-  repeated cosmos.base.v1beta1.Coin coins = 3
-      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
-  // declined is true if these funds were previously declined.
-  bool declined = 4;
-}
-
 // QueryQuarantinedFundsResponse defines the RPC response of a QuarantinedFunds query.
 message QueryQuarantinedFundsResponse {
   // quarantinedFunds is info about coins sitting in quarantine.
@@ -360,20 +347,10 @@ message QueryQuarantineAutoResponsesRequest {
   cosmos.base.query.v1beta1.PageRequest pagination = 99;
 }
 
-// QuarantineAutoResponseResult defines a single result for a QuarantineAutoResponses query.
-message QuarantineAutoResponseResult {
-  // to_address is the receiving address.
-  string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  // from_address is the sending address.
-  string from_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  // response is the auto-response setting for these two addresses.
-  QuarantineAutoResponse response = 3;
-}
-
 // QueryQuarantineAutoResponsesResponse defines the RPC response of a QuarantineAutoResponses query.
 message QueryQuarantineAutoResponsesResponse {
   // results are the auto-response entries from the provided query.
-  repeated QuarantineAutoResponseResult results = 1;
+  repeated QuarantineAutoResponseEntry results = 1;
 
   // pagination defines the pagination in the response.
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
