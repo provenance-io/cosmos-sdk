@@ -307,10 +307,6 @@ func (k BaseKeeper) QuarantinedFunds(goCtx context.Context, req *types.QueryQuar
 		qr := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
 		qf := qr.AsQuarantinedFunds(toAddr, fromAddr)
 		resp.QuarantinedFunds = append(resp.QuarantinedFunds, qf)
-		resp.Pagination = &query.PageResponse{
-			NextKey: nil,
-			Total:   1,
-		}
 	} else {
 		store := k.getQuarantineRecordPrefixStore(ctx, toAddr)
 		resp.Pagination, err = query.FilteredPaginate(
@@ -356,6 +352,54 @@ func (k BaseKeeper) IsQuarantined(goCtx context.Context, req *types.QueryIsQuara
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	resp := &types.QueryIsQuarantinedResponse{
 		IsQuarantined: k.IsQuarantinedAddr(ctx, toAddr),
+	}
+
+	return resp, nil
+}
+
+func (k BaseKeeper) QuarantineAutoResponses(goCtx context.Context, req *types.QueryQuarantineAutoResponsesRequest) (*types.QueryQuarantineAutoResponsesResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	if len(req.ToAddress) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "to address cannot be empty")
+	}
+
+	toAddr, err := sdk.AccAddressFromBech32(req.ToAddress)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid to address: %s", err.Error())
+	}
+
+	var fromAddr sdk.AccAddress
+	if len(req.FromAddress) > 0 {
+		fromAddr, err = sdk.AccAddressFromBech32(req.FromAddress)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid from address: %s", err.Error())
+		}
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	resp := &types.QueryQuarantineAutoResponsesResponse{}
+
+	if len(fromAddr) > 0 {
+		qar := k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr)
+		r := types.NewQuarantineAutoResponseResult(toAddr, fromAddr, qar)
+		resp.Results = append(resp.Results, r)
+	} else {
+		store := k.getQuarantineAutoResponsesPrefixStore(ctx, toAddr)
+		resp.Pagination, err = query.Paginate(
+			store, req.Pagination,
+			func(key, value []byte) error {
+				kToAddr, kFromAddr := types.ParseQuarantineAutoResponseKey(key)
+				qar := types.ToQuarantineAutoResponse(value)
+				r := types.NewQuarantineAutoResponseResult(kToAddr, kFromAddr, qar)
+				resp.Results = append(resp.Results, r)
+				return nil
+			},
+		)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	return resp, nil
