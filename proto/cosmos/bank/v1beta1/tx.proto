@@ -89,8 +89,8 @@ message MsgQuarantineOptOutResponse {}
 message MsgQuarantineAccept {
   option (cosmos.msg.v1.signer) = "to_address";
 
-  string from_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  string to_address   = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string to_address   = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string from_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // permanent, if true, causes current and future sends from from_address to to_address to be automatically accepted.
   // If false (default), only the currently quarantined funds will be accepted.
@@ -104,8 +104,8 @@ message MsgQuarantineAcceptResponse {}
 message MsgQuarantineDecline {
   option (cosmos.msg.v1.signer) = "to_address";
 
-  string from_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  string to_address   = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string to_address   = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string from_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // permanent, if true, causes current and future sends from from_address to to_address to be automatically declined.
   // If false (default), only the currently quarantined funds will be declined.
