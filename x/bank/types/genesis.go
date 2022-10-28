@@ -78,19 +78,13 @@ func (gs GenesisState) Validate() error {
 }
 
 // NewGenesisState creates a new genesis state.
-func NewGenesisState(
-	params Params, balances []Balance, supply sdk.Coins, denomMetaData []Metadata, sendEnabled []SendEnabled,
-	quarantinedAddresses []string, quarantineAutoResponses []QuarantineAutoResponseEntry, funds []QuarantinedFunds,
-) *GenesisState {
+func NewGenesisState(params Params, balances []Balance, supply sdk.Coins, denomMetaData []Metadata, sendEnabled []SendEnabled) *GenesisState {
 	rv := &GenesisState{
-		Params:                  params,
-		Balances:                balances,
-		Supply:                  supply,
-		DenomMetadata:           denomMetaData,
-		SendEnabled:             sendEnabled,
-		QuarantinedAddresses:    quarantinedAddresses,
-		QuarantineAutoResponses: quarantineAutoResponses,
-		QuarantinedFunds:        funds,
+		Params:        params,
+		Balances:      balances,
+		Supply:        supply,
+		DenomMetadata: denomMetaData,
+		SendEnabled:   sendEnabled,
 	}
 	rv.MigrateSendEnabled()
 	return rv
@@ -98,10 +92,7 @@ func NewGenesisState(
 
 // DefaultGenesisState returns a default bank module genesis state.
 func DefaultGenesisState() *GenesisState {
-	return NewGenesisState(
-		DefaultParams(), []Balance{}, sdk.Coins{}, []Metadata{}, []SendEnabled{},
-		[]string{}, []QuarantineAutoResponseEntry{}, []QuarantinedFunds{},
-	)
+	return NewGenesisState(DefaultParams(), []Balance{}, sdk.Coins{}, []Metadata{}, []SendEnabled{})
 }
 
 // GetGenesisStateFromAppState returns x/bank GenesisState given raw application

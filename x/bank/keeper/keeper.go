@@ -94,15 +94,12 @@ func (k BaseKeeper) GetPaginatedTotalSupply(ctx sdk.Context, pagination *query.P
 // blocklist map. This blocklist describes the set of addresses that are not allowed
 // to receive funds through direct and explicit actions, for example, by using a MsgSend or
 // by using a SendCoinsFromModuleToAccount execution.
-// The quarantinedFundsHolder parameter defines the address of the account that will hold quarantined funds
-// until they've been accepted by the receiver. If not provided, the bank module's address will be used.
 func NewBaseKeeper(
 	cdc codec.BinaryCodec,
 	storeKey storetypes.StoreKey,
 	ak types.AccountKeeper,
 	paramSpace paramtypes.Subspace,
 	blockedAddrs map[string]bool,
-	quarantinedFundsHolder sdk.AccAddress,
 ) BaseKeeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -110,7 +107,7 @@ func NewBaseKeeper(
 	}
 
 	return BaseKeeper{
-		BaseSendKeeper:         NewBaseSendKeeper(cdc, storeKey, ak, paramSpace, blockedAddrs, quarantinedFundsHolder),
+		BaseSendKeeper:         NewBaseSendKeeper(cdc, storeKey, ak, paramSpace, blockedAddrs),
 		ak:                     ak,
 		cdc:                    cdc,
 		storeKey:               storeKey,
