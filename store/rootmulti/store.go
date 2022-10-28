@@ -60,7 +60,7 @@ type Store struct {
 
 	interBlockCache types.MultiStorePersistentCache
 
-	listeners map[types.StoreKey][]types.WriteListener
+	listeners map[types.StoreKey]*types.MemoryListener
 }
 
 var (
@@ -379,20 +379,24 @@ func (rs *Store) TracingEnabled() bool {
 }
 
 // AddListeners adds listeners for a specific KVStore
-func (rs *Store) AddListeners(key types.StoreKey, listeners []types.WriteListener) {
-	if ls, ok := rs.listeners[key]; ok {
-		rs.listeners[key] = append(ls, listeners...)
-	} else {
-		rs.listeners[key] = listeners
-	}
+func (rs *Store) AddListener(key types.StoreKey, listener *types.MemoryListener) {
+	rs.listeners[key] = listener
 }
 
 // ListeningEnabled returns if listening is enabled for a specific KVStore
 func (rs *Store) ListeningEnabled(key types.StoreKey) bool {
 	if ls, ok := rs.listeners[key]; ok {
-		return len(ls) != 0
+		return ls != nil
 	}
 	return false
+}
+
+func (rs *Store) PopStateCache() []types.StoreKVPair {
+	var cache []types.StoreKVPair
+	for _, ls := range rs.listeners {
+		cache = append(cache, ls.PopStateCache()...)
+	}
+	return cache
 }
 
 // LastCommitID implements Committer/CommitStore.
@@ -439,13 +443,6 @@ func (rs *Store) Commit() types.CommitID {
 
 	if err := rs.handlePruning(version); err != nil {
 		panic(err)
-	}
-
-	// process captured state changes in listeners
-	for _, lis := range rs.listeners {
-		for _, listener := range lis {
-			listener.OnCommit()
-		}
 	}
 
 	return types.CommitID{
