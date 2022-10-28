@@ -26,3 +26,10 @@ type AccountKeeper interface {
 	GetModuleAccount(ctx sdk.Context, moduleName string) types.ModuleAccountI
 	SetModuleAccount(ctx sdk.Context, macc types.ModuleAccountI)
 }
+
+type QuarantineKeeper interface {
+	IsQuarantinedAddr(ctx sdk.Context, toAddr sdk.AccAddress) bool
+	IsAutoAccept(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) bool
+	GetQuarantinedFundsHolder() sdk.AccAddress
+	AddQuarantinedCoins(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, coins sdk.Coins)
+}

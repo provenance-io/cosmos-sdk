@@ -16,7 +16,8 @@ import (
 // between accounts without the possibility of creating coins.
 type SendKeeper interface {
 	ViewKeeper
-	QuarantineKeeper
+
+	SetQuarantineKeeper(qk types.QuarantineKeeper)
 
 	InputOutputCoins(ctx sdk.Context, inputs []types.Input, outputs []types.Output) error
 	SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error
@@ -45,7 +46,6 @@ var _ SendKeeper = (*BaseSendKeeper)(nil)
 // creating coins. It implements the SendKeeper interface.
 type BaseSendKeeper struct {
 	BaseViewKeeper
-	BaseQuarantineKeeper
 
 	cdc        codec.BinaryCodec
 	ak         types.AccountKeeper
@@ -54,21 +54,31 @@ type BaseSendKeeper struct {
 
 	// list of addresses that are restricted from receiving transactions
 	blockedAddrs map[string]bool
+
+	qk types.QuarantineKeeper
 }
 
 func NewBaseSendKeeper(
 	cdc codec.BinaryCodec, storeKey storetypes.StoreKey, ak types.AccountKeeper, paramSpace paramtypes.Subspace,
-	blockedAddrs map[string]bool, quarantinedFundsHolder sdk.AccAddress,
+	blockedAddrs map[string]bool,
 ) BaseSendKeeper {
 	return BaseSendKeeper{
-		BaseViewKeeper:       NewBaseViewKeeper(cdc, storeKey, ak),
-		BaseQuarantineKeeper: NewBaseQuarantineKeeper(cdc, storeKey, quarantinedFundsHolder),
-		cdc:                  cdc,
-		ak:                   ak,
-		storeKey:             storeKey,
-		paramSpace:           paramSpace,
-		blockedAddrs:         blockedAddrs,
+		BaseViewKeeper: NewBaseViewKeeper(cdc, storeKey, ak),
+		cdc:            cdc,
+		ak:             ak,
+		storeKey:       storeKey,
+		paramSpace:     paramSpace,
+		blockedAddrs:   blockedAddrs,
 	}
+}
+
+// SetQuarantineKeeper sets the quarantine keeper to use in the bank module.
+//
+// This is done instead of providing it as an argument to NewBaseSendKeeper in order to prevent
+// circular dependencies, and fix the bootstrap problem of both keepers needing to know each other.
+// If no QuarantineKeeper is ever provided, quarantine functionality is disabled.
+func (k *BaseSendKeeper) SetQuarantineKeeper(qk types.QuarantineKeeper) {
+	k.qk = qk
 }
 
 // GetParams returns the total set of bank parameters.
@@ -153,11 +163,11 @@ func (k BaseSendKeeper) InputOutputCoins(ctx sdk.Context, inputs []types.Input, 
 // Otherwise, the coins will be transferred from the fromAddr to the toAddr.
 // An error is returned upon failure.
 func (k BaseSendKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
-	if !k.IsQuarantinedAddr(ctx, toAddr) || k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr) == types.QUARANTINE_AUTO_RESPONSE_ACCEPT {
+	if k.qk == nil || !k.qk.IsQuarantinedAddr(ctx, toAddr) || k.qk.IsAutoAccept(ctx, toAddr, fromAddr) {
 		return k.SendCoinsBypassQuarantine(ctx, fromAddr, toAddr, amt)
 	}
 
-	qHolderAddr := k.GetQuarantinedFundsHolder()
+	qHolderAddr := k.qk.GetQuarantinedFundsHolder()
 	if len(qHolderAddr) == 0 {
 		return sdkerrors.ErrUnknownAddress.Wrapf("no quarantine holder account defined")
 	}
@@ -166,7 +176,7 @@ func (k BaseSendKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAd
 		return err
 	}
 
-	k.AddQuarantinedCoins(ctx, toAddr, fromAddr, amt)
+	k.qk.AddQuarantinedCoins(ctx, toAddr, fromAddr, amt)
 
 	return nil
 }

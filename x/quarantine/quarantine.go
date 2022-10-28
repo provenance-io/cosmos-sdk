@@ -56,6 +56,16 @@ func (r QuarantineAutoResponse) IsValid() bool {
 	return found
 }
 
+// IsAccept returns true if this is an auto-accept response.
+func (r QuarantineAutoResponse) IsAccept() bool {
+	return r == QUARANTINE_AUTO_RESPONSE_ACCEPT
+}
+
+// IsDecline returns true if this is an auto-decline response.
+func (r QuarantineAutoResponse) IsDecline() bool {
+	return r == QUARANTINE_AUTO_RESPONSE_DECLINE
+}
+
 // NewQuarantineAutoResponseUpdate creates a new quarantine auto-response update.
 func NewQuarantineAutoResponseUpdate(fromAddr sdk.AccAddress, response QuarantineAutoResponse) *QuarantineAutoResponseUpdate {
 	return &QuarantineAutoResponseUpdate{

@@ -75,7 +75,7 @@ type IntegrationTestSuite struct {
 	queryClient types.QueryClient
 }
 
-func (suite *IntegrationTestSuite) initKeepersWithmAccPerms(blockedAddrs map[string]bool) (authkeeper.AccountKeeper, keeper.BaseKeeper) {
+func (suite *IntegrationTestSuite) initKeepersWithmAccPerms(blockedAddrs map[string]bool) (authkeeper.AccountKeeper, *keeper.BaseKeeper) {
 	app := suite.app
 	maccPerms := simapp.GetMaccPerms()
 	appCodec := simapp.MakeTestEncodingConfig().Codec
@@ -1588,7 +1588,8 @@ func (suite *IntegrationTestSuite) TestMigrator_Migrate3to4() {
 		params := types.Params{DefaultSendEnabled: def}
 		bankKeeper.SetParams(ctx, params)
 		suite.T().Run(fmt.Sprintf("default %t does not change", def), func(t *testing.T) {
-			migrator := keeper.NewMigrator(bankKeeper.(keeper.BaseKeeper))
+			kp := bankKeeper.(*keeper.BaseKeeper)
+			migrator := keeper.NewMigrator(*kp)
 			require.NoError(t, migrator.Migrate3to4(ctx))
 			actual := bankKeeper.GetParams(ctx)
 			assert.Equal(t, params.DefaultSendEnabled, actual.DefaultSendEnabled)
@@ -1604,7 +1605,8 @@ func (suite *IntegrationTestSuite) TestMigrator_Migrate3to4() {
 		}
 		bankKeeper.SetParams(ctx, params)
 		suite.T().Run(fmt.Sprintf("default %t send enabled info moved to store", def), func(t *testing.T) {
-			migrator := keeper.NewMigrator(bankKeeper.(keeper.BaseKeeper))
+			kp := bankKeeper.(*keeper.BaseKeeper)
+			migrator := keeper.NewMigrator(*kp)
 			require.NoError(t, migrator.Migrate3to4(ctx))
 			newParams := bankKeeper.GetParams(ctx)
 			assert.Len(t, newParams.SendEnabled, 0)

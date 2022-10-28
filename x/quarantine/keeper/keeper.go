@@ -20,6 +20,8 @@ type QuarantineKeeper interface {
 	GetAllQuarantinedAccounts(ctx sdk.Context) []string
 
 	GetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) quarantine.QuarantineAutoResponse
+	IsAutoAccept(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) bool
+	IsAutoDecline(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) bool
 	SetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, response quarantine.QuarantineAutoResponse)
 	IterateQuarantineAutoResponses(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, response quarantine.QuarantineAutoResponse) (stop bool))
 	GetAllQuarantineAutoResponseEntries(ctx sdk.Context) []*quarantine.QuarantineAutoResponseEntry
@@ -51,12 +53,14 @@ func NewKeeper(
 	if len(quarantinedFundsHolder) == 0 {
 		quarantinedFundsHolder = authtypes.NewModuleAddress(quarantine.ModuleName)
 	}
-	return Keeper{
+	rv := Keeper{
 		cdc:                    cdc,
 		storeKey:               storeKey,
 		quarantinedFundsHolder: quarantinedFundsHolder,
 		bankKeeper:             bankKeeper,
 	}
+	bankKeeper.SetQuarantineKeeper(rv)
+	return rv
 }
 
 // GetQuarantinedFundsHolder returns the account address that holds quarantined funds.
@@ -122,6 +126,16 @@ func (k Keeper) GetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.
 	key := quarantine.CreateQuarantineAutoResponseKey(toAddr, fromAddr)
 	bz := store.Get(key)
 	return quarantine.ToQuarantineAutoResponse(bz)
+}
+
+// IsAutoAccept returns true if the to address has enabled auto-accept from the from address.
+func (k Keeper) IsAutoAccept(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) bool {
+	return k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr).IsAccept()
+}
+
+// IsAutoDecline returns true if the to address has enabled auto-decline from the from address.
+func (k Keeper) IsAutoDecline(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) bool {
+	return k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr).IsDecline()
 }
 
 // SetQuarantineAutoResponse sets the auto response of sends to toAddr from fromAddr.
