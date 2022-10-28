@@ -43,6 +43,14 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ---
 
+## [v0.45.10-pio-4](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.10-pio-4) - 2022-10-28
+
+### Improvements
+
+* Bump github.com/cosmos/iavl to v0.19.4 (from v0.19.3) to prevent possible app-hash mismatch in new IAVL store.
+
+---
+
 ## [v0.45.10-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.45.10-pio-3) - 2022-10-26
 
 ### Bug Fixes
