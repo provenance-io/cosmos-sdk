@@ -93,12 +93,7 @@ func (r *QuarantineRecord) Add(coins ...sdk.Coin) {
 
 // AsQuarantinedFunds creates a new QuarantinedFunds using fields in this and the provided addresses.
 func (r QuarantineRecord) AsQuarantinedFunds(toAddr, fromAddr sdk.AccAddress) *QuarantinedFunds {
-	return &QuarantinedFunds{
-		ToAddress:   toAddr.String(),
-		FromAddress: fromAddr.String(),
-		Coins:       r.Coins,
-		Declined:    r.Declined,
-	}
+	return NewQuarantinedFunds(toAddr, fromAddr, r.Coins, r.Declined)
 }
 
 // NewQuarantinedFunds creates a new quarantined funds object.
@@ -111,6 +106,12 @@ func NewQuarantinedFunds(toAddr, fromAddr sdk.AccAddress, coins sdk.Coins, decli
 	}
 }
 
+// AsQuarantineRecord creates a new QuarantineRecord using the fields in this.
+func (f QuarantinedFunds) AsQuarantineRecord() *QuarantineRecord {
+	return NewQuarantineRecord(f.Coins, f.Declined)
+}
+
+// NewQuarantineAutoResponseEntry creates a new quarantined auto-response entry.
 func NewQuarantineAutoResponseEntry(toAddr, fromAddr sdk.AccAddress, response QuarantineAutoResponse) *QuarantineAutoResponseEntry {
 	return &QuarantineAutoResponseEntry{
 		ToAddress:   toAddr.String(),

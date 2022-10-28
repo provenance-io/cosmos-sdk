@@ -17,15 +17,18 @@ type QuarantineKeeper interface {
 	SetQuarantineOptIn(ctx sdk.Context, toAddr sdk.AccAddress)
 	SetQuarantineOptOut(ctx sdk.Context, toAddr sdk.AccAddress)
 	IterateQuarantinedAccounts(ctx sdk.Context, cb func(addr sdk.AccAddress) (stop bool))
+	GetAllQuarantinedAccounts(ctx sdk.Context) []string
 
 	GetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) types.QuarantineAutoResponse
 	SetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, response types.QuarantineAutoResponse)
 	IterateQuarantineAutoResponses(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, response types.QuarantineAutoResponse) (stop bool))
+	GetAllQuarantineAutoResponseEntries(ctx sdk.Context) []types.QuarantineAutoResponseEntry
 
 	GetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) types.QuarantineRecord
 	SetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, funds *types.QuarantineRecord)
 	AddQuarantinedCoins(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, coins sdk.Coins)
 	IterateQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, funds types.QuarantineRecord) (stop bool))
+	GetAllQuarantinedFunds(ctx sdk.Context) []types.QuarantinedFunds
 	SetQuarantineRecordAccepted(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress)
 	SetQuarantineRecordDeclined(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress)
 }
@@ -100,6 +103,16 @@ func (k BaseQuarantineKeeper) IterateQuarantinedAccounts(ctx sdk.Context, cb fun
 	}
 }
 
+// GetAllQuarantinedAccounts gets the bech32 string of every account that have opted into quarantine.
+func (k BaseQuarantineKeeper) GetAllQuarantinedAccounts(ctx sdk.Context) []string {
+	var rv []string
+	k.IterateQuarantinedAccounts(ctx, func(toAddr sdk.AccAddress) bool {
+		rv = append(rv, toAddr.String())
+		return false
+	})
+	return rv
+}
+
 // GetQuarantineAutoResponse returns the quarantine auto-response for the given to/from addresses.
 func (k BaseQuarantineKeeper) GetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) types.QuarantineAutoResponse {
 	store := ctx.KVStore(k.storeKey)
@@ -148,6 +161,16 @@ func (k BaseQuarantineKeeper) IterateQuarantineAutoResponses(ctx sdk.Context, to
 			break
 		}
 	}
+}
+
+// GetAllQuarantineAutoResponseEntries gets a QuarantineAutoResponseEntry entry for every quarantine auto-response that has been set.
+func (k BaseQuarantineKeeper) GetAllQuarantineAutoResponseEntries(ctx sdk.Context) []types.QuarantineAutoResponseEntry {
+	var rv []types.QuarantineAutoResponseEntry
+	k.IterateQuarantineAutoResponses(ctx, nil, func(toAddr, fromAddr sdk.AccAddress, resp types.QuarantineAutoResponse) bool {
+		rv = append(rv, *types.NewQuarantineAutoResponseEntry(toAddr, fromAddr, resp))
+		return false
+	})
+	return rv
 }
 
 // GetQuarantineRecord gets the funds that are quarantined to toAddr from fromAddr.
@@ -207,6 +230,16 @@ func (k BaseQuarantineKeeper) IterateQuarantineRecords(ctx sdk.Context, toAddr s
 			break
 		}
 	}
+}
+
+// GetAllQuarantinedFunds gets a QuarantinedFunds entry for each QuarantineRecord.
+func (k BaseQuarantineKeeper) GetAllQuarantinedFunds(ctx sdk.Context) []types.QuarantinedFunds {
+	var rv []types.QuarantinedFunds
+	k.IterateQuarantineRecords(ctx, nil, func(toAddr, fromAddr sdk.AccAddress, funds types.QuarantineRecord) bool {
+		rv = append(rv, *funds.AsQuarantinedFunds(toAddr, fromAddr))
+		return false
+	})
+	return rv
 }
 
 // SetQuarantineRecordAccepted marks quarantined funds as accepted.
