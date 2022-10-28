@@ -1,7 +1,9 @@
 package module
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"math/rand"
 
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
@@ -53,21 +55,16 @@ func (AppModuleBasic) Name() string {
 
 // DefaultGenesis returns default genesis state as raw bytes for the quarantine module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	// TODO[1046]: Uncomment this once the protos are created and generated and a NewGenesisState function exists.
-	// cdc.MustUnmarshalJSON(quarantine.NewGenesisState())
-	return nil
+	return cdc.MustMarshalJSON(quarantine.DefaultGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the quarantine module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config sdkclient.TxEncodingConfig, bz json.RawMessage) error {
-	// TODO[1046]: Write this once protos are done.
-	// Example:
-	// 	var data quarantine.GenesisState
-	//	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-	//		return fmt.Errorf("failed to unmarshal %s genesis state: %w", quarantine.ModuleName, err)
-	//	}
-	//	return data.Validate()
-	return nil
+	var data quarantine.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", quarantine.ModuleName, err)
+	}
+	return data.Validate()
 }
 
 // GetQueryCmd returns the cli query commands for the quarantine module
@@ -82,11 +79,9 @@ func (a AppModuleBasic) GetTxCmd() *cobra.Command {
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the quarantine module.
 func (a AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx sdkclient.Context, mux *runtime.ServeMux) {
-	// TODO[1046]: Uncomment this once protos are done.
-	//
-	// 	if err := quarantine.RegisterQueryHandlerClient(context.Background(), mux, quarantine.NewQueryClient(clientCtx)); err != nil {
-	//		panic(err)
-	//	}
+	if err := quarantine.RegisterQueryHandlerClient(context.Background(), mux, quarantine.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
 }
 
 // RegisterInterfaces registers the quarantine module's interface types
@@ -138,7 +133,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 
 // RegisterServices registers a gRPC query service to respond to the quarantine-specific gRPC queries.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	// TODO[1046]: Uncomment this once protos are done.
+	// TODO[1046]: Uncomment this once msg_server funcs are copied over.
 	// quarantine.RegisterMsgServer(cfg.MsgServer(), am.keeper)
 	// quarantine.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }

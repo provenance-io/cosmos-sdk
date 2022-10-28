@@ -5,6 +5,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	authzcodec "github.com/cosmos/cosmos-sdk/x/authz/codec"
 )
 
@@ -12,35 +13,35 @@ import (
 // governance module.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	// TODO[1046]: Implement RegisterLegacyAminoCodec
-	// Here's what gov has:
-	// 	cdc.RegisterInterface((*Content)(nil), nil)
-	//	legacy.RegisterAminoMsg(cdc, &MsgSubmitProposal{}, "cosmos-sdk/MsgSubmitProposal")
-	//	legacy.RegisterAminoMsg(cdc, &MsgDeposit{}, "cosmos-sdk/MsgDeposit")
-	//	legacy.RegisterAminoMsg(cdc, &MsgVote{}, "cosmos-sdk/MsgVote")
-	//	legacy.RegisterAminoMsg(cdc, &MsgVoteWeighted{}, "cosmos-sdk/MsgVoteWeighted")
-	//	cdc.RegisterConcrete(&TextProposal{}, "cosmos-sdk/TextProposal", nil)
+	// Something like this:
+	// 	legacy.RegisterAminoMsg(cdc, &MsgQuarantineOptIn{}, "cosmos-sdk/MsgQuarantineOptIn")
+	//	legacy.RegisterAminoMsg(cdc, &MsgQuarantineOptOut{}, "cosmos-sdk/MsgQuarantineOptOut")
+	//	legacy.RegisterAminoMsg(cdc, &MsgQuarantineAccept{}, "cosmos-sdk/MsgQuarantineAccept")
+	//	legacy.RegisterAminoMsg(cdc, &MsgQuarantineDecline{}, "cosmos-sdk/MsgQuarantineDecline")
+	//	legacy.RegisterAminoMsg(cdc, &MsgUpdateQuarantineAutoResponses{}, "cosmos-sdk/MsgUpdateQuarantineAutoResponses")
 }
 
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	// TODO[1046]: Implement RegisterInterfaces
-	// Here's what gov has:
-	// 	registry.RegisterImplementations((*sdk.Msg)(nil),
-	//		&MsgSubmitProposal{},
-	//		&MsgVote{},
-	//		&MsgVoteWeighted{},
-	//		&MsgDeposit{},
-	//	)
-	//	registry.RegisterInterface(
-	//		"cosmos.gov.v1beta1.Content",
-	//		(*Content)(nil),
-	//		&TextProposal{},
-	//	)
-	//
-	//	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgQuarantineOptIn{},
+		&MsgQuarantineOptOut{},
+		&MsgQuarantineAccept{},
+		&MsgQuarantineDecline{},
+		&MsgUpdateQuarantineAutoResponses{},
+	)
+
+	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
 var (
-	amino     = codec.NewLegacyAmino()
+	amino = codec.NewLegacyAmino()
+
+	// ModuleCdc references the global x/quarantine module codec. Note, the codec should
+	// ONLY be used in certain instances of tests and for JSON encoding as Amino is
+	// still used for that purpose.
+	//
+	// The actual codec used for serialization should be provided to x/quarantine and
+	// defined at the application level.
 	ModuleCdc = codec.NewAminoCodec(amino)
 )
 
