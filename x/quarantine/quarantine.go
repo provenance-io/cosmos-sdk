@@ -50,6 +50,12 @@ func IsAutoDeclineB(bz []byte) bool {
 	return len(bz) == 1 && bz[0] == AutoDeclineB
 }
 
+// IsValid returns true if this is a known response value
+func (r QuarantineAutoResponse) IsValid() bool {
+	_, found := QuarantineAutoResponse_name[int32(r)]
+	return found
+}
+
 // NewQuarantineAutoResponseUpdate creates a new quarantine auto-response update.
 func NewQuarantineAutoResponseUpdate(fromAddr sdk.AccAddress, response QuarantineAutoResponse) *QuarantineAutoResponseUpdate {
 	return &QuarantineAutoResponseUpdate{
@@ -58,12 +64,12 @@ func NewQuarantineAutoResponseUpdate(fromAddr sdk.AccAddress, response Quarantin
 	}
 }
 
-// ValidateBasic does simple stateless validation of this update.
-func (u QuarantineAutoResponseUpdate) ValidateBasic() error {
+// Validate does simple stateless validation of this update.
+func (u QuarantineAutoResponseUpdate) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(u.FromAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %s", err)
 	}
-	if _, found := QuarantineAutoResponse_name[int32(u.Response)]; !found {
+	if !u.Response.IsValid() {
 		return errors.ErrInvalidValue.Wrapf("unknown auto-response value: %d", u.Response)
 	}
 	return nil
@@ -77,8 +83,8 @@ func NewQuarantineRecord(coins sdk.Coins, declined bool) *QuarantineRecord {
 	}
 }
 
-// ValidateBasic does simple stateless validation of these quarantined funds.
-func (r QuarantineRecord) ValidateBasic() error {
+// Validate does simple stateless validation of these quarantined funds.
+func (r QuarantineRecord) Validate() error {
 	return r.Coins.Validate()
 }
 
@@ -112,6 +118,20 @@ func (f QuarantinedFunds) AsQuarantineRecord() *QuarantineRecord {
 	return NewQuarantineRecord(f.Coins, f.Declined)
 }
 
+// Validate does simple stateless validation of these quarantined funds.
+func (f QuarantinedFunds) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(f.ToAddress); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %v", err)
+	}
+	if _, err := sdk.AccAddressFromBech32(f.FromAddress); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
+	}
+	if err := f.Coins.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // NewQuarantineAutoResponseEntry creates a new quarantined auto-response entry.
 func NewQuarantineAutoResponseEntry(toAddr, fromAddr sdk.AccAddress, response QuarantineAutoResponse) *QuarantineAutoResponseEntry {
 	return &QuarantineAutoResponseEntry{
@@ -119,4 +139,18 @@ func NewQuarantineAutoResponseEntry(toAddr, fromAddr sdk.AccAddress, response Qu
 		FromAddress: fromAddr.String(),
 		Response:    response,
 	}
+}
+
+// Validate does simple stateless validation of these quarantined funds.
+func (e QuarantineAutoResponseEntry) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(e.ToAddress); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %v", err)
+	}
+	if _, err := sdk.AccAddressFromBech32(e.FromAddress); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
+	}
+	if !e.Response.IsValid() {
+		return errors.ErrInvalidValue.Wrapf("unknown auto-response value: %d", e.Response)
+	}
+	return nil
 }

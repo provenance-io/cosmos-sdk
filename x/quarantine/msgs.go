@@ -134,7 +134,7 @@ func (msg MsgUpdateQuarantineAutoResponses) ValidateBasic() error {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
 	for i, update := range msg.Updates {
-		if err := update.ValidateBasic(); err != nil {
+		if err := update.Validate(); err != nil {
 			return errors.Wrapf(err, "invalid update %d", i)
 		}
 	}
