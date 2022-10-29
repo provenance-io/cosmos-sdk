@@ -18,3 +18,9 @@ func TxCmd(name string) *cobra.Command {
 
 	return txCmd
 }
+
+// TODO[1046]: Command for OptIn
+// TODO[1046]: Command for OptOut
+// TODO[1046]: Command for Accept
+// TODO[1046]: Command for Decline
+// TODO[1046]: Command for UpdateAutoResponses

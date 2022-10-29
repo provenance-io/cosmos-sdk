@@ -18,3 +18,7 @@ func QueryCmd(name string) *cobra.Command {
 
 	return queryCmd
 }
+
+// TODO[1046]: Command for QuarantinedFunds
+// TODO[1046]: Command for IsQuarantined
+// TODO[1046]: Command for AutoResponses
