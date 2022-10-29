@@ -134,9 +134,8 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 
 // RegisterServices registers a gRPC query service to respond to the quarantine-specific gRPC queries.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	// TODO[1046]: Uncomment this once msg_server funcs are copied over.
-	// quarantine.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	// quarantine.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+	quarantine.RegisterMsgServer(cfg.MsgServer(), am.keeper)
+	quarantine.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.

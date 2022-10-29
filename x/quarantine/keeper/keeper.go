@@ -41,14 +41,14 @@ type Keeper struct {
 	cdc      codec.BinaryCodec
 	storeKey storetypes.StoreKey
 
-	quarantinedFundsHolder sdk.AccAddress
-
 	bankKeeper quarantine.BankKeeper
+
+	quarantinedFundsHolder sdk.AccAddress
 }
 
 func NewKeeper(
-	cdc codec.BinaryCodec, storeKey storetypes.StoreKey, quarantinedFundsHolder sdk.AccAddress,
-	bankKeeper quarantine.BankKeeper,
+	cdc codec.BinaryCodec, storeKey storetypes.StoreKey, bankKeeper quarantine.BankKeeper,
+	quarantinedFundsHolder sdk.AccAddress,
 ) Keeper {
 	if len(quarantinedFundsHolder) == 0 {
 		quarantinedFundsHolder = authtypes.NewModuleAddress(quarantine.ModuleName)
@@ -56,8 +56,8 @@ func NewKeeper(
 	rv := Keeper{
 		cdc:                    cdc,
 		storeKey:               storeKey,
-		quarantinedFundsHolder: quarantinedFundsHolder,
 		bankKeeper:             bankKeeper,
+		quarantinedFundsHolder: quarantinedFundsHolder,
 	}
 	bankKeeper.SetQuarantineKeeper(rv)
 	return rv

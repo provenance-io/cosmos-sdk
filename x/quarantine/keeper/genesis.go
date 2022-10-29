@@ -2,6 +2,8 @@ package keeper
 
 import (
 	"encoding/json"
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
@@ -30,7 +32,13 @@ func (k Keeper) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawM
 		totalQuarantined = totalQuarantined.Add(qf.Coins...)
 	}
 
-	// TODO[1046]: Use the bank keeper to make sure the fund-holder has enough funds.
+	if !totalQuarantined.IsZero() {
+		qFundHolderBalance := k.bankKeeper.GetAllBalances(ctx, k.quarantinedFundsHolder)
+		if _, hasNeg := qFundHolderBalance.SafeSub(totalQuarantined...); hasNeg {
+			panic(fmt.Errorf("quarantine fund holder account %q does not have enough funds %q to cover quarantined funds %q",
+				k.quarantinedFundsHolder.String(), qFundHolderBalance.String(), totalQuarantined.String()))
+		}
+	}
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) *quarantine.GenesisState {

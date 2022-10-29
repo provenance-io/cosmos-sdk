@@ -124,10 +124,6 @@ func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, accountKeeper types.Acc
 	}
 }
 
-func (am AppModule) SetQuarantineKeeper(qk types.QuarantineKeeper) {
-	am.keeper.SetQuarantineKeeper(qk)
-}
-
 // Name returns the bank module's name.
 func (AppModule) Name() string { return types.ModuleName }
 

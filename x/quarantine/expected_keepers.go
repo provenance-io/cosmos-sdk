@@ -14,5 +14,6 @@ type AccountKeeper interface {
 
 type BankKeeper interface {
 	SetQuarantineKeeper(qk banktypes.QuarantineKeeper)
+	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 	SendCoinsBypassQuarantine(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error
 }

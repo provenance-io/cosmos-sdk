@@ -13,8 +13,6 @@ const (
 	StoreKey = ModuleName
 )
 
-// TODO[1046]: copy the keys stuff I need into here.
-
 var (
 	// QuarantineOptInPrefix is the prefix for the quarantine account opt-in flags.
 	QuarantineOptInPrefix = []byte{0x00}

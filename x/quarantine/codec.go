@@ -2,6 +2,7 @@ package quarantine
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,13 +13,11 @@ import (
 // RegisterLegacyAminoCodec registers all the necessary types and interfaces for the
 // governance module.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	// TODO[1046]: Implement RegisterLegacyAminoCodec
-	// Something like this:
-	// 	legacy.RegisterAminoMsg(cdc, &MsgQuarantineOptIn{}, "cosmos-sdk/MsgQuarantineOptIn")
-	//	legacy.RegisterAminoMsg(cdc, &MsgQuarantineOptOut{}, "cosmos-sdk/MsgQuarantineOptOut")
-	//	legacy.RegisterAminoMsg(cdc, &MsgQuarantineAccept{}, "cosmos-sdk/MsgQuarantineAccept")
-	//	legacy.RegisterAminoMsg(cdc, &MsgQuarantineDecline{}, "cosmos-sdk/MsgQuarantineDecline")
-	//	legacy.RegisterAminoMsg(cdc, &MsgUpdateQuarantineAutoResponses{}, "cosmos-sdk/MsgUpdateQuarantineAutoResponses")
+	legacy.RegisterAminoMsg(cdc, &MsgQuarantineOptIn{}, "cosmos-sdk/MsgQuarantineOptIn")
+	legacy.RegisterAminoMsg(cdc, &MsgQuarantineOptOut{}, "cosmos-sdk/MsgQuarantineOptOut")
+	legacy.RegisterAminoMsg(cdc, &MsgQuarantineAccept{}, "cosmos-sdk/MsgQuarantineAccept")
+	legacy.RegisterAminoMsg(cdc, &MsgQuarantineDecline{}, "cosmos-sdk/MsgQuarantineDecline")
+	legacy.RegisterAminoMsg(cdc, &MsgUpdateQuarantineAutoResponses{}, "cosmos-sdk/MsgUpdateQuarantineAutoResponses")
 }
 
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
