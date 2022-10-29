@@ -18,14 +18,9 @@ func (k Keeper) OptIn(goCtx context.Context, msg *quarantine.MsgOptIn) (*quarant
 		return nil, err
 	}
 
-	k.SetOptIn(ctx, toAddr)
-
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, quarantine.AttributeValueCategory),
-		),
-	)
+	if err = k.SetOptIn(ctx, toAddr); err != nil {
+		return nil, err
+	}
 
 	return &quarantine.MsgOptInResponse{}, nil
 }
@@ -38,14 +33,9 @@ func (k Keeper) OptOut(goCtx context.Context, msg *quarantine.MsgOptOut) (*quara
 		return nil, err
 	}
 
-	k.SetOptOut(ctx, toAddr)
-
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, quarantine.AttributeValueCategory),
-		),
-	)
+	if err = k.SetOptOut(ctx, toAddr); err != nil {
+		return nil, err
+	}
 
 	return &quarantine.MsgOptOutResponse{}, nil
 }
@@ -73,6 +63,15 @@ func (k Keeper) Accept(goCtx context.Context, msg *quarantine.MsgAccept) (*quara
 		if err = k.bankKeeper.SendCoinsBypassQuarantine(ctx, qHolderAddr, toAddr, funds.Coins); err != nil {
 			return nil, err
 		}
+
+		err = ctx.EventManager().EmitTypedEvent(&quarantine.EventFundsReleased{
+			ToAddress:   toAddr.String(),
+			FromAddress: fromAddr.String(),
+			Coins:       funds.Coins,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	k.SetQuarantineRecordAccepted(ctx, toAddr, fromAddr)
@@ -80,13 +79,6 @@ func (k Keeper) Accept(goCtx context.Context, msg *quarantine.MsgAccept) (*quara
 	if msg.Permanent {
 		k.SetAutoResponse(ctx, toAddr, fromAddr, quarantine.AUTO_RESPONSE_ACCEPT)
 	}
-
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, quarantine.AttributeValueCategory),
-		),
-	)
 
 	return &quarantine.MsgAcceptResponse{}, nil
 }
@@ -110,13 +102,6 @@ func (k Keeper) Decline(goCtx context.Context, msg *quarantine.MsgDecline) (*qua
 		k.SetAutoResponse(ctx, toAddr, fromAddr, quarantine.AUTO_RESPONSE_DECLINE)
 	}
 
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, quarantine.AttributeValueCategory),
-		),
-	)
-
 	return &quarantine.MsgDeclineResponse{}, nil
 }
 
@@ -135,13 +120,6 @@ func (k Keeper) UpdateAutoResponses(goCtx context.Context, msg *quarantine.MsgUp
 		}
 		k.SetAutoResponse(ctx, toAddr, fromAddr, update.Response)
 	}
-
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, quarantine.AttributeValueCategory),
-		),
-	)
 
 	return &quarantine.MsgUpdateAutoResponsesResponse{}, nil
 }

@@ -15,7 +15,9 @@ func (k Keeper) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawM
 
 	for _, toAddrStr := range genesisState.QuarantinedAddresses {
 		toAddr := sdk.MustAccAddressFromBech32(toAddrStr)
-		k.SetOptIn(ctx, toAddr)
+		if err := k.SetOptIn(ctx, toAddr); err != nil {
+			panic(err)
+		}
 	}
 
 	for _, qar := range genesisState.AutoResponses {

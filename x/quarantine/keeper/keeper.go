@@ -45,17 +45,19 @@ func (k Keeper) IsQuarantinedAddr(ctx sdk.Context, toAddr sdk.AccAddress) bool {
 }
 
 // SetOptIn records that an address has opted into quarantine.
-func (k Keeper) SetOptIn(ctx sdk.Context, toAddr sdk.AccAddress) {
+func (k Keeper) SetOptIn(ctx sdk.Context, toAddr sdk.AccAddress) error {
 	store := ctx.KVStore(k.storeKey)
 	key := quarantine.CreateOptInKey(toAddr)
 	store.Set(key, []byte{0x00})
+	return ctx.EventManager().EmitTypedEvent(&quarantine.EventOptIn{ToAddress: toAddr.String()})
 }
 
 // SetOptOut removes an address' quarantine opt-in record.
-func (k Keeper) SetOptOut(ctx sdk.Context, toAddr sdk.AccAddress) {
+func (k Keeper) SetOptOut(ctx sdk.Context, toAddr sdk.AccAddress) error {
 	store := ctx.KVStore(k.storeKey)
 	key := quarantine.CreateOptInKey(toAddr)
 	store.Delete(key)
+	return ctx.EventManager().EmitTypedEvent(&quarantine.EventOptOut{ToAddress: toAddr.String()})
 }
 
 // getQuarantinedAccountsPrefixStore returns a kv store prefixed for quarantine opt-in entries.
@@ -182,11 +184,16 @@ func (k Keeper) SetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAdd
 }
 
 // AddQuarantinedCoins records that some new funds have been quarantined.
-func (k Keeper) AddQuarantinedCoins(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, coins sdk.Coins) {
+func (k Keeper) AddQuarantinedCoins(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, coins sdk.Coins) error {
 	qf := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
 	qf.Add(coins...)
 	qf.Declined = k.GetAutoResponse(ctx, toAddr, fromAddr) == quarantine.AUTO_RESPONSE_DECLINE
 	k.SetQuarantineRecord(ctx, toAddr, fromAddr, &qf)
+	return ctx.EventManager().EmitTypedEvent(&quarantine.EventFundsQuarantined{
+		ToAddress:   toAddr.String(),
+		FromAddress: fromAddr.String(),
+		Coins:       coins,
+	})
 }
 
 // getQuarantineRecordPrefixStore returns a kv store prefixed for quarantine records to the given address.
