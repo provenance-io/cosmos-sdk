@@ -167,7 +167,7 @@ func (k BaseSendKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAd
 		return k.SendCoinsBypassQuarantine(ctx, fromAddr, toAddr, amt)
 	}
 
-	qHolderAddr := k.qk.GetQuarantinedFundsHolder()
+	qHolderAddr := k.qk.GetFundsHolder()
 	if len(qHolderAddr) == 0 {
 		return sdkerrors.ErrUnknownAddress.Wrapf("no quarantine holder account defined")
 	}

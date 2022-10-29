@@ -10,7 +10,7 @@ import (
 
 var _ quarantine.MsgServer = Keeper{}
 
-func (k Keeper) QuarantineOptIn(goCtx context.Context, msg *quarantine.MsgQuarantineOptIn) (*quarantine.MsgQuarantineOptInResponse, error) {
+func (k Keeper) OptIn(goCtx context.Context, msg *quarantine.MsgOptIn) (*quarantine.MsgOptInResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	toAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
@@ -18,7 +18,7 @@ func (k Keeper) QuarantineOptIn(goCtx context.Context, msg *quarantine.MsgQuaran
 		return nil, err
 	}
 
-	k.SetQuarantineOptIn(ctx, toAddr)
+	k.SetOptIn(ctx, toAddr)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -27,10 +27,10 @@ func (k Keeper) QuarantineOptIn(goCtx context.Context, msg *quarantine.MsgQuaran
 		),
 	)
 
-	return &quarantine.MsgQuarantineOptInResponse{}, nil
+	return &quarantine.MsgOptInResponse{}, nil
 }
 
-func (k Keeper) QuarantineOptOut(goCtx context.Context, msg *quarantine.MsgQuarantineOptOut) (*quarantine.MsgQuarantineOptOutResponse, error) {
+func (k Keeper) OptOut(goCtx context.Context, msg *quarantine.MsgOptOut) (*quarantine.MsgOptOutResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	toAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
@@ -38,7 +38,7 @@ func (k Keeper) QuarantineOptOut(goCtx context.Context, msg *quarantine.MsgQuara
 		return nil, err
 	}
 
-	k.SetQuarantineOptOut(ctx, toAddr)
+	k.SetOptOut(ctx, toAddr)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -47,10 +47,10 @@ func (k Keeper) QuarantineOptOut(goCtx context.Context, msg *quarantine.MsgQuara
 		),
 	)
 
-	return &quarantine.MsgQuarantineOptOutResponse{}, nil
+	return &quarantine.MsgOptOutResponse{}, nil
 }
 
-func (k Keeper) QuarantineAccept(goCtx context.Context, msg *quarantine.MsgQuarantineAccept) (*quarantine.MsgQuarantineAcceptResponse, error) {
+func (k Keeper) Accept(goCtx context.Context, msg *quarantine.MsgAccept) (*quarantine.MsgAcceptResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	toAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
@@ -65,7 +65,7 @@ func (k Keeper) QuarantineAccept(goCtx context.Context, msg *quarantine.MsgQuara
 
 	funds := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
 	if !funds.IsZero() {
-		qHolderAddr := k.GetQuarantinedFundsHolder()
+		qHolderAddr := k.GetFundsHolder()
 		if len(qHolderAddr) == 0 {
 			return nil, sdkerrors.ErrUnknownAddress.Wrapf("no quarantine holder account defined")
 		}
@@ -78,7 +78,7 @@ func (k Keeper) QuarantineAccept(goCtx context.Context, msg *quarantine.MsgQuara
 	k.SetQuarantineRecordAccepted(ctx, toAddr, fromAddr)
 
 	if msg.Permanent {
-		k.SetQuarantineAutoResponse(ctx, toAddr, fromAddr, quarantine.QUARANTINE_AUTO_RESPONSE_ACCEPT)
+		k.SetAutoResponse(ctx, toAddr, fromAddr, quarantine.AUTO_RESPONSE_ACCEPT)
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -88,10 +88,10 @@ func (k Keeper) QuarantineAccept(goCtx context.Context, msg *quarantine.MsgQuara
 		),
 	)
 
-	return &quarantine.MsgQuarantineAcceptResponse{}, nil
+	return &quarantine.MsgAcceptResponse{}, nil
 }
 
-func (k Keeper) QuarantineDecline(goCtx context.Context, msg *quarantine.MsgQuarantineDecline) (*quarantine.MsgQuarantineDeclineResponse, error) {
+func (k Keeper) Decline(goCtx context.Context, msg *quarantine.MsgDecline) (*quarantine.MsgDeclineResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	toAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
@@ -107,7 +107,7 @@ func (k Keeper) QuarantineDecline(goCtx context.Context, msg *quarantine.MsgQuar
 	k.SetQuarantineRecordDeclined(ctx, toAddr, fromAddr)
 
 	if msg.Permanent {
-		k.SetQuarantineAutoResponse(ctx, toAddr, fromAddr, quarantine.QUARANTINE_AUTO_RESPONSE_DECLINE)
+		k.SetAutoResponse(ctx, toAddr, fromAddr, quarantine.AUTO_RESPONSE_DECLINE)
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -117,10 +117,10 @@ func (k Keeper) QuarantineDecline(goCtx context.Context, msg *quarantine.MsgQuar
 		),
 	)
 
-	return &quarantine.MsgQuarantineDeclineResponse{}, nil
+	return &quarantine.MsgDeclineResponse{}, nil
 }
 
-func (k Keeper) UpdateQuarantineAutoResponses(goCtx context.Context, msg *quarantine.MsgUpdateQuarantineAutoResponses) (*quarantine.MsgUpdateQuarantineAutoResponsesResponse, error) {
+func (k Keeper) UpdateAutoResponses(goCtx context.Context, msg *quarantine.MsgUpdateAutoResponses) (*quarantine.MsgUpdateAutoResponsesResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	toAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
@@ -133,7 +133,7 @@ func (k Keeper) UpdateQuarantineAutoResponses(goCtx context.Context, msg *quaran
 		if err != nil {
 			return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
 		}
-		k.SetQuarantineAutoResponse(ctx, toAddr, fromAddr, update.Response)
+		k.SetAutoResponse(ctx, toAddr, fromAddr, update.Response)
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -143,5 +143,5 @@ func (k Keeper) UpdateQuarantineAutoResponses(goCtx context.Context, msg *quaran
 		),
 	)
 
-	return &quarantine.MsgUpdateQuarantineAutoResponsesResponse{}, nil
+	return &quarantine.MsgUpdateAutoResponsesResponse{}, nil
 }

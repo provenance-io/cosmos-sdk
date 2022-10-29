@@ -6,7 +6,7 @@ import (
 
 // RandomizedGenState generates a random GenesisState for the quarantine module.
 func RandomizedGenState(simState *module.SimulationState) {
-	// TODO[1046]: Create teh random sate.
+	// TODO[1046]: Create the random state.
 	// simState.AppParams.GetOrGenerate(...)
 	//
 	// quarantineGenesis := quarantine.GenesisState{...}

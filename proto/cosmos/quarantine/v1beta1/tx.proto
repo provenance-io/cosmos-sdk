@@ -10,47 +10,47 @@ option go_package = "github.com/cosmos/cosmos-sdk/x/quarantine";
 
 // Msg defines the bank Msg service.
 service Msg {
-  // QuarantineOptIn defines a method for opting in to account quarantine.
+  // OptIn defines a method for opting in to account quarantine.
   // Funds sent to a quarantined account must be approved before they can be received.
-  rpc QuarantineOptIn(MsgQuarantineOptIn) returns (MsgQuarantineOptInResponse);
+  rpc OptIn(MsgOptIn) returns (MsgOptInResponse);
 
-  // QuarantineOptOut defines a method for opting out of account quarantine.
+  // OptOut defines a method for opting out of account quarantine.
   // Any pending funds for the account must still be accepted, but new sends will no longer be quarantined.
-  rpc QuarantineOptOut(MsgQuarantineOptOut) returns (MsgQuarantineOptOutResponse);
+  rpc OptOut(MsgOptOut) returns (MsgOptOutResponse);
 
-  // AcceptSend defines a method for accepting quarantined funds.
-  rpc QuarantineAccept(MsgQuarantineAccept) returns (MsgQuarantineAcceptResponse);
+  // Accept defines a method for accepting quarantined funds.
+  rpc Accept(MsgAccept) returns (MsgAcceptResponse);
 
-  // DeclineSend defines a method for declining quarantined funds.
-  rpc QuarantineDecline(MsgQuarantineDecline) returns (MsgQuarantineDeclineResponse);
+  // Decline defines a method for declining quarantined funds.
+  rpc Decline(MsgDecline) returns (MsgDeclineResponse);
 
-  // UpdateQuarantineAutoResponses defines a method for updating the auto-response settings for a quarantined address.
-  rpc UpdateQuarantineAutoResponses(MsgUpdateQuarantineAutoResponses)
-      returns (MsgUpdateQuarantineAutoResponsesResponse);
+  // UpdateAutoResponses defines a method for updating the auto-response settings for a quarantined address.
+  rpc UpdateAutoResponses(MsgUpdateAutoResponses)
+      returns (MsgUpdateAutoResponsesResponse);
 }
 
-// MsgQuarantineOptIn represents a message for opting in to account quarantine.
-message MsgQuarantineOptIn {
+// MsgOptIn represents a message for opting in to account quarantine.
+message MsgOptIn {
   option (cosmos.msg.v1.signer) = "to_address";
 
   string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
-// MsgQuarantineOptInResponse defines the Msg/QuarantineOpt response type.
-message MsgQuarantineOptInResponse {}
+// MsgOptInResponse defines the Msg/OptIn response type.
+message MsgOptInResponse {}
 
-// MsgQuarantineOptIn represents a message for opting in to account quarantine.
-message MsgQuarantineOptOut {
+// MsgOptOut represents a message for opting in to account quarantine.
+message MsgOptOut {
   option (cosmos.msg.v1.signer) = "to_address";
 
   string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
-// MsgQuarantineOptInResponse defines the Msg/QuarantineOpt response type.
-message MsgQuarantineOptOutResponse {}
+// MsgOptOutResponse defines the Msg/OptOut response type.
+message MsgOptOutResponse {}
 
-// MsgQuarantineAccept represents a message for accepting quarantined funds.
-message MsgQuarantineAccept {
+// MsgAccept represents a message for accepting quarantined funds.
+message MsgAccept {
   option (cosmos.msg.v1.signer) = "to_address";
 
   string to_address   = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
@@ -61,11 +61,11 @@ message MsgQuarantineAccept {
   bool permanent = 3;
 }
 
-// MsgQuarantineAcceptResponse defines the Msg/QuarantineAccept response type.
-message MsgQuarantineAcceptResponse {}
+// MsgAcceptResponse defines the Msg/Accept response type.
+message MsgAcceptResponse {}
 
-// MsgQuarantineDecline represents a message for declining quarantined funds.
-message MsgQuarantineDecline {
+// MsgDecline represents a message for declining quarantined funds.
+message MsgDecline {
   option (cosmos.msg.v1.signer) = "to_address";
 
   string to_address   = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
@@ -76,19 +76,19 @@ message MsgQuarantineDecline {
   bool permanent = 3;
 }
 
-// MsgQuarantineDeclineResponse defines the Msg/QuarantineDecline response type.
-message MsgQuarantineDeclineResponse {}
+// MsgDeclineResponse defines the Msg/Decline response type.
+message MsgDeclineResponse {}
 
-// MsgUpdateQuarantineAutoResponse represents a message for updating quarantine auto-responses for a receiving address.
-message MsgUpdateQuarantineAutoResponses {
+// MsgUpdateAutoResponses represents a message for updating quarantine auto-responses for a receiving address.
+message MsgUpdateAutoResponses {
   option (cosmos.msg.v1.signer) = "to_address";
 
   // to_address is the quarantined address that would be accepting or declining funds.
   string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // updates is the list of addresses and actions that should be updated for the to_address.
-  repeated QuarantineAutoResponseUpdate updates = 2;
+  repeated AutoResponseUpdate updates = 2;
 }
 
-// MsgUpdateQuarantineAutoResponsesResponse defines the Msg/UpdateQuarantineAutoResponse response type.
-message MsgUpdateQuarantineAutoResponsesResponse {}
+// MsgUpdateAutoResponsesResponse defines the Msg/UpdateAutoResponse response type.
+message MsgUpdateAutoResponsesResponse {}

@@ -15,7 +15,7 @@ func (gs GenesisState) Validate() error {
 			return sdkerrors.ErrInvalidAddress.Wrapf("invalid quarantined address: %v", err)
 		}
 	}
-	for _, resp := range gs.QuarantineAutoResponses {
+	for _, resp := range gs.AutoResponses {
 		if err := resp.Validate(); err != nil {
 			return errors.Wrap(err, "invalid quarantine auto response entry")
 		}
@@ -29,11 +29,11 @@ func (gs GenesisState) Validate() error {
 }
 
 // NewGenesisState creates a new genesis state for the quarantine module.
-func NewGenesisState(quarantinedAddresses []string, autoResponses []*QuarantineAutoResponseEntry, funds []*QuarantinedFunds) *GenesisState {
+func NewGenesisState(quarantinedAddresses []string, autoResponses []*AutoResponseEntry, funds []*QuarantinedFunds) *GenesisState {
 	return &GenesisState{
-		QuarantinedAddresses:    quarantinedAddresses,
-		QuarantineAutoResponses: autoResponses,
-		QuarantinedFunds:        funds,
+		QuarantinedAddresses: quarantinedAddresses,
+		AutoResponses:        autoResponses,
+		QuarantinedFunds:     funds,
 	}
 }
 

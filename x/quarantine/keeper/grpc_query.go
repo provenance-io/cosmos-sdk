@@ -57,7 +57,7 @@ func (k Keeper) QuarantinedFunds(goCtx context.Context, req *quarantine.QueryQua
 					return false, nil
 				}
 				if accumulate {
-					kToAddr, kFromAddr := quarantine.ParseQuarantineRecordKey(key)
+					kToAddr, kFromAddr := quarantine.ParseRecordKey(key)
 					qf := qr.AsQuarantinedFunds(kToAddr, kFromAddr)
 					resp.QuarantinedFunds = append(resp.QuarantinedFunds, qf)
 				}
@@ -93,7 +93,7 @@ func (k Keeper) IsQuarantined(goCtx context.Context, req *quarantine.QueryIsQuar
 	return resp, nil
 }
 
-func (k Keeper) QuarantineAutoResponses(goCtx context.Context, req *quarantine.QueryQuarantineAutoResponsesRequest) (*quarantine.QueryQuarantineAutoResponsesResponse, error) {
+func (k Keeper) AutoResponses(goCtx context.Context, req *quarantine.QueryAutoResponsesRequest) (*quarantine.QueryAutoResponsesResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -115,20 +115,20 @@ func (k Keeper) QuarantineAutoResponses(goCtx context.Context, req *quarantine.Q
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	resp := &quarantine.QueryQuarantineAutoResponsesResponse{}
+	resp := &quarantine.QueryAutoResponsesResponse{}
 
 	if len(fromAddr) > 0 {
-		qar := k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr)
-		r := quarantine.NewQuarantineAutoResponseEntry(toAddr, fromAddr, qar)
+		qar := k.GetAutoResponse(ctx, toAddr, fromAddr)
+		r := quarantine.NewAutoResponseEntry(toAddr, fromAddr, qar)
 		resp.Results = append(resp.Results, r)
 	} else {
-		store := k.getQuarantineAutoResponsesPrefixStore(ctx, toAddr)
+		store := k.getAutoResponsesPrefixStore(ctx, toAddr)
 		resp.Pagination, err = query.Paginate(
 			store, req.Pagination,
 			func(key, value []byte) error {
-				kToAddr, kFromAddr := quarantine.ParseQuarantineAutoResponseKey(key)
-				qar := quarantine.ToQuarantineAutoResponse(value)
-				r := quarantine.NewQuarantineAutoResponseEntry(kToAddr, kFromAddr, qar)
+				kToAddr, kFromAddr := quarantine.ParseAutoResponseKey(key)
+				qar := quarantine.ToAutoResponse(value)
+				r := quarantine.NewAutoResponseEntry(kToAddr, kFromAddr, qar)
 				resp.Results = append(resp.Results, r)
 				return nil
 			},

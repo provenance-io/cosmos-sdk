@@ -6,19 +6,19 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-var _ sdk.Msg = &MsgQuarantineOptIn{}
+var _ sdk.Msg = &MsgOptIn{}
 
-// TODO[1046]: Implement the LegacyMsg interface for MsgQuarantineOptIn? GetSignBytes() []byte, Route() string, Type() string
+// TODO[1046]: Implement the LegacyMsg interface for MsgOptIn? GetSignBytes() []byte, Route() string, Type() string
 
-// NewMsgQuarantineOptIn creates a new msg to opt in to account quarantine.
-func NewMsgQuarantineOptIn(toAddr sdk.AccAddress) *MsgQuarantineOptIn {
-	return &MsgQuarantineOptIn{
+// NewMsgOptIn creates a new msg to opt in to account quarantine.
+func NewMsgOptIn(toAddr sdk.AccAddress) *MsgOptIn {
+	return &MsgOptIn{
 		ToAddress: toAddr.String(),
 	}
 }
 
 // ValidateBasic does simple stateless validation of this Msg.
-func (msg MsgQuarantineOptIn) ValidateBasic() error {
+func (msg MsgOptIn) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
@@ -26,24 +26,24 @@ func (msg MsgQuarantineOptIn) ValidateBasic() error {
 }
 
 // GetSigners returns the addresses of required signers of this Msg.
-func (msg MsgQuarantineOptIn) GetSigners() []sdk.AccAddress {
+func (msg MsgOptIn) GetSigners() []sdk.AccAddress {
 	addr, _ := sdk.AccAddressFromBech32(msg.ToAddress)
 	return []sdk.AccAddress{addr}
 }
 
-var _ sdk.Msg = &MsgQuarantineOptOut{}
+var _ sdk.Msg = &MsgOptOut{}
 
-// TODO[1046]: Implement the LegacyMsg interface for MsgQuarantineOptOut? GetSignBytes() []byte, Route() string, Type() string
+// TODO[1046]: Implement the LegacyMsg interface for MsgOptOut? GetSignBytes() []byte, Route() string, Type() string
 
-// NewMsgQuarantineOptOut creates a new msg to opt out of account quarantine.
-func NewMsgQuarantineOptOut(toAddr sdk.AccAddress) *MsgQuarantineOptOut {
-	return &MsgQuarantineOptOut{
+// NewMsgOptOut creates a new msg to opt out of account quarantine.
+func NewMsgOptOut(toAddr sdk.AccAddress) *MsgOptOut {
+	return &MsgOptOut{
 		ToAddress: toAddr.String(),
 	}
 }
 
 // ValidateBasic does simple stateless validation of this Msg.
-func (msg MsgQuarantineOptOut) ValidateBasic() error {
+func (msg MsgOptOut) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
@@ -51,18 +51,18 @@ func (msg MsgQuarantineOptOut) ValidateBasic() error {
 }
 
 // GetSigners returns the addresses of required signers of this Msg.
-func (msg MsgQuarantineOptOut) GetSigners() []sdk.AccAddress {
+func (msg MsgOptOut) GetSigners() []sdk.AccAddress {
 	addr, _ := sdk.AccAddressFromBech32(msg.ToAddress)
 	return []sdk.AccAddress{addr}
 }
 
-var _ sdk.Msg = &MsgQuarantineAccept{}
+var _ sdk.Msg = &MsgAccept{}
 
-// TODO[1046]: Implement the LegacyMsg interface for MsgQuarantineAccept? GetSignBytes() []byte, Route() string, Type() string
+// TODO[1046]: Implement the LegacyMsg interface for MsgAccept? GetSignBytes() []byte, Route() string, Type() string
 
-// NewMsgQuarantineAccept creates a new msg to accept quarantined funds.
-func NewMsgQuarantineAccept(toAddr, fromAddr sdk.AccAddress, permanent bool) *MsgQuarantineAccept {
-	return &MsgQuarantineAccept{
+// NewMsgAccept creates a new msg to accept quarantined funds.
+func NewMsgAccept(toAddr, fromAddr sdk.AccAddress, permanent bool) *MsgAccept {
+	return &MsgAccept{
 		FromAddress: fromAddr.String(),
 		ToAddress:   toAddr.String(),
 		Permanent:   permanent,
@@ -70,7 +70,7 @@ func NewMsgQuarantineAccept(toAddr, fromAddr sdk.AccAddress, permanent bool) *Ms
 }
 
 // ValidateBasic does simple stateless validation of this Msg.
-func (msg MsgQuarantineAccept) ValidateBasic() error {
+func (msg MsgAccept) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
@@ -81,18 +81,18 @@ func (msg MsgQuarantineAccept) ValidateBasic() error {
 }
 
 // GetSigners returns the addresses of required signers of this Msg.
-func (msg MsgQuarantineAccept) GetSigners() []sdk.AccAddress {
+func (msg MsgAccept) GetSigners() []sdk.AccAddress {
 	addr, _ := sdk.AccAddressFromBech32(msg.ToAddress)
 	return []sdk.AccAddress{addr}
 }
 
-var _ sdk.Msg = &MsgQuarantineDecline{}
+var _ sdk.Msg = &MsgDecline{}
 
-// TODO[1046]: Implement the LegacyMsg interface for MsgQuarantineDecline? GetSignBytes() []byte, Route() string, Type() string
+// TODO[1046]: Implement the LegacyMsg interface for MsgDecline? GetSignBytes() []byte, Route() string, Type() string
 
-// NewMsgQuarantineDecline creates a new msg to decline quarantined funds.
-func NewMsgQuarantineDecline(toAddr, fromAddr sdk.AccAddress, permanent bool) *MsgQuarantineDecline {
-	return &MsgQuarantineDecline{
+// NewMsgDecline creates a new msg to decline quarantined funds.
+func NewMsgDecline(toAddr, fromAddr sdk.AccAddress, permanent bool) *MsgDecline {
+	return &MsgDecline{
 		FromAddress: fromAddr.String(),
 		ToAddress:   toAddr.String(),
 		Permanent:   permanent,
@@ -100,7 +100,7 @@ func NewMsgQuarantineDecline(toAddr, fromAddr sdk.AccAddress, permanent bool) *M
 }
 
 // ValidateBasic does simple stateless validation of this Msg.
-func (msg MsgQuarantineDecline) ValidateBasic() error {
+func (msg MsgDecline) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
@@ -111,25 +111,25 @@ func (msg MsgQuarantineDecline) ValidateBasic() error {
 }
 
 // GetSigners returns the addresses of required signers of this Msg.
-func (msg MsgQuarantineDecline) GetSigners() []sdk.AccAddress {
+func (msg MsgDecline) GetSigners() []sdk.AccAddress {
 	addr, _ := sdk.AccAddressFromBech32(msg.ToAddress)
 	return []sdk.AccAddress{addr}
 }
 
-var _ sdk.Msg = &MsgUpdateQuarantineAutoResponses{}
+var _ sdk.Msg = &MsgUpdateAutoResponses{}
 
-// TODO[1046]: Implement the LegacyMsg interface for MsgUpdateQuarantineAutoResponses? GetSignBytes() []byte, Route() string, Type() string
+// TODO[1046]: Implement the LegacyMsg interface for MsgUpdateAutoResponses? GetSignBytes() []byte, Route() string, Type() string
 
-// NewMsgUpdateQuarantineAutoResponses creates a new msg to update quarantined auto-responses.
-func NewMsgUpdateQuarantineAutoResponses(toAddr sdk.AccAddress, updates []*QuarantineAutoResponseUpdate) *MsgUpdateQuarantineAutoResponses {
-	return &MsgUpdateQuarantineAutoResponses{
+// NewMsgUpdateAutoResponses creates a new msg to update quarantined auto-responses.
+func NewMsgUpdateAutoResponses(toAddr sdk.AccAddress, updates []*AutoResponseUpdate) *MsgUpdateAutoResponses {
+	return &MsgUpdateAutoResponses{
 		ToAddress: toAddr.String(),
 		Updates:   updates,
 	}
 }
 
 // ValidateBasic does simple stateless validation of this Msg.
-func (msg MsgUpdateQuarantineAutoResponses) ValidateBasic() error {
+func (msg MsgUpdateAutoResponses) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
@@ -142,7 +142,7 @@ func (msg MsgUpdateQuarantineAutoResponses) ValidateBasic() error {
 }
 
 // GetSigners returns the addresses of required signers of this Msg.
-func (msg MsgUpdateQuarantineAutoResponses) GetSigners() []sdk.AccAddress {
+func (msg MsgUpdateAutoResponses) GetSigners() []sdk.AccAddress {
 	addr, _ := sdk.AccAddressFromBech32(msg.ToAddress)
 	return []sdk.AccAddress{addr}
 }

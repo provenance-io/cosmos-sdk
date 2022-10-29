@@ -30,6 +30,98 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// QueryIsQuarantinedRequest defines the RPC request for checking if an account has opted into quarantine.
+type QueryIsQuarantinedRequest struct {
+	// to_address is the address to check.
+	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
+}
+
+func (m *QueryIsQuarantinedRequest) Reset()         { *m = QueryIsQuarantinedRequest{} }
+func (m *QueryIsQuarantinedRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryIsQuarantinedRequest) ProtoMessage()    {}
+func (*QueryIsQuarantinedRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6e6232ebe830d056, []int{0}
+}
+func (m *QueryIsQuarantinedRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryIsQuarantinedRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryIsQuarantinedRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryIsQuarantinedRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryIsQuarantinedRequest.Merge(m, src)
+}
+func (m *QueryIsQuarantinedRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryIsQuarantinedRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryIsQuarantinedRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryIsQuarantinedRequest proto.InternalMessageInfo
+
+func (m *QueryIsQuarantinedRequest) GetToAddress() string {
+	if m != nil {
+		return m.ToAddress
+	}
+	return ""
+}
+
+// QueryIsQuarantinedResponse defines the RPC response of an IsQuarantined query.
+type QueryIsQuarantinedResponse struct {
+	// is_quarantined is true if the to_address has opted into quarantine.
+	IsQuarantined bool `protobuf:"varint,1,opt,name=is_quarantined,json=isQuarantined,proto3" json:"is_quarantined,omitempty"`
+}
+
+func (m *QueryIsQuarantinedResponse) Reset()         { *m = QueryIsQuarantinedResponse{} }
+func (m *QueryIsQuarantinedResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryIsQuarantinedResponse) ProtoMessage()    {}
+func (*QueryIsQuarantinedResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6e6232ebe830d056, []int{1}
+}
+func (m *QueryIsQuarantinedResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryIsQuarantinedResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryIsQuarantinedResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryIsQuarantinedResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryIsQuarantinedResponse.Merge(m, src)
+}
+func (m *QueryIsQuarantinedResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryIsQuarantinedResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryIsQuarantinedResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryIsQuarantinedResponse proto.InternalMessageInfo
+
+func (m *QueryIsQuarantinedResponse) GetIsQuarantined() bool {
+	if m != nil {
+		return m.IsQuarantined
+	}
+	return false
+}
+
 // QueryQuarantinedFundsRequest defines the RPC request for looking up quarantined funds.
 type QueryQuarantinedFundsRequest struct {
 	// to_address is the intended recipient of the coins that have been quarantined.
@@ -44,7 +136,7 @@ func (m *QueryQuarantinedFundsRequest) Reset()         { *m = QueryQuarantinedFu
 func (m *QueryQuarantinedFundsRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryQuarantinedFundsRequest) ProtoMessage()    {}
 func (*QueryQuarantinedFundsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6e6232ebe830d056, []int{0}
+	return fileDescriptor_6e6232ebe830d056, []int{2}
 }
 func (m *QueryQuarantinedFundsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -106,7 +198,7 @@ func (m *QueryQuarantinedFundsResponse) Reset()         { *m = QueryQuarantinedF
 func (m *QueryQuarantinedFundsResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryQuarantinedFundsResponse) ProtoMessage()    {}
 func (*QueryQuarantinedFundsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6e6232ebe830d056, []int{1}
+	return fileDescriptor_6e6232ebe830d056, []int{3}
 }
 func (m *QueryQuarantinedFundsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -149,100 +241,8 @@ func (m *QueryQuarantinedFundsResponse) GetPagination() *query.PageResponse {
 	return nil
 }
 
-// QueryIsQuarantinedRequest defines the RPC request for checking if an account has opted into quarantine.
-type QueryIsQuarantinedRequest struct {
-	// to_address is the address to check.
-	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
-}
-
-func (m *QueryIsQuarantinedRequest) Reset()         { *m = QueryIsQuarantinedRequest{} }
-func (m *QueryIsQuarantinedRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryIsQuarantinedRequest) ProtoMessage()    {}
-func (*QueryIsQuarantinedRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6e6232ebe830d056, []int{2}
-}
-func (m *QueryIsQuarantinedRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryIsQuarantinedRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryIsQuarantinedRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryIsQuarantinedRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryIsQuarantinedRequest.Merge(m, src)
-}
-func (m *QueryIsQuarantinedRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryIsQuarantinedRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryIsQuarantinedRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryIsQuarantinedRequest proto.InternalMessageInfo
-
-func (m *QueryIsQuarantinedRequest) GetToAddress() string {
-	if m != nil {
-		return m.ToAddress
-	}
-	return ""
-}
-
-// QueryIsQuarantinedResponse defines the RPC response of an IsQuarantined query.
-type QueryIsQuarantinedResponse struct {
-	// is_quarantined is true if the to_address has opted into quarantine.
-	IsQuarantined bool `protobuf:"varint,1,opt,name=is_quarantined,json=isQuarantined,proto3" json:"is_quarantined,omitempty"`
-}
-
-func (m *QueryIsQuarantinedResponse) Reset()         { *m = QueryIsQuarantinedResponse{} }
-func (m *QueryIsQuarantinedResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryIsQuarantinedResponse) ProtoMessage()    {}
-func (*QueryIsQuarantinedResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6e6232ebe830d056, []int{3}
-}
-func (m *QueryIsQuarantinedResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryIsQuarantinedResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryIsQuarantinedResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryIsQuarantinedResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryIsQuarantinedResponse.Merge(m, src)
-}
-func (m *QueryIsQuarantinedResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryIsQuarantinedResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryIsQuarantinedResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryIsQuarantinedResponse proto.InternalMessageInfo
-
-func (m *QueryIsQuarantinedResponse) GetIsQuarantined() bool {
-	if m != nil {
-		return m.IsQuarantined
-	}
-	return false
-}
-
-// QueryQuarantineAutoResponsesRequest defines the RPC request for getting auto-response settings for an address.
-type QueryQuarantineAutoResponsesRequest struct {
+// QueryAutoResponsesRequest defines the RPC request for getting auto-response settings for an address.
+type QueryAutoResponsesRequest struct {
 	// to_address is the quarantined account to get info on.
 	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
 	// from_address is an optional sender address to limit results.
@@ -251,18 +251,18 @@ type QueryQuarantineAutoResponsesRequest struct {
 	Pagination *query.PageRequest `protobuf:"bytes,99,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
-func (m *QueryQuarantineAutoResponsesRequest) Reset()         { *m = QueryQuarantineAutoResponsesRequest{} }
-func (m *QueryQuarantineAutoResponsesRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryQuarantineAutoResponsesRequest) ProtoMessage()    {}
-func (*QueryQuarantineAutoResponsesRequest) Descriptor() ([]byte, []int) {
+func (m *QueryAutoResponsesRequest) Reset()         { *m = QueryAutoResponsesRequest{} }
+func (m *QueryAutoResponsesRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryAutoResponsesRequest) ProtoMessage()    {}
+func (*QueryAutoResponsesRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6e6232ebe830d056, []int{4}
 }
-func (m *QueryQuarantineAutoResponsesRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryAutoResponsesRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryQuarantineAutoResponsesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryAutoResponsesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryQuarantineAutoResponsesRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryAutoResponsesRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -272,59 +272,59 @@ func (m *QueryQuarantineAutoResponsesRequest) XXX_Marshal(b []byte, deterministi
 		return b[:n], nil
 	}
 }
-func (m *QueryQuarantineAutoResponsesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryQuarantineAutoResponsesRequest.Merge(m, src)
+func (m *QueryAutoResponsesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAutoResponsesRequest.Merge(m, src)
 }
-func (m *QueryQuarantineAutoResponsesRequest) XXX_Size() int {
+func (m *QueryAutoResponsesRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryQuarantineAutoResponsesRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryQuarantineAutoResponsesRequest.DiscardUnknown(m)
+func (m *QueryAutoResponsesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAutoResponsesRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryQuarantineAutoResponsesRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryAutoResponsesRequest proto.InternalMessageInfo
 
-func (m *QueryQuarantineAutoResponsesRequest) GetToAddress() string {
+func (m *QueryAutoResponsesRequest) GetToAddress() string {
 	if m != nil {
 		return m.ToAddress
 	}
 	return ""
 }
 
-func (m *QueryQuarantineAutoResponsesRequest) GetFromAddress() string {
+func (m *QueryAutoResponsesRequest) GetFromAddress() string {
 	if m != nil {
 		return m.FromAddress
 	}
 	return ""
 }
 
-func (m *QueryQuarantineAutoResponsesRequest) GetPagination() *query.PageRequest {
+func (m *QueryAutoResponsesRequest) GetPagination() *query.PageRequest {
 	if m != nil {
 		return m.Pagination
 	}
 	return nil
 }
 
-// QueryQuarantineAutoResponsesResponse defines the RPC response of a QuarantineAutoResponses query.
-type QueryQuarantineAutoResponsesResponse struct {
+// QueryAutoResponsesResponse defines the RPC response of a AutoResponses query.
+type QueryAutoResponsesResponse struct {
 	// results are the auto-response entries from the provided query.
-	Results []*QuarantineAutoResponseEntry `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Results []*AutoResponseEntry `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
 	// pagination defines the pagination in the response.
 	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
-func (m *QueryQuarantineAutoResponsesResponse) Reset()         { *m = QueryQuarantineAutoResponsesResponse{} }
-func (m *QueryQuarantineAutoResponsesResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryQuarantineAutoResponsesResponse) ProtoMessage()    {}
-func (*QueryQuarantineAutoResponsesResponse) Descriptor() ([]byte, []int) {
+func (m *QueryAutoResponsesResponse) Reset()         { *m = QueryAutoResponsesResponse{} }
+func (m *QueryAutoResponsesResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryAutoResponsesResponse) ProtoMessage()    {}
+func (*QueryAutoResponsesResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6e6232ebe830d056, []int{5}
 }
-func (m *QueryQuarantineAutoResponsesResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryAutoResponsesResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryQuarantineAutoResponsesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryAutoResponsesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryQuarantineAutoResponsesResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryAutoResponsesResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -334,26 +334,26 @@ func (m *QueryQuarantineAutoResponsesResponse) XXX_Marshal(b []byte, determinist
 		return b[:n], nil
 	}
 }
-func (m *QueryQuarantineAutoResponsesResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryQuarantineAutoResponsesResponse.Merge(m, src)
+func (m *QueryAutoResponsesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryAutoResponsesResponse.Merge(m, src)
 }
-func (m *QueryQuarantineAutoResponsesResponse) XXX_Size() int {
+func (m *QueryAutoResponsesResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryQuarantineAutoResponsesResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryQuarantineAutoResponsesResponse.DiscardUnknown(m)
+func (m *QueryAutoResponsesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryAutoResponsesResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryQuarantineAutoResponsesResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryAutoResponsesResponse proto.InternalMessageInfo
 
-func (m *QueryQuarantineAutoResponsesResponse) GetResults() []*QuarantineAutoResponseEntry {
+func (m *QueryAutoResponsesResponse) GetResults() []*AutoResponseEntry {
 	if m != nil {
 		return m.Results
 	}
 	return nil
 }
 
-func (m *QueryQuarantineAutoResponsesResponse) GetPagination() *query.PageResponse {
+func (m *QueryAutoResponsesResponse) GetPagination() *query.PageResponse {
 	if m != nil {
 		return m.Pagination
 	}
@@ -361,12 +361,12 @@ func (m *QueryQuarantineAutoResponsesResponse) GetPagination() *query.PageRespon
 }
 
 func init() {
-	proto.RegisterType((*QueryQuarantinedFundsRequest)(nil), "cosmos.quarantine.v1beta1.QueryQuarantinedFundsRequest")
-	proto.RegisterType((*QueryQuarantinedFundsResponse)(nil), "cosmos.quarantine.v1beta1.QueryQuarantinedFundsResponse")
 	proto.RegisterType((*QueryIsQuarantinedRequest)(nil), "cosmos.quarantine.v1beta1.QueryIsQuarantinedRequest")
 	proto.RegisterType((*QueryIsQuarantinedResponse)(nil), "cosmos.quarantine.v1beta1.QueryIsQuarantinedResponse")
-	proto.RegisterType((*QueryQuarantineAutoResponsesRequest)(nil), "cosmos.quarantine.v1beta1.QueryQuarantineAutoResponsesRequest")
-	proto.RegisterType((*QueryQuarantineAutoResponsesResponse)(nil), "cosmos.quarantine.v1beta1.QueryQuarantineAutoResponsesResponse")
+	proto.RegisterType((*QueryQuarantinedFundsRequest)(nil), "cosmos.quarantine.v1beta1.QueryQuarantinedFundsRequest")
+	proto.RegisterType((*QueryQuarantinedFundsResponse)(nil), "cosmos.quarantine.v1beta1.QueryQuarantinedFundsResponse")
+	proto.RegisterType((*QueryAutoResponsesRequest)(nil), "cosmos.quarantine.v1beta1.QueryAutoResponsesRequest")
+	proto.RegisterType((*QueryAutoResponsesResponse)(nil), "cosmos.quarantine.v1beta1.QueryAutoResponsesResponse")
 }
 
 func init() {
@@ -374,46 +374,46 @@ func init() {
 }
 
 var fileDescriptor_6e6232ebe830d056 = []byte{
-	// 611 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xdc, 0x55, 0xc1, 0x6f, 0x12, 0x4f,
-	0x18, 0x65, 0xf8, 0xe5, 0x57, 0xed, 0x60, 0x4d, 0x33, 0x31, 0x91, 0x6e, 0xea, 0x86, 0xa0, 0x28,
-	0x6a, 0xba, 0x13, 0x68, 0x6b, 0x4d, 0x9a, 0xa8, 0x40, 0xac, 0xf1, 0xd6, 0xa2, 0x89, 0x09, 0x17,
-	0x32, 0xc0, 0x74, 0xdd, 0xb4, 0xcc, 0xc0, 0xce, 0x6c, 0xb5, 0x69, 0xb8, 0xf8, 0x17, 0x98, 0xf4,
-	0xe4, 0xd5, 0x9b, 0x47, 0x13, 0x2f, 0x1e, 0xbd, 0x79, 0x6c, 0xf4, 0xe2, 0xc1, 0x83, 0x01, 0xff,
-	0x10, 0xc3, 0xec, 0x00, 0x0b, 0x85, 0x2e, 0xa8, 0x27, 0x4f, 0x64, 0x98, 0xf7, 0xde, 0xf7, 0xbd,
-	0x37, 0xdf, 0xcc, 0xc2, 0x54, 0x95, 0x8b, 0x3a, 0x17, 0xb8, 0xe9, 0x11, 0x97, 0x30, 0xe9, 0x30,
-	0x8a, 0x0f, 0x32, 0x15, 0x2a, 0x49, 0x06, 0x37, 0x3d, 0xea, 0x1e, 0x5a, 0x0d, 0x97, 0x4b, 0x8e,
-	0x96, 0x7c, 0x98, 0x35, 0x80, 0x59, 0x1a, 0x66, 0x2c, 0xdb, 0x9c, 0xdb, 0xfb, 0x14, 0x93, 0x86,
-	0x83, 0x09, 0x63, 0x5c, 0x12, 0xe9, 0x70, 0x26, 0x7c, 0xa2, 0x71, 0x4b, 0xeb, 0x57, 0x88, 0xa0,
-	0xbe, 0x62, 0x5f, 0xbf, 0x41, 0x6c, 0x87, 0x29, 0xf0, 0x08, 0x76, 0x6c, 0x2f, 0xfd, 0xba, 0x3e,
-	0x56, 0x37, 0x54, 0x56, 0x2b, 0xac, 0xbb, 0x53, 0x8b, 0xe4, 0x77, 0x00, 0x97, 0x77, 0xba, 0x95,
-	0x76, 0xfa, 0xa4, 0xda, 0x96, 0xc7, 0x6a, 0xa2, 0x48, 0x9b, 0x1e, 0x15, 0x12, 0x6d, 0x40, 0x28,
-	0x79, 0x99, 0xd4, 0x6a, 0x2e, 0x15, 0x22, 0x0e, 0x12, 0x20, 0x3d, 0x9f, 0x8f, 0x7f, 0xf9, 0xb0,
-	0x72, 0x49, 0xcb, 0xe4, 0xfc, 0x9d, 0x27, 0xd2, 0x75, 0x98, 0x5d, 0x9c, 0x97, 0x5c, 0xff, 0x81,
-	0x36, 0xe1, 0x85, 0x5d, 0x97, 0xd7, 0xfb, 0xd4, 0x68, 0x08, 0x35, 0xd6, 0x45, 0xf7, 0xc8, 0x5b,
-	0x10, 0x0e, 0x1c, 0xc7, 0xab, 0x09, 0x90, 0x8e, 0x65, 0xaf, 0x5b, 0x9a, 0xd7, 0x8d, 0xc7, 0xf2,
-	0x03, 0xd7, 0x96, 0xad, 0x6d, 0x62, 0x53, 0xdd, 0x71, 0x31, 0xc0, 0x4c, 0x7e, 0x02, 0xf0, 0xca,
-	0x04, 0x7b, 0xa2, 0xc1, 0x99, 0xa0, 0xe8, 0x19, 0x5c, 0x6c, 0x8e, 0xec, 0xc5, 0x41, 0xe2, 0xbf,
-	0x74, 0x2c, 0x7b, 0xdb, 0x9a, 0x78, 0x8e, 0xd6, 0x29, 0xb9, 0x53, 0x22, 0xe8, 0xd1, 0x90, 0x85,
-	0xa8, 0xb2, 0x70, 0x23, 0xd4, 0x82, 0xdf, 0xd5, 0x90, 0x87, 0xa7, 0x70, 0x49, 0x59, 0x78, 0x2c,
-	0x02, 0x55, 0xff, 0xf4, 0x78, 0x92, 0x05, 0x68, 0x8c, 0x53, 0xd5, 0xa9, 0xa4, 0xe0, 0x45, 0x47,
-	0x94, 0x03, 0x9e, 0x94, 0xf4, 0xf9, 0xe2, 0x82, 0x13, 0x84, 0x27, 0x3b, 0x00, 0x5e, 0x1d, 0x89,
-	0x37, 0xe7, 0x49, 0xde, 0x93, 0xf9, 0x77, 0x86, 0xe8, 0xda, 0xd9, 0x2e, 0x75, 0x6a, 0xdb, 0xf0,
-	0x9c, 0x4b, 0x85, 0xb7, 0x2f, 0x7b, 0x23, 0x74, 0x67, 0xaa, 0x11, 0x0a, 0x8a, 0x3d, 0x64, 0xd2,
-	0x3d, 0x2c, 0xf6, 0x64, 0xfe, 0xda, 0x10, 0x65, 0x8f, 0xe7, 0xe0, 0xff, 0xca, 0x03, 0xfa, 0x08,
-	0xe0, 0xc2, 0xd0, 0xa1, 0xa3, 0xb5, 0x33, 0xbb, 0x9c, 0x30, 0x79, 0xc6, 0xfa, 0x8c, 0x2c, 0xbf,
-	0xa9, 0xe4, 0xe6, 0xab, 0xaf, 0x3f, 0x8f, 0xa3, 0xeb, 0x68, 0x15, 0xf7, 0x1f, 0x3b, 0xb6, 0x37,
-	0xe6, 0xe9, 0xc2, 0xa4, 0x2a, 0x9d, 0x03, 0x8a, 0x8f, 0x06, 0x83, 0xd3, 0x42, 0xef, 0xa3, 0x70,
-	0x71, 0xf4, 0xea, 0xa1, 0x8d, 0xb0, 0x46, 0x26, 0x3c, 0x6d, 0xc6, 0xdd, 0xd9, 0x89, 0xda, 0xc4,
-	0x3b, 0xa0, 0x5c, 0xbc, 0x05, 0x28, 0x15, 0x66, 0x63, 0xb7, 0x4b, 0x2c, 0xad, 0xa1, 0xec, 0x54,
-	0xc0, 0x21, 0xbb, 0xa5, 0x02, 0xca, 0xcd, 0xce, 0xc2, 0x47, 0xc1, 0x1b, 0xd3, 0x42, 0x6f, 0xa2,
-	0xf0, 0xf2, 0x84, 0xc1, 0x45, 0xf7, 0xa6, 0x4f, 0x60, 0xdc, 0xbd, 0x36, 0xee, 0xff, 0x36, 0x5f,
-	0x07, 0xd9, 0x52, 0x39, 0xbe, 0x40, 0x99, 0xd0, 0x69, 0xf0, 0x24, 0x1f, 0x0e, 0x27, 0x8f, 0x1e,
-	0xcc, 0x4c, 0x1a, 0xc9, 0x26, 0x5f, 0xf8, 0xdc, 0x36, 0xc1, 0x49, 0xdb, 0x04, 0x3f, 0xda, 0x26,
-	0x78, 0xdd, 0x31, 0x23, 0x27, 0x1d, 0x33, 0xf2, 0xad, 0x63, 0x46, 0x4a, 0x37, 0x6d, 0x47, 0x3e,
-	0xf7, 0x2a, 0x56, 0x95, 0xd7, 0x7b, 0x55, 0xfc, 0x9f, 0x15, 0x51, 0xdb, 0xc3, 0x2f, 0x03, 0x55,
-	0x2a, 0x73, 0xea, 0x4b, 0xba, 0xfa, 0x2b, 0x00, 0x00, 0xff, 0xff, 0x33, 0x0b, 0x64, 0xe8, 0x1e,
-	0x08, 0x00, 0x00,
+	// 612 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xdc, 0x55, 0xbf, 0x6f, 0xd3, 0x4e,
+	0x1c, 0xcd, 0xe5, 0xab, 0x7e, 0xa1, 0x17, 0x82, 0xaa, 0x13, 0x43, 0x1a, 0x15, 0x2b, 0xb2, 0x14,
+	0x08, 0x3f, 0xea, 0x53, 0xd2, 0x56, 0x45, 0xea, 0x42, 0x12, 0x11, 0xc4, 0x46, 0x03, 0x12, 0x52,
+	0x96, 0xe8, 0x12, 0x5f, 0x8d, 0xd5, 0xe6, 0x2e, 0xf1, 0x9d, 0x0b, 0x55, 0x95, 0x85, 0xbf, 0x00,
+	0x89, 0xff, 0x80, 0x8d, 0x81, 0x01, 0x89, 0x85, 0x91, 0x8d, 0xb1, 0x82, 0x05, 0x24, 0x06, 0x94,
+	0xf0, 0x2f, 0x30, 0xb1, 0xa0, 0xd8, 0x97, 0xc4, 0x4e, 0x9d, 0x9a, 0x08, 0x26, 0xa6, 0xc8, 0xf6,
+	0x7b, 0xef, 0xde, 0xf3, 0xfb, 0x7c, 0x1c, 0x98, 0x6f, 0x73, 0xd1, 0xe1, 0x02, 0xf7, 0x5c, 0xe2,
+	0x10, 0x26, 0x6d, 0x46, 0xf1, 0x61, 0xb1, 0x45, 0x25, 0x29, 0xe2, 0x9e, 0x4b, 0x9d, 0x23, 0xa3,
+	0xeb, 0x70, 0xc9, 0xd1, 0xaa, 0x0f, 0x33, 0xa6, 0x30, 0x43, 0xc1, 0xb2, 0x6b, 0x16, 0xe7, 0xd6,
+	0x01, 0xc5, 0xa4, 0x6b, 0x63, 0xc2, 0x18, 0x97, 0x44, 0xda, 0x9c, 0x09, 0x9f, 0x98, 0xbd, 0xae,
+	0xf4, 0x5b, 0x44, 0x50, 0x5f, 0x71, 0xa2, 0xdf, 0x25, 0x96, 0xcd, 0x3c, 0xf0, 0x0c, 0x36, 0xd2,
+	0xcb, 0xe4, 0x5c, 0x1f, 0xab, 0x0c, 0x35, 0xbd, 0x2b, 0xac, 0xdc, 0x79, 0x17, 0xfa, 0x43, 0xb8,
+	0xba, 0x3b, 0x3a, 0xe8, 0x9e, 0xd8, 0x9d, 0xb0, 0xcc, 0x3a, 0xed, 0xb9, 0x54, 0x48, 0xb4, 0x0d,
+	0xa1, 0xe4, 0x4d, 0x62, 0x9a, 0x0e, 0x15, 0x22, 0x03, 0x72, 0xa0, 0xb0, 0x5c, 0xc9, 0x7c, 0x7c,
+	0xbb, 0x7e, 0x49, 0x49, 0x94, 0xfd, 0x27, 0x0f, 0xa4, 0x63, 0x33, 0xab, 0xbe, 0x2c, 0xb9, 0xba,
+	0xa1, 0x57, 0x61, 0x36, 0x4a, 0x55, 0x74, 0x39, 0x13, 0x14, 0xe5, 0xe1, 0x45, 0x5b, 0x34, 0xa7,
+	0x2e, 0x4d, 0x4f, 0xfa, 0x7c, 0x3d, 0x6d, 0x07, 0xe1, 0xfa, 0x57, 0x00, 0xd7, 0x3c, 0x95, 0xc0,
+	0xcd, 0x9a, 0xcb, 0x4c, 0xf1, 0xa7, 0xf6, 0xd0, 0x0e, 0xbc, 0xb0, 0xe7, 0xf0, 0xce, 0x84, 0x9a,
+	0x8c, 0xa1, 0xa6, 0x46, 0xe8, 0x31, 0xb9, 0x06, 0xe1, 0xb4, 0x8c, 0x4c, 0x3b, 0x07, 0x0a, 0xa9,
+	0xd2, 0x15, 0x43, 0xf1, 0x46, 0xcd, 0x19, 0xfe, 0x2c, 0xa8, 0x36, 0x8c, 0xfb, 0xc4, 0xa2, 0xca,
+	0x71, 0x3d, 0xc0, 0xd4, 0xdf, 0x03, 0x78, 0x79, 0x4e, 0x3c, 0xf5, 0x9e, 0x1e, 0xc1, 0x95, 0xde,
+	0xcc, 0xb3, 0x0c, 0xc8, 0xfd, 0x57, 0x48, 0x95, 0x6e, 0x18, 0x73, 0x47, 0xcc, 0x38, 0x25, 0x77,
+	0x4a, 0x04, 0xdd, 0x0d, 0x45, 0x48, 0x7a, 0x11, 0xae, 0xc6, 0x46, 0xf0, 0x5d, 0x85, 0x32, 0x7c,
+	0x01, 0x6a, 0x7c, 0xca, 0xae, 0xe4, 0x63, 0xc4, 0x3f, 0xd2, 0xcf, 0x6b, 0xa0, 0x86, 0x78, 0x26,
+	0x9b, 0x2a, 0xa7, 0x06, 0xcf, 0x39, 0x54, 0xb8, 0x07, 0x72, 0xdc, 0xc9, 0xcd, 0x33, 0x3a, 0x09,
+	0x4a, 0xdc, 0x61, 0xd2, 0x39, 0xaa, 0x8f, 0xc9, 0x7f, 0xad, 0x8b, 0xd2, 0x8f, 0x25, 0xb8, 0xe4,
+	0xf9, 0x45, 0xef, 0x00, 0x4c, 0x87, 0x36, 0x0f, 0x6d, 0x9e, 0x39, 0x2f, 0x73, 0xd6, 0x3f, 0xbb,
+	0xb5, 0x20, 0xcb, 0x37, 0xa5, 0xef, 0x3c, 0xfb, 0xf4, 0xfd, 0x45, 0x72, 0x0b, 0x6d, 0xe0, 0xc9,
+	0xe7, 0x8c, 0xed, 0x47, 0x7c, 0x9c, 0x30, 0x69, 0x4b, 0xfb, 0x90, 0xe2, 0xe3, 0xe9, 0x90, 0xf4,
+	0xd1, 0x9b, 0x24, 0x5c, 0x99, 0x9d, 0x60, 0xb4, 0x1d, 0x67, 0x64, 0xce, 0x17, 0x22, 0x7b, 0x6b,
+	0x71, 0xa2, 0x0a, 0xf1, 0x0a, 0x78, 0x29, 0x5e, 0x02, 0x94, 0x8f, 0x8b, 0xb1, 0x37, 0x22, 0x36,
+	0x36, 0x51, 0xe9, 0xb7, 0x80, 0xa1, 0xb8, 0x8d, 0x2a, 0x2a, 0x2f, 0xce, 0xc2, 0xc7, 0xc1, 0xed,
+	0xe8, 0xa3, 0x9f, 0x00, 0xa6, 0x43, 0x43, 0x1a, 0xdf, 0x77, 0xd4, 0xbe, 0xc6, 0xf7, 0x1d, 0xb9,
+	0x09, 0x7a, 0xdf, 0x7b, 0x53, 0x4f, 0x50, 0x31, 0xb6, 0x6f, 0x57, 0xf2, 0x70, 0xfc, 0x0a, 0xba,
+	0xbd, 0x30, 0x69, 0x26, 0x7d, 0xa5, 0xfa, 0x61, 0xa0, 0x81, 0x93, 0x81, 0x06, 0xbe, 0x0d, 0x34,
+	0xf0, 0x7c, 0xa8, 0x25, 0x4e, 0x86, 0x5a, 0xe2, 0xf3, 0x50, 0x4b, 0x34, 0xae, 0x59, 0xb6, 0x7c,
+	0xec, 0xb6, 0x8c, 0x36, 0xef, 0x8c, 0x4f, 0xf1, 0x7f, 0xd6, 0x85, 0xb9, 0x8f, 0x9f, 0x06, 0x4e,
+	0x69, 0xfd, 0xef, 0xfd, 0x1b, 0x6e, 0xfc, 0x0a, 0x00, 0x00, 0xff, 0xff, 0xad, 0x99, 0x17, 0x3b,
+	0xe2, 0x07, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -441,7 +441,7 @@ type QueryClient interface {
 	//
 	// The to_address is required. If a from_address is provided only the auto response for that from_address will be
 	// returned. If no from_address is provided, all auto-response settings for the given to_address will be returned.
-	QuarantineAutoResponses(ctx context.Context, in *QueryQuarantineAutoResponsesRequest, opts ...grpc.CallOption) (*QueryQuarantineAutoResponsesResponse, error)
+	AutoResponses(ctx context.Context, in *QueryAutoResponsesRequest, opts ...grpc.CallOption) (*QueryAutoResponsesResponse, error)
 }
 
 type queryClient struct {
@@ -470,9 +470,9 @@ func (c *queryClient) QuarantinedFunds(ctx context.Context, in *QueryQuarantined
 	return out, nil
 }
 
-func (c *queryClient) QuarantineAutoResponses(ctx context.Context, in *QueryQuarantineAutoResponsesRequest, opts ...grpc.CallOption) (*QueryQuarantineAutoResponsesResponse, error) {
-	out := new(QueryQuarantineAutoResponsesResponse)
-	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Query/QuarantineAutoResponses", in, out, opts...)
+func (c *queryClient) AutoResponses(ctx context.Context, in *QueryAutoResponsesRequest, opts ...grpc.CallOption) (*QueryAutoResponsesResponse, error) {
+	out := new(QueryAutoResponsesResponse)
+	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Query/AutoResponses", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -494,7 +494,7 @@ type QueryServer interface {
 	//
 	// The to_address is required. If a from_address is provided only the auto response for that from_address will be
 	// returned. If no from_address is provided, all auto-response settings for the given to_address will be returned.
-	QuarantineAutoResponses(context.Context, *QueryQuarantineAutoResponsesRequest) (*QueryQuarantineAutoResponsesResponse, error)
+	AutoResponses(context.Context, *QueryAutoResponsesRequest) (*QueryAutoResponsesResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -507,8 +507,8 @@ func (*UnimplementedQueryServer) IsQuarantined(ctx context.Context, req *QueryIs
 func (*UnimplementedQueryServer) QuarantinedFunds(ctx context.Context, req *QueryQuarantinedFundsRequest) (*QueryQuarantinedFundsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QuarantinedFunds not implemented")
 }
-func (*UnimplementedQueryServer) QuarantineAutoResponses(ctx context.Context, req *QueryQuarantineAutoResponsesRequest) (*QueryQuarantineAutoResponsesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QuarantineAutoResponses not implemented")
+func (*UnimplementedQueryServer) AutoResponses(ctx context.Context, req *QueryAutoResponsesRequest) (*QueryAutoResponsesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AutoResponses not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -551,20 +551,20 @@ func _Query_QuarantinedFunds_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_QuarantineAutoResponses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryQuarantineAutoResponsesRequest)
+func _Query_AutoResponses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAutoResponsesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).QuarantineAutoResponses(ctx, in)
+		return srv.(QueryServer).AutoResponses(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/cosmos.quarantine.v1beta1.Query/QuarantineAutoResponses",
+		FullMethod: "/cosmos.quarantine.v1beta1.Query/AutoResponses",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).QuarantineAutoResponses(ctx, req.(*QueryQuarantineAutoResponsesRequest))
+		return srv.(QueryServer).AutoResponses(ctx, req.(*QueryAutoResponsesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -582,12 +582,75 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_QuarantinedFunds_Handler,
 		},
 		{
-			MethodName: "QuarantineAutoResponses",
-			Handler:    _Query_QuarantineAutoResponses_Handler,
+			MethodName: "AutoResponses",
+			Handler:    _Query_AutoResponses_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "cosmos/quarantine/v1beta1/query.proto",
+}
+
+func (m *QueryIsQuarantinedRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryIsQuarantinedRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryIsQuarantinedRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ToAddress) > 0 {
+		i -= len(m.ToAddress)
+		copy(dAtA[i:], m.ToAddress)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ToAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryIsQuarantinedResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryIsQuarantinedResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryIsQuarantinedResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.IsQuarantined {
+		i--
+		if m.IsQuarantined {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *QueryQuarantinedFundsRequest) Marshal() (dAtA []byte, err error) {
@@ -690,7 +753,7 @@ func (m *QueryQuarantinedFundsResponse) MarshalToSizedBuffer(dAtA []byte) (int, 
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryIsQuarantinedRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryAutoResponsesRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -700,75 +763,12 @@ func (m *QueryIsQuarantinedRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryIsQuarantinedRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryAutoResponsesRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryIsQuarantinedRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.ToAddress) > 0 {
-		i -= len(m.ToAddress)
-		copy(dAtA[i:], m.ToAddress)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.ToAddress)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryIsQuarantinedResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryIsQuarantinedResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryIsQuarantinedResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.IsQuarantined {
-		i--
-		if m.IsQuarantined {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryQuarantineAutoResponsesRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryQuarantineAutoResponsesRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryQuarantineAutoResponsesRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryAutoResponsesRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -804,7 +804,7 @@ func (m *QueryQuarantineAutoResponsesRequest) MarshalToSizedBuffer(dAtA []byte) 
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryQuarantineAutoResponsesResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryAutoResponsesResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -814,12 +814,12 @@ func (m *QueryQuarantineAutoResponsesResponse) Marshal() (dAtA []byte, err error
 	return dAtA[:n], nil
 }
 
-func (m *QueryQuarantineAutoResponsesResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryAutoResponsesResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryQuarantineAutoResponsesResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryAutoResponsesResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -864,6 +864,31 @@ func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *QueryIsQuarantinedRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ToAddress)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryIsQuarantinedResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.IsQuarantined {
+		n += 2
+	}
+	return n
+}
+
 func (m *QueryQuarantinedFundsRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -904,32 +929,7 @@ func (m *QueryQuarantinedFundsResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryIsQuarantinedRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ToAddress)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-
-func (m *QueryIsQuarantinedResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.IsQuarantined {
-		n += 2
-	}
-	return n
-}
-
-func (m *QueryQuarantineAutoResponsesRequest) Size() (n int) {
+func (m *QueryAutoResponsesRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -950,7 +950,7 @@ func (m *QueryQuarantineAutoResponsesRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryQuarantineAutoResponsesResponse) Size() (n int) {
+func (m *QueryAutoResponsesResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -974,6 +974,158 @@ func sovQuery(x uint64) (n int) {
 }
 func sozQuery(x uint64) (n int) {
 	return sovQuery(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *QueryIsQuarantinedRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryIsQuarantinedRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryIsQuarantinedRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryIsQuarantinedResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryIsQuarantinedResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryIsQuarantinedResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsQuarantined", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IsQuarantined = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *QueryQuarantinedFundsRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -1245,7 +1397,7 @@ func (m *QueryQuarantinedFundsResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryIsQuarantinedRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryAutoResponsesRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1268,162 +1420,10 @@ func (m *QueryIsQuarantinedRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryIsQuarantinedRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryAutoResponsesRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryIsQuarantinedRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ToAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryIsQuarantinedResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryIsQuarantinedResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryIsQuarantinedResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field IsQuarantined", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.IsQuarantined = bool(v != 0)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryQuarantineAutoResponsesRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryQuarantineAutoResponsesRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryQuarantineAutoResponsesRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryAutoResponsesRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1547,7 +1547,7 @@ func (m *QueryQuarantineAutoResponsesRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryQuarantineAutoResponsesResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryAutoResponsesResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1570,10 +1570,10 @@ func (m *QueryQuarantineAutoResponsesResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryQuarantineAutoResponsesResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryAutoResponsesResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryQuarantineAutoResponsesResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryAutoResponsesResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1605,7 +1605,7 @@ func (m *QueryQuarantineAutoResponsesResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Results = append(m.Results, &QuarantineAutoResponseEntry{})
+			m.Results = append(m.Results, &AutoResponseEntry{})
 			if err := m.Results[len(m.Results)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

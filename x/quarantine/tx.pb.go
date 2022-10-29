@@ -30,23 +30,23 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgQuarantineOptIn represents a message for opting in to account quarantine.
-type MsgQuarantineOptIn struct {
+// MsgOptIn represents a message for opting in to account quarantine.
+type MsgOptIn struct {
 	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
 }
 
-func (m *MsgQuarantineOptIn) Reset()         { *m = MsgQuarantineOptIn{} }
-func (m *MsgQuarantineOptIn) String() string { return proto.CompactTextString(m) }
-func (*MsgQuarantineOptIn) ProtoMessage()    {}
-func (*MsgQuarantineOptIn) Descriptor() ([]byte, []int) {
+func (m *MsgOptIn) Reset()         { *m = MsgOptIn{} }
+func (m *MsgOptIn) String() string { return proto.CompactTextString(m) }
+func (*MsgOptIn) ProtoMessage()    {}
+func (*MsgOptIn) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d2d4535ca5d9aa17, []int{0}
 }
-func (m *MsgQuarantineOptIn) XXX_Unmarshal(b []byte) error {
+func (m *MsgOptIn) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgQuarantineOptIn) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgOptIn) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgQuarantineOptIn.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgOptIn.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -56,41 +56,41 @@ func (m *MsgQuarantineOptIn) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *MsgQuarantineOptIn) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgQuarantineOptIn.Merge(m, src)
+func (m *MsgOptIn) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgOptIn.Merge(m, src)
 }
-func (m *MsgQuarantineOptIn) XXX_Size() int {
+func (m *MsgOptIn) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgQuarantineOptIn) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgQuarantineOptIn.DiscardUnknown(m)
+func (m *MsgOptIn) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgOptIn.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgQuarantineOptIn proto.InternalMessageInfo
+var xxx_messageInfo_MsgOptIn proto.InternalMessageInfo
 
-func (m *MsgQuarantineOptIn) GetToAddress() string {
+func (m *MsgOptIn) GetToAddress() string {
 	if m != nil {
 		return m.ToAddress
 	}
 	return ""
 }
 
-// MsgQuarantineOptInResponse defines the Msg/QuarantineOpt response type.
-type MsgQuarantineOptInResponse struct {
+// MsgOptInResponse defines the Msg/OptIn response type.
+type MsgOptInResponse struct {
 }
 
-func (m *MsgQuarantineOptInResponse) Reset()         { *m = MsgQuarantineOptInResponse{} }
-func (m *MsgQuarantineOptInResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgQuarantineOptInResponse) ProtoMessage()    {}
-func (*MsgQuarantineOptInResponse) Descriptor() ([]byte, []int) {
+func (m *MsgOptInResponse) Reset()         { *m = MsgOptInResponse{} }
+func (m *MsgOptInResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgOptInResponse) ProtoMessage()    {}
+func (*MsgOptInResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d2d4535ca5d9aa17, []int{1}
 }
-func (m *MsgQuarantineOptInResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgOptInResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgQuarantineOptInResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgOptInResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgQuarantineOptInResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgOptInResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -100,35 +100,35 @@ func (m *MsgQuarantineOptInResponse) XXX_Marshal(b []byte, deterministic bool) (
 		return b[:n], nil
 	}
 }
-func (m *MsgQuarantineOptInResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgQuarantineOptInResponse.Merge(m, src)
+func (m *MsgOptInResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgOptInResponse.Merge(m, src)
 }
-func (m *MsgQuarantineOptInResponse) XXX_Size() int {
+func (m *MsgOptInResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgQuarantineOptInResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgQuarantineOptInResponse.DiscardUnknown(m)
+func (m *MsgOptInResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgOptInResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgQuarantineOptInResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgOptInResponse proto.InternalMessageInfo
 
-// MsgQuarantineOptIn represents a message for opting in to account quarantine.
-type MsgQuarantineOptOut struct {
+// MsgOptOut represents a message for opting in to account quarantine.
+type MsgOptOut struct {
 	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
 }
 
-func (m *MsgQuarantineOptOut) Reset()         { *m = MsgQuarantineOptOut{} }
-func (m *MsgQuarantineOptOut) String() string { return proto.CompactTextString(m) }
-func (*MsgQuarantineOptOut) ProtoMessage()    {}
-func (*MsgQuarantineOptOut) Descriptor() ([]byte, []int) {
+func (m *MsgOptOut) Reset()         { *m = MsgOptOut{} }
+func (m *MsgOptOut) String() string { return proto.CompactTextString(m) }
+func (*MsgOptOut) ProtoMessage()    {}
+func (*MsgOptOut) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d2d4535ca5d9aa17, []int{2}
 }
-func (m *MsgQuarantineOptOut) XXX_Unmarshal(b []byte) error {
+func (m *MsgOptOut) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgQuarantineOptOut) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgOptOut) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgQuarantineOptOut.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgOptOut.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -138,41 +138,41 @@ func (m *MsgQuarantineOptOut) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (m *MsgQuarantineOptOut) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgQuarantineOptOut.Merge(m, src)
+func (m *MsgOptOut) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgOptOut.Merge(m, src)
 }
-func (m *MsgQuarantineOptOut) XXX_Size() int {
+func (m *MsgOptOut) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgQuarantineOptOut) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgQuarantineOptOut.DiscardUnknown(m)
+func (m *MsgOptOut) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgOptOut.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgQuarantineOptOut proto.InternalMessageInfo
+var xxx_messageInfo_MsgOptOut proto.InternalMessageInfo
 
-func (m *MsgQuarantineOptOut) GetToAddress() string {
+func (m *MsgOptOut) GetToAddress() string {
 	if m != nil {
 		return m.ToAddress
 	}
 	return ""
 }
 
-// MsgQuarantineOptInResponse defines the Msg/QuarantineOpt response type.
-type MsgQuarantineOptOutResponse struct {
+// MsgOptOutResponse defines the Msg/OptOut response type.
+type MsgOptOutResponse struct {
 }
 
-func (m *MsgQuarantineOptOutResponse) Reset()         { *m = MsgQuarantineOptOutResponse{} }
-func (m *MsgQuarantineOptOutResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgQuarantineOptOutResponse) ProtoMessage()    {}
-func (*MsgQuarantineOptOutResponse) Descriptor() ([]byte, []int) {
+func (m *MsgOptOutResponse) Reset()         { *m = MsgOptOutResponse{} }
+func (m *MsgOptOutResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgOptOutResponse) ProtoMessage()    {}
+func (*MsgOptOutResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d2d4535ca5d9aa17, []int{3}
 }
-func (m *MsgQuarantineOptOutResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgOptOutResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgQuarantineOptOutResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgOptOutResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgQuarantineOptOutResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgOptOutResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -182,20 +182,20 @@ func (m *MsgQuarantineOptOutResponse) XXX_Marshal(b []byte, deterministic bool) 
 		return b[:n], nil
 	}
 }
-func (m *MsgQuarantineOptOutResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgQuarantineOptOutResponse.Merge(m, src)
+func (m *MsgOptOutResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgOptOutResponse.Merge(m, src)
 }
-func (m *MsgQuarantineOptOutResponse) XXX_Size() int {
+func (m *MsgOptOutResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgQuarantineOptOutResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgQuarantineOptOutResponse.DiscardUnknown(m)
+func (m *MsgOptOutResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgOptOutResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgQuarantineOptOutResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgOptOutResponse proto.InternalMessageInfo
 
-// MsgQuarantineAccept represents a message for accepting quarantined funds.
-type MsgQuarantineAccept struct {
+// MsgAccept represents a message for accepting quarantined funds.
+type MsgAccept struct {
 	ToAddress   string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
 	FromAddress string `protobuf:"bytes,2,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty"`
 	// permanent, if true, causes current and future sends from from_address to to_address to be automatically accepted.
@@ -203,18 +203,18 @@ type MsgQuarantineAccept struct {
 	Permanent bool `protobuf:"varint,3,opt,name=permanent,proto3" json:"permanent,omitempty"`
 }
 
-func (m *MsgQuarantineAccept) Reset()         { *m = MsgQuarantineAccept{} }
-func (m *MsgQuarantineAccept) String() string { return proto.CompactTextString(m) }
-func (*MsgQuarantineAccept) ProtoMessage()    {}
-func (*MsgQuarantineAccept) Descriptor() ([]byte, []int) {
+func (m *MsgAccept) Reset()         { *m = MsgAccept{} }
+func (m *MsgAccept) String() string { return proto.CompactTextString(m) }
+func (*MsgAccept) ProtoMessage()    {}
+func (*MsgAccept) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d2d4535ca5d9aa17, []int{4}
 }
-func (m *MsgQuarantineAccept) XXX_Unmarshal(b []byte) error {
+func (m *MsgAccept) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgQuarantineAccept) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgAccept) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgQuarantineAccept.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgAccept.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -224,55 +224,55 @@ func (m *MsgQuarantineAccept) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (m *MsgQuarantineAccept) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgQuarantineAccept.Merge(m, src)
+func (m *MsgAccept) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgAccept.Merge(m, src)
 }
-func (m *MsgQuarantineAccept) XXX_Size() int {
+func (m *MsgAccept) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgQuarantineAccept) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgQuarantineAccept.DiscardUnknown(m)
+func (m *MsgAccept) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgAccept.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgQuarantineAccept proto.InternalMessageInfo
+var xxx_messageInfo_MsgAccept proto.InternalMessageInfo
 
-func (m *MsgQuarantineAccept) GetToAddress() string {
+func (m *MsgAccept) GetToAddress() string {
 	if m != nil {
 		return m.ToAddress
 	}
 	return ""
 }
 
-func (m *MsgQuarantineAccept) GetFromAddress() string {
+func (m *MsgAccept) GetFromAddress() string {
 	if m != nil {
 		return m.FromAddress
 	}
 	return ""
 }
 
-func (m *MsgQuarantineAccept) GetPermanent() bool {
+func (m *MsgAccept) GetPermanent() bool {
 	if m != nil {
 		return m.Permanent
 	}
 	return false
 }
 
-// MsgQuarantineAcceptResponse defines the Msg/QuarantineAccept response type.
-type MsgQuarantineAcceptResponse struct {
+// MsgAcceptResponse defines the Msg/Accept response type.
+type MsgAcceptResponse struct {
 }
 
-func (m *MsgQuarantineAcceptResponse) Reset()         { *m = MsgQuarantineAcceptResponse{} }
-func (m *MsgQuarantineAcceptResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgQuarantineAcceptResponse) ProtoMessage()    {}
-func (*MsgQuarantineAcceptResponse) Descriptor() ([]byte, []int) {
+func (m *MsgAcceptResponse) Reset()         { *m = MsgAcceptResponse{} }
+func (m *MsgAcceptResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgAcceptResponse) ProtoMessage()    {}
+func (*MsgAcceptResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d2d4535ca5d9aa17, []int{5}
 }
-func (m *MsgQuarantineAcceptResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgAcceptResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgQuarantineAcceptResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgAcceptResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgQuarantineAcceptResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgAcceptResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -282,20 +282,20 @@ func (m *MsgQuarantineAcceptResponse) XXX_Marshal(b []byte, deterministic bool) 
 		return b[:n], nil
 	}
 }
-func (m *MsgQuarantineAcceptResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgQuarantineAcceptResponse.Merge(m, src)
+func (m *MsgAcceptResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgAcceptResponse.Merge(m, src)
 }
-func (m *MsgQuarantineAcceptResponse) XXX_Size() int {
+func (m *MsgAcceptResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgQuarantineAcceptResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgQuarantineAcceptResponse.DiscardUnknown(m)
+func (m *MsgAcceptResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgAcceptResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgQuarantineAcceptResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgAcceptResponse proto.InternalMessageInfo
 
-// MsgQuarantineDecline represents a message for declining quarantined funds.
-type MsgQuarantineDecline struct {
+// MsgDecline represents a message for declining quarantined funds.
+type MsgDecline struct {
 	ToAddress   string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
 	FromAddress string `protobuf:"bytes,2,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty"`
 	// permanent, if true, causes current and future sends from from_address to to_address to be automatically declined.
@@ -303,18 +303,18 @@ type MsgQuarantineDecline struct {
 	Permanent bool `protobuf:"varint,3,opt,name=permanent,proto3" json:"permanent,omitempty"`
 }
 
-func (m *MsgQuarantineDecline) Reset()         { *m = MsgQuarantineDecline{} }
-func (m *MsgQuarantineDecline) String() string { return proto.CompactTextString(m) }
-func (*MsgQuarantineDecline) ProtoMessage()    {}
-func (*MsgQuarantineDecline) Descriptor() ([]byte, []int) {
+func (m *MsgDecline) Reset()         { *m = MsgDecline{} }
+func (m *MsgDecline) String() string { return proto.CompactTextString(m) }
+func (*MsgDecline) ProtoMessage()    {}
+func (*MsgDecline) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d2d4535ca5d9aa17, []int{6}
 }
-func (m *MsgQuarantineDecline) XXX_Unmarshal(b []byte) error {
+func (m *MsgDecline) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgQuarantineDecline) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgDecline) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgQuarantineDecline.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgDecline.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -324,55 +324,55 @@ func (m *MsgQuarantineDecline) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (m *MsgQuarantineDecline) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgQuarantineDecline.Merge(m, src)
+func (m *MsgDecline) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgDecline.Merge(m, src)
 }
-func (m *MsgQuarantineDecline) XXX_Size() int {
+func (m *MsgDecline) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgQuarantineDecline) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgQuarantineDecline.DiscardUnknown(m)
+func (m *MsgDecline) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgDecline.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgQuarantineDecline proto.InternalMessageInfo
+var xxx_messageInfo_MsgDecline proto.InternalMessageInfo
 
-func (m *MsgQuarantineDecline) GetToAddress() string {
+func (m *MsgDecline) GetToAddress() string {
 	if m != nil {
 		return m.ToAddress
 	}
 	return ""
 }
 
-func (m *MsgQuarantineDecline) GetFromAddress() string {
+func (m *MsgDecline) GetFromAddress() string {
 	if m != nil {
 		return m.FromAddress
 	}
 	return ""
 }
 
-func (m *MsgQuarantineDecline) GetPermanent() bool {
+func (m *MsgDecline) GetPermanent() bool {
 	if m != nil {
 		return m.Permanent
 	}
 	return false
 }
 
-// MsgQuarantineDeclineResponse defines the Msg/QuarantineDecline response type.
-type MsgQuarantineDeclineResponse struct {
+// MsgDeclineResponse defines the Msg/Decline response type.
+type MsgDeclineResponse struct {
 }
 
-func (m *MsgQuarantineDeclineResponse) Reset()         { *m = MsgQuarantineDeclineResponse{} }
-func (m *MsgQuarantineDeclineResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgQuarantineDeclineResponse) ProtoMessage()    {}
-func (*MsgQuarantineDeclineResponse) Descriptor() ([]byte, []int) {
+func (m *MsgDeclineResponse) Reset()         { *m = MsgDeclineResponse{} }
+func (m *MsgDeclineResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgDeclineResponse) ProtoMessage()    {}
+func (*MsgDeclineResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d2d4535ca5d9aa17, []int{7}
 }
-func (m *MsgQuarantineDeclineResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgDeclineResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgQuarantineDeclineResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgDeclineResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgQuarantineDeclineResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgDeclineResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -382,38 +382,38 @@ func (m *MsgQuarantineDeclineResponse) XXX_Marshal(b []byte, deterministic bool)
 		return b[:n], nil
 	}
 }
-func (m *MsgQuarantineDeclineResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgQuarantineDeclineResponse.Merge(m, src)
+func (m *MsgDeclineResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgDeclineResponse.Merge(m, src)
 }
-func (m *MsgQuarantineDeclineResponse) XXX_Size() int {
+func (m *MsgDeclineResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgQuarantineDeclineResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgQuarantineDeclineResponse.DiscardUnknown(m)
+func (m *MsgDeclineResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgDeclineResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgQuarantineDeclineResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgDeclineResponse proto.InternalMessageInfo
 
-// MsgUpdateQuarantineAutoResponse represents a message for updating quarantine auto-responses for a receiving address.
-type MsgUpdateQuarantineAutoResponses struct {
+// MsgUpdateAutoResponses represents a message for updating quarantine auto-responses for a receiving address.
+type MsgUpdateAutoResponses struct {
 	// to_address is the quarantined address that would be accepting or declining funds.
 	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
 	// updates is the list of addresses and actions that should be updated for the to_address.
-	Updates []*QuarantineAutoResponseUpdate `protobuf:"bytes,2,rep,name=updates,proto3" json:"updates,omitempty"`
+	Updates []*AutoResponseUpdate `protobuf:"bytes,2,rep,name=updates,proto3" json:"updates,omitempty"`
 }
 
-func (m *MsgUpdateQuarantineAutoResponses) Reset()         { *m = MsgUpdateQuarantineAutoResponses{} }
-func (m *MsgUpdateQuarantineAutoResponses) String() string { return proto.CompactTextString(m) }
-func (*MsgUpdateQuarantineAutoResponses) ProtoMessage()    {}
-func (*MsgUpdateQuarantineAutoResponses) Descriptor() ([]byte, []int) {
+func (m *MsgUpdateAutoResponses) Reset()         { *m = MsgUpdateAutoResponses{} }
+func (m *MsgUpdateAutoResponses) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdateAutoResponses) ProtoMessage()    {}
+func (*MsgUpdateAutoResponses) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d2d4535ca5d9aa17, []int{8}
 }
-func (m *MsgUpdateQuarantineAutoResponses) XXX_Unmarshal(b []byte) error {
+func (m *MsgUpdateAutoResponses) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgUpdateQuarantineAutoResponses) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgUpdateAutoResponses) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgUpdateQuarantineAutoResponses.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgUpdateAutoResponses.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -423,50 +423,48 @@ func (m *MsgUpdateQuarantineAutoResponses) XXX_Marshal(b []byte, deterministic b
 		return b[:n], nil
 	}
 }
-func (m *MsgUpdateQuarantineAutoResponses) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgUpdateQuarantineAutoResponses.Merge(m, src)
+func (m *MsgUpdateAutoResponses) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdateAutoResponses.Merge(m, src)
 }
-func (m *MsgUpdateQuarantineAutoResponses) XXX_Size() int {
+func (m *MsgUpdateAutoResponses) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgUpdateQuarantineAutoResponses) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgUpdateQuarantineAutoResponses.DiscardUnknown(m)
+func (m *MsgUpdateAutoResponses) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdateAutoResponses.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgUpdateQuarantineAutoResponses proto.InternalMessageInfo
+var xxx_messageInfo_MsgUpdateAutoResponses proto.InternalMessageInfo
 
-func (m *MsgUpdateQuarantineAutoResponses) GetToAddress() string {
+func (m *MsgUpdateAutoResponses) GetToAddress() string {
 	if m != nil {
 		return m.ToAddress
 	}
 	return ""
 }
 
-func (m *MsgUpdateQuarantineAutoResponses) GetUpdates() []*QuarantineAutoResponseUpdate {
+func (m *MsgUpdateAutoResponses) GetUpdates() []*AutoResponseUpdate {
 	if m != nil {
 		return m.Updates
 	}
 	return nil
 }
 
-// MsgUpdateQuarantineAutoResponsesResponse defines the Msg/UpdateQuarantineAutoResponse response type.
-type MsgUpdateQuarantineAutoResponsesResponse struct {
+// MsgUpdateAutoResponsesResponse defines the Msg/UpdateAutoResponse response type.
+type MsgUpdateAutoResponsesResponse struct {
 }
 
-func (m *MsgUpdateQuarantineAutoResponsesResponse) Reset() {
-	*m = MsgUpdateQuarantineAutoResponsesResponse{}
-}
-func (m *MsgUpdateQuarantineAutoResponsesResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgUpdateQuarantineAutoResponsesResponse) ProtoMessage()    {}
-func (*MsgUpdateQuarantineAutoResponsesResponse) Descriptor() ([]byte, []int) {
+func (m *MsgUpdateAutoResponsesResponse) Reset()         { *m = MsgUpdateAutoResponsesResponse{} }
+func (m *MsgUpdateAutoResponsesResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdateAutoResponsesResponse) ProtoMessage()    {}
+func (*MsgUpdateAutoResponsesResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d2d4535ca5d9aa17, []int{9}
 }
-func (m *MsgUpdateQuarantineAutoResponsesResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgUpdateAutoResponsesResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgUpdateQuarantineAutoResponsesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgUpdateAutoResponsesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgUpdateQuarantineAutoResponsesResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgUpdateAutoResponsesResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -476,29 +474,29 @@ func (m *MsgUpdateQuarantineAutoResponsesResponse) XXX_Marshal(b []byte, determi
 		return b[:n], nil
 	}
 }
-func (m *MsgUpdateQuarantineAutoResponsesResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgUpdateQuarantineAutoResponsesResponse.Merge(m, src)
+func (m *MsgUpdateAutoResponsesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdateAutoResponsesResponse.Merge(m, src)
 }
-func (m *MsgUpdateQuarantineAutoResponsesResponse) XXX_Size() int {
+func (m *MsgUpdateAutoResponsesResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgUpdateQuarantineAutoResponsesResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgUpdateQuarantineAutoResponsesResponse.DiscardUnknown(m)
+func (m *MsgUpdateAutoResponsesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdateAutoResponsesResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgUpdateQuarantineAutoResponsesResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgUpdateAutoResponsesResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgQuarantineOptIn)(nil), "cosmos.quarantine.v1beta1.MsgQuarantineOptIn")
-	proto.RegisterType((*MsgQuarantineOptInResponse)(nil), "cosmos.quarantine.v1beta1.MsgQuarantineOptInResponse")
-	proto.RegisterType((*MsgQuarantineOptOut)(nil), "cosmos.quarantine.v1beta1.MsgQuarantineOptOut")
-	proto.RegisterType((*MsgQuarantineOptOutResponse)(nil), "cosmos.quarantine.v1beta1.MsgQuarantineOptOutResponse")
-	proto.RegisterType((*MsgQuarantineAccept)(nil), "cosmos.quarantine.v1beta1.MsgQuarantineAccept")
-	proto.RegisterType((*MsgQuarantineAcceptResponse)(nil), "cosmos.quarantine.v1beta1.MsgQuarantineAcceptResponse")
-	proto.RegisterType((*MsgQuarantineDecline)(nil), "cosmos.quarantine.v1beta1.MsgQuarantineDecline")
-	proto.RegisterType((*MsgQuarantineDeclineResponse)(nil), "cosmos.quarantine.v1beta1.MsgQuarantineDeclineResponse")
-	proto.RegisterType((*MsgUpdateQuarantineAutoResponses)(nil), "cosmos.quarantine.v1beta1.MsgUpdateQuarantineAutoResponses")
-	proto.RegisterType((*MsgUpdateQuarantineAutoResponsesResponse)(nil), "cosmos.quarantine.v1beta1.MsgUpdateQuarantineAutoResponsesResponse")
+	proto.RegisterType((*MsgOptIn)(nil), "cosmos.quarantine.v1beta1.MsgOptIn")
+	proto.RegisterType((*MsgOptInResponse)(nil), "cosmos.quarantine.v1beta1.MsgOptInResponse")
+	proto.RegisterType((*MsgOptOut)(nil), "cosmos.quarantine.v1beta1.MsgOptOut")
+	proto.RegisterType((*MsgOptOutResponse)(nil), "cosmos.quarantine.v1beta1.MsgOptOutResponse")
+	proto.RegisterType((*MsgAccept)(nil), "cosmos.quarantine.v1beta1.MsgAccept")
+	proto.RegisterType((*MsgAcceptResponse)(nil), "cosmos.quarantine.v1beta1.MsgAcceptResponse")
+	proto.RegisterType((*MsgDecline)(nil), "cosmos.quarantine.v1beta1.MsgDecline")
+	proto.RegisterType((*MsgDeclineResponse)(nil), "cosmos.quarantine.v1beta1.MsgDeclineResponse")
+	proto.RegisterType((*MsgUpdateAutoResponses)(nil), "cosmos.quarantine.v1beta1.MsgUpdateAutoResponses")
+	proto.RegisterType((*MsgUpdateAutoResponsesResponse)(nil), "cosmos.quarantine.v1beta1.MsgUpdateAutoResponsesResponse")
 }
 
 func init() {
@@ -506,40 +504,39 @@ func init() {
 }
 
 var fileDescriptor_d2d4535ca5d9aa17 = []byte{
-	// 525 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x55, 0xbf, 0x6f, 0xd3, 0x40,
-	0x18, 0xcd, 0x11, 0xf1, 0x23, 0x5f, 0x91, 0x0a, 0xa6, 0x12, 0xc1, 0xa4, 0x56, 0x94, 0x29, 0x44,
-	0x8a, 0x4f, 0x29, 0x82, 0x48, 0x74, 0x6a, 0xcb, 0xc2, 0x10, 0x45, 0x0d, 0x62, 0x61, 0x20, 0xba,
-	0x38, 0x87, 0xb1, 0xc0, 0x77, 0xae, 0xef, 0x5c, 0x0a, 0x12, 0x0b, 0x7f, 0x01, 0x2b, 0x23, 0xff,
-	0x01, 0x03, 0x13, 0x0c, 0xac, 0x8c, 0x15, 0x13, 0x23, 0x4a, 0x06, 0xfe, 0x0d, 0x94, 0xf8, 0xec,
-	0xa6, 0xb1, 0xeb, 0xc4, 0x81, 0xa5, 0xd3, 0xfd, 0xf8, 0xde, 0xfb, 0xde, 0x7b, 0x96, 0x3f, 0x1d,
-	0xd4, 0x2c, 0x2e, 0x5c, 0x2e, 0xf0, 0x41, 0x40, 0x7c, 0xc2, 0xa4, 0xc3, 0x28, 0x3e, 0x6c, 0x0d,
-	0xa8, 0x24, 0x2d, 0x2c, 0x8f, 0x4c, 0xcf, 0xe7, 0x92, 0x6b, 0xb7, 0x42, 0x8c, 0x79, 0x82, 0x31,
-	0x15, 0x46, 0x6f, 0x28, 0xfa, 0x80, 0x08, 0x8a, 0x0f, 0x02, 0xea, 0xbf, 0x89, 0xe9, 0x1e, 0xb1,
-	0x1d, 0x46, 0xa4, 0xc3, 0x59, 0xd8, 0x46, 0xbf, 0xa9, 0xb0, 0xae, 0xb0, 0xf1, 0x61, 0x6b, 0xb2,
-	0xa8, 0x42, 0xe3, 0x6c, 0x0f, 0x33, 0x92, 0x21, 0x56, 0x79, 0xe9, 0x4f, 0x4f, 0x58, 0x19, 0x9b,
-	0x1e, 0x6a, 0xcf, 0x40, 0xeb, 0x08, 0x7b, 0x3f, 0x66, 0x74, 0x3d, 0xf9, 0x88, 0x69, 0x6d, 0x00,
-	0xc9, 0xfb, 0x64, 0x38, 0xf4, 0xa9, 0x10, 0x65, 0x54, 0x45, 0xf5, 0xd2, 0x6e, 0xf9, 0xe7, 0x97,
-	0xe6, 0x86, 0xe2, 0xee, 0x84, 0x95, 0xc7, 0xd2, 0x77, 0x98, 0xdd, 0x2b, 0x49, 0xae, 0x2e, 0x1e,
-	0xac, 0xbf, 0xff, 0xf3, 0xb9, 0x31, 0xc3, 0xad, 0x55, 0x40, 0x4f, 0xf6, 0xef, 0x51, 0xe1, 0x71,
-	0x26, 0x68, 0xad, 0x0f, 0x37, 0xe6, 0xab, 0xdd, 0x40, 0xfe, 0x47, 0xf9, 0x4d, 0xb8, 0x9d, 0x22,
-	0x10, 0xeb, 0x7f, 0x45, 0x73, 0x06, 0x76, 0x2c, 0x8b, 0x7a, 0xab, 0x1b, 0xd0, 0xb6, 0xe1, 0xea,
-	0x73, 0x9f, 0xbb, 0x31, 0xf5, 0xc2, 0x02, 0xea, 0xda, 0x04, 0x1d, 0x91, 0x2b, 0x50, 0xf2, 0xa8,
-	0xef, 0x12, 0x46, 0x99, 0x2c, 0x17, 0xab, 0xa8, 0x7e, 0xa5, 0x77, 0x72, 0xb1, 0x38, 0x5b, 0xe8,
-	0x3d, 0xce, 0xf6, 0x0d, 0xc1, 0xc6, 0xa9, 0xfa, 0x43, 0x6a, 0xbd, 0x72, 0x18, 0x3d, 0x1f, 0xe1,
-	0x0c, 0xa8, 0xa4, 0x99, 0x8f, 0xd3, 0x7d, 0x47, 0x50, 0xed, 0x08, 0xfb, 0x89, 0x37, 0x24, 0x92,
-	0xce, 0x7c, 0x83, 0x40, 0xf2, 0x08, 0x23, 0x56, 0x4f, 0xba, 0x0f, 0x97, 0x83, 0x69, 0xe7, 0x49,
-	0xc8, 0x62, 0x7d, 0x6d, 0xab, 0x6d, 0x9e, 0x39, 0xce, 0x66, 0xba, 0x7a, 0xe8, 0xac, 0x17, 0xf5,
-	0x49, 0x26, 0x6c, 0x40, 0x7d, 0x51, 0x80, 0x68, 0xb3, 0xf5, 0xf1, 0x22, 0x14, 0x3b, 0xc2, 0xd6,
-	0x5e, 0xc3, 0xfa, 0xfc, 0xa8, 0x36, 0x33, 0x9c, 0x25, 0x27, 0x4f, 0xbf, 0x97, 0x0b, 0x1e, 0x19,
-	0xd0, 0xde, 0xc2, 0xb5, 0xc4, 0x94, 0x9a, 0x39, 0x5a, 0x75, 0x03, 0xa9, 0xdf, 0xcf, 0x87, 0x4f,
-	0xd7, 0x56, 0x03, 0xba, 0xb4, 0x76, 0x88, 0x5f, 0x5e, 0xfb, 0xf4, 0x10, 0x69, 0xef, 0xe0, 0x7a,
-	0x72, 0x80, 0xf0, 0xb2, 0xcd, 0x14, 0x41, 0x6f, 0xe7, 0x24, 0xc4, 0xf2, 0x9f, 0x10, 0x6c, 0x66,
-	0xff, 0xe2, 0xdb, 0xd9, 0xad, 0x33, 0xc9, 0xfa, 0xde, 0x3f, 0x90, 0xa3, 0xcd, 0xee, 0xde, 0x8f,
-	0x91, 0x81, 0x8e, 0x47, 0x06, 0xfa, 0x3d, 0x32, 0xd0, 0x87, 0xb1, 0x51, 0x38, 0x1e, 0x1b, 0x85,
-	0x5f, 0x63, 0xa3, 0xf0, 0xf4, 0x8e, 0xed, 0xc8, 0x17, 0xc1, 0xc0, 0xb4, 0xb8, 0xab, 0x1e, 0x1d,
-	0xb5, 0x34, 0xc5, 0xf0, 0x25, 0x3e, 0x9a, 0x79, 0xa7, 0x06, 0x97, 0xa6, 0xaf, 0xd1, 0xdd, 0xbf,
-	0x01, 0x00, 0x00, 0xff, 0xff, 0xfb, 0x07, 0xbe, 0xd4, 0x5a, 0x07, 0x00, 0x00,
+	// 510 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x54, 0xcf, 0x8a, 0xd3, 0x40,
+	0x18, 0xef, 0x58, 0xdd, 0xdd, 0x7e, 0x2b, 0xa8, 0xd9, 0x45, 0x6b, 0x90, 0x50, 0xaa, 0x42, 0xad,
+	0x36, 0xa1, 0xeb, 0x41, 0xd4, 0x53, 0x57, 0x41, 0x3c, 0x94, 0x42, 0x75, 0x0f, 0x8a, 0x50, 0xa6,
+	0xe9, 0x38, 0x06, 0xcd, 0x4c, 0x36, 0x33, 0x59, 0xd6, 0xab, 0xfb, 0x02, 0xbe, 0x87, 0x97, 0x15,
+	0x7c, 0x08, 0x8f, 0x8b, 0x27, 0x8f, 0xd2, 0x1e, 0x7c, 0x0d, 0x69, 0x66, 0x26, 0x8d, 0xd8, 0x36,
+	0x75, 0xf1, 0xe2, 0x29, 0x99, 0x99, 0xdf, 0x5f, 0x98, 0x6f, 0xa0, 0xee, 0x73, 0x11, 0x72, 0xe1,
+	0xed, 0x27, 0x38, 0xc6, 0x4c, 0x06, 0x8c, 0x78, 0x07, 0xed, 0x21, 0x91, 0xb8, 0xed, 0xc9, 0x43,
+	0x37, 0x8a, 0xb9, 0xe4, 0xd6, 0x55, 0x85, 0x71, 0x67, 0x18, 0x57, 0x63, 0xec, 0xa6, 0xa6, 0x0f,
+	0xb1, 0x20, 0xde, 0x7e, 0x42, 0xe2, 0xf7, 0x19, 0x3d, 0xc2, 0x34, 0x60, 0x58, 0x06, 0x9c, 0x29,
+	0x19, 0xfb, 0x8a, 0xc6, 0x86, 0x82, 0x7a, 0x07, 0xed, 0xe9, 0x47, 0x1f, 0x34, 0x17, 0x67, 0xc8,
+	0x59, 0x2a, 0xac, 0xce, 0x32, 0x48, 0x57, 0x9e, 0x0e, 0x96, 0x2e, 0xea, 0xcf, 0x61, 0xa3, 0x2b,
+	0x68, 0x2f, 0x92, 0x4f, 0x99, 0x75, 0x0f, 0x40, 0xf2, 0x01, 0x1e, 0x8d, 0x62, 0x22, 0x44, 0x15,
+	0xd5, 0x50, 0xa3, 0xb2, 0x5b, 0xfd, 0xf6, 0xa5, 0xb5, 0xad, 0x19, 0x1d, 0x75, 0xf2, 0x4c, 0xc6,
+	0x01, 0xa3, 0xfd, 0x8a, 0xe4, 0x7a, 0xe3, 0xc1, 0x85, 0x0f, 0x3f, 0x8f, 0x9b, 0x39, 0x6e, 0xdd,
+	0x82, 0x8b, 0x46, 0xb5, 0x4f, 0x44, 0xc4, 0x99, 0x20, 0xf5, 0x3d, 0xa8, 0xa8, 0xbd, 0x5e, 0x22,
+	0xff, 0xa1, 0xd5, 0x16, 0x5c, 0xca, 0x64, 0x33, 0xaf, 0x63, 0x94, 0x9a, 0x75, 0x7c, 0x9f, 0x44,
+	0xa7, 0x37, 0xb3, 0x1e, 0xc2, 0xf9, 0xd7, 0x31, 0x0f, 0x33, 0xea, 0x99, 0x02, 0xea, 0xe6, 0x14,
+	0x6d, 0xc8, 0xd7, 0xa0, 0x12, 0x91, 0x38, 0xc4, 0x8c, 0x30, 0x59, 0x2d, 0xd7, 0x50, 0x63, 0xa3,
+	0x3f, 0xdb, 0x58, 0xd4, 0x43, 0x25, 0xce, 0x7a, 0x7c, 0x46, 0x00, 0x5d, 0x41, 0x1f, 0x13, 0xff,
+	0x5d, 0xc0, 0xc8, 0xff, 0x51, 0x64, 0x1b, 0xac, 0x59, 0xe4, 0xac, 0xc9, 0x27, 0x04, 0x97, 0xbb,
+	0x82, 0xee, 0x45, 0x23, 0x2c, 0x49, 0x27, 0x91, 0xdc, 0x9c, 0x88, 0xd3, 0xb7, 0x7a, 0x02, 0xeb,
+	0x49, 0xaa, 0x37, 0x2d, 0x54, 0x6e, 0x6c, 0xee, 0xb4, 0xdc, 0x85, 0x43, 0xe7, 0xe6, 0x3d, 0x55,
+	0x8a, 0xbe, 0x61, 0xff, 0xd9, 0xa1, 0x06, 0xce, 0xfc, 0xb0, 0xe6, 0x67, 0xe7, 0xe8, 0x2c, 0x94,
+	0xbb, 0x82, 0x5a, 0x2f, 0xe0, 0x9c, 0x1a, 0x9e, 0xeb, 0x4b, 0xbc, 0xcd, 0x2c, 0xd8, 0xb7, 0x57,
+	0x00, 0x19, 0x0b, 0xeb, 0x15, 0xac, 0xe9, 0x69, 0xb9, 0x51, 0x48, 0xeb, 0x25, 0xd2, 0xbe, 0xb3,
+	0x0a, 0x2a, 0xaf, 0xae, 0xc7, 0xa3, 0x40, 0x5d, 0xa1, 0x8a, 0xd4, 0x7f, 0xbf, 0xb8, 0xd6, 0x00,
+	0xd6, 0xcd, 0xa5, 0xbd, 0xb9, 0x9c, 0xa8, 0x61, 0x76, 0x6b, 0x25, 0x58, 0x66, 0x70, 0x84, 0x60,
+	0x6b, 0xde, 0x65, 0x6a, 0x2f, 0x97, 0x99, 0x43, 0xb1, 0xef, 0xff, 0x35, 0xc5, 0xfc, 0xec, 0x3e,
+	0xfa, 0x3a, 0x76, 0xd0, 0xc9, 0xd8, 0x41, 0x3f, 0xc6, 0x0e, 0xfa, 0x38, 0x71, 0x4a, 0x27, 0x13,
+	0xa7, 0xf4, 0x7d, 0xe2, 0x94, 0x5e, 0xde, 0xa2, 0x81, 0x7c, 0x93, 0x0c, 0x5d, 0x9f, 0x87, 0xfa,
+	0xc1, 0xd5, 0x9f, 0x96, 0x18, 0xbd, 0xf5, 0x0e, 0x73, 0x6f, 0xf4, 0x70, 0x2d, 0x7d, 0x89, 0xef,
+	0xfe, 0x0a, 0x00, 0x00, 0xff, 0xff, 0x5d, 0x2c, 0x2e, 0x41, 0x56, 0x06, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -554,18 +551,18 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// QuarantineOptIn defines a method for opting in to account quarantine.
+	// OptIn defines a method for opting in to account quarantine.
 	// Funds sent to a quarantined account must be approved before they can be received.
-	QuarantineOptIn(ctx context.Context, in *MsgQuarantineOptIn, opts ...grpc.CallOption) (*MsgQuarantineOptInResponse, error)
-	// QuarantineOptOut defines a method for opting out of account quarantine.
+	OptIn(ctx context.Context, in *MsgOptIn, opts ...grpc.CallOption) (*MsgOptInResponse, error)
+	// OptOut defines a method for opting out of account quarantine.
 	// Any pending funds for the account must still be accepted, but new sends will no longer be quarantined.
-	QuarantineOptOut(ctx context.Context, in *MsgQuarantineOptOut, opts ...grpc.CallOption) (*MsgQuarantineOptOutResponse, error)
-	// AcceptSend defines a method for accepting quarantined funds.
-	QuarantineAccept(ctx context.Context, in *MsgQuarantineAccept, opts ...grpc.CallOption) (*MsgQuarantineAcceptResponse, error)
-	// DeclineSend defines a method for declining quarantined funds.
-	QuarantineDecline(ctx context.Context, in *MsgQuarantineDecline, opts ...grpc.CallOption) (*MsgQuarantineDeclineResponse, error)
-	// UpdateQuarantineAutoResponses defines a method for updating the auto-response settings for a quarantined address.
-	UpdateQuarantineAutoResponses(ctx context.Context, in *MsgUpdateQuarantineAutoResponses, opts ...grpc.CallOption) (*MsgUpdateQuarantineAutoResponsesResponse, error)
+	OptOut(ctx context.Context, in *MsgOptOut, opts ...grpc.CallOption) (*MsgOptOutResponse, error)
+	// Accept defines a method for accepting quarantined funds.
+	Accept(ctx context.Context, in *MsgAccept, opts ...grpc.CallOption) (*MsgAcceptResponse, error)
+	// Decline defines a method for declining quarantined funds.
+	Decline(ctx context.Context, in *MsgDecline, opts ...grpc.CallOption) (*MsgDeclineResponse, error)
+	// UpdateAutoResponses defines a method for updating the auto-response settings for a quarantined address.
+	UpdateAutoResponses(ctx context.Context, in *MsgUpdateAutoResponses, opts ...grpc.CallOption) (*MsgUpdateAutoResponsesResponse, error)
 }
 
 type msgClient struct {
@@ -576,45 +573,45 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) QuarantineOptIn(ctx context.Context, in *MsgQuarantineOptIn, opts ...grpc.CallOption) (*MsgQuarantineOptInResponse, error) {
-	out := new(MsgQuarantineOptInResponse)
-	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Msg/QuarantineOptIn", in, out, opts...)
+func (c *msgClient) OptIn(ctx context.Context, in *MsgOptIn, opts ...grpc.CallOption) (*MsgOptInResponse, error) {
+	out := new(MsgOptInResponse)
+	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Msg/OptIn", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *msgClient) QuarantineOptOut(ctx context.Context, in *MsgQuarantineOptOut, opts ...grpc.CallOption) (*MsgQuarantineOptOutResponse, error) {
-	out := new(MsgQuarantineOptOutResponse)
-	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Msg/QuarantineOptOut", in, out, opts...)
+func (c *msgClient) OptOut(ctx context.Context, in *MsgOptOut, opts ...grpc.CallOption) (*MsgOptOutResponse, error) {
+	out := new(MsgOptOutResponse)
+	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Msg/OptOut", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *msgClient) QuarantineAccept(ctx context.Context, in *MsgQuarantineAccept, opts ...grpc.CallOption) (*MsgQuarantineAcceptResponse, error) {
-	out := new(MsgQuarantineAcceptResponse)
-	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Msg/QuarantineAccept", in, out, opts...)
+func (c *msgClient) Accept(ctx context.Context, in *MsgAccept, opts ...grpc.CallOption) (*MsgAcceptResponse, error) {
+	out := new(MsgAcceptResponse)
+	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Msg/Accept", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *msgClient) QuarantineDecline(ctx context.Context, in *MsgQuarantineDecline, opts ...grpc.CallOption) (*MsgQuarantineDeclineResponse, error) {
-	out := new(MsgQuarantineDeclineResponse)
-	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Msg/QuarantineDecline", in, out, opts...)
+func (c *msgClient) Decline(ctx context.Context, in *MsgDecline, opts ...grpc.CallOption) (*MsgDeclineResponse, error) {
+	out := new(MsgDeclineResponse)
+	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Msg/Decline", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *msgClient) UpdateQuarantineAutoResponses(ctx context.Context, in *MsgUpdateQuarantineAutoResponses, opts ...grpc.CallOption) (*MsgUpdateQuarantineAutoResponsesResponse, error) {
-	out := new(MsgUpdateQuarantineAutoResponsesResponse)
-	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Msg/UpdateQuarantineAutoResponses", in, out, opts...)
+func (c *msgClient) UpdateAutoResponses(ctx context.Context, in *MsgUpdateAutoResponses, opts ...grpc.CallOption) (*MsgUpdateAutoResponsesResponse, error) {
+	out := new(MsgUpdateAutoResponsesResponse)
+	err := c.cc.Invoke(ctx, "/cosmos.quarantine.v1beta1.Msg/UpdateAutoResponses", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -623,130 +620,130 @@ func (c *msgClient) UpdateQuarantineAutoResponses(ctx context.Context, in *MsgUp
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// QuarantineOptIn defines a method for opting in to account quarantine.
+	// OptIn defines a method for opting in to account quarantine.
 	// Funds sent to a quarantined account must be approved before they can be received.
-	QuarantineOptIn(context.Context, *MsgQuarantineOptIn) (*MsgQuarantineOptInResponse, error)
-	// QuarantineOptOut defines a method for opting out of account quarantine.
+	OptIn(context.Context, *MsgOptIn) (*MsgOptInResponse, error)
+	// OptOut defines a method for opting out of account quarantine.
 	// Any pending funds for the account must still be accepted, but new sends will no longer be quarantined.
-	QuarantineOptOut(context.Context, *MsgQuarantineOptOut) (*MsgQuarantineOptOutResponse, error)
-	// AcceptSend defines a method for accepting quarantined funds.
-	QuarantineAccept(context.Context, *MsgQuarantineAccept) (*MsgQuarantineAcceptResponse, error)
-	// DeclineSend defines a method for declining quarantined funds.
-	QuarantineDecline(context.Context, *MsgQuarantineDecline) (*MsgQuarantineDeclineResponse, error)
-	// UpdateQuarantineAutoResponses defines a method for updating the auto-response settings for a quarantined address.
-	UpdateQuarantineAutoResponses(context.Context, *MsgUpdateQuarantineAutoResponses) (*MsgUpdateQuarantineAutoResponsesResponse, error)
+	OptOut(context.Context, *MsgOptOut) (*MsgOptOutResponse, error)
+	// Accept defines a method for accepting quarantined funds.
+	Accept(context.Context, *MsgAccept) (*MsgAcceptResponse, error)
+	// Decline defines a method for declining quarantined funds.
+	Decline(context.Context, *MsgDecline) (*MsgDeclineResponse, error)
+	// UpdateAutoResponses defines a method for updating the auto-response settings for a quarantined address.
+	UpdateAutoResponses(context.Context, *MsgUpdateAutoResponses) (*MsgUpdateAutoResponsesResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
 type UnimplementedMsgServer struct {
 }
 
-func (*UnimplementedMsgServer) QuarantineOptIn(ctx context.Context, req *MsgQuarantineOptIn) (*MsgQuarantineOptInResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QuarantineOptIn not implemented")
+func (*UnimplementedMsgServer) OptIn(ctx context.Context, req *MsgOptIn) (*MsgOptInResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OptIn not implemented")
 }
-func (*UnimplementedMsgServer) QuarantineOptOut(ctx context.Context, req *MsgQuarantineOptOut) (*MsgQuarantineOptOutResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QuarantineOptOut not implemented")
+func (*UnimplementedMsgServer) OptOut(ctx context.Context, req *MsgOptOut) (*MsgOptOutResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OptOut not implemented")
 }
-func (*UnimplementedMsgServer) QuarantineAccept(ctx context.Context, req *MsgQuarantineAccept) (*MsgQuarantineAcceptResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QuarantineAccept not implemented")
+func (*UnimplementedMsgServer) Accept(ctx context.Context, req *MsgAccept) (*MsgAcceptResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Accept not implemented")
 }
-func (*UnimplementedMsgServer) QuarantineDecline(ctx context.Context, req *MsgQuarantineDecline) (*MsgQuarantineDeclineResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QuarantineDecline not implemented")
+func (*UnimplementedMsgServer) Decline(ctx context.Context, req *MsgDecline) (*MsgDeclineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Decline not implemented")
 }
-func (*UnimplementedMsgServer) UpdateQuarantineAutoResponses(ctx context.Context, req *MsgUpdateQuarantineAutoResponses) (*MsgUpdateQuarantineAutoResponsesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateQuarantineAutoResponses not implemented")
+func (*UnimplementedMsgServer) UpdateAutoResponses(ctx context.Context, req *MsgUpdateAutoResponses) (*MsgUpdateAutoResponsesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateAutoResponses not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
 }
 
-func _Msg_QuarantineOptIn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgQuarantineOptIn)
+func _Msg_OptIn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgOptIn)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).QuarantineOptIn(ctx, in)
+		return srv.(MsgServer).OptIn(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/cosmos.quarantine.v1beta1.Msg/QuarantineOptIn",
+		FullMethod: "/cosmos.quarantine.v1beta1.Msg/OptIn",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).QuarantineOptIn(ctx, req.(*MsgQuarantineOptIn))
+		return srv.(MsgServer).OptIn(ctx, req.(*MsgOptIn))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_QuarantineOptOut_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgQuarantineOptOut)
+func _Msg_OptOut_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgOptOut)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).QuarantineOptOut(ctx, in)
+		return srv.(MsgServer).OptOut(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/cosmos.quarantine.v1beta1.Msg/QuarantineOptOut",
+		FullMethod: "/cosmos.quarantine.v1beta1.Msg/OptOut",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).QuarantineOptOut(ctx, req.(*MsgQuarantineOptOut))
+		return srv.(MsgServer).OptOut(ctx, req.(*MsgOptOut))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_QuarantineAccept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgQuarantineAccept)
+func _Msg_Accept_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgAccept)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).QuarantineAccept(ctx, in)
+		return srv.(MsgServer).Accept(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/cosmos.quarantine.v1beta1.Msg/QuarantineAccept",
+		FullMethod: "/cosmos.quarantine.v1beta1.Msg/Accept",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).QuarantineAccept(ctx, req.(*MsgQuarantineAccept))
+		return srv.(MsgServer).Accept(ctx, req.(*MsgAccept))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_QuarantineDecline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgQuarantineDecline)
+func _Msg_Decline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgDecline)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).QuarantineDecline(ctx, in)
+		return srv.(MsgServer).Decline(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/cosmos.quarantine.v1beta1.Msg/QuarantineDecline",
+		FullMethod: "/cosmos.quarantine.v1beta1.Msg/Decline",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).QuarantineDecline(ctx, req.(*MsgQuarantineDecline))
+		return srv.(MsgServer).Decline(ctx, req.(*MsgDecline))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_UpdateQuarantineAutoResponses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgUpdateQuarantineAutoResponses)
+func _Msg_UpdateAutoResponses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgUpdateAutoResponses)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).UpdateQuarantineAutoResponses(ctx, in)
+		return srv.(MsgServer).UpdateAutoResponses(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/cosmos.quarantine.v1beta1.Msg/UpdateQuarantineAutoResponses",
+		FullMethod: "/cosmos.quarantine.v1beta1.Msg/UpdateAutoResponses",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).UpdateQuarantineAutoResponses(ctx, req.(*MsgUpdateQuarantineAutoResponses))
+		return srv.(MsgServer).UpdateAutoResponses(ctx, req.(*MsgUpdateAutoResponses))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -756,31 +753,31 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "QuarantineOptIn",
-			Handler:    _Msg_QuarantineOptIn_Handler,
+			MethodName: "OptIn",
+			Handler:    _Msg_OptIn_Handler,
 		},
 		{
-			MethodName: "QuarantineOptOut",
-			Handler:    _Msg_QuarantineOptOut_Handler,
+			MethodName: "OptOut",
+			Handler:    _Msg_OptOut_Handler,
 		},
 		{
-			MethodName: "QuarantineAccept",
-			Handler:    _Msg_QuarantineAccept_Handler,
+			MethodName: "Accept",
+			Handler:    _Msg_Accept_Handler,
 		},
 		{
-			MethodName: "QuarantineDecline",
-			Handler:    _Msg_QuarantineDecline_Handler,
+			MethodName: "Decline",
+			Handler:    _Msg_Decline_Handler,
 		},
 		{
-			MethodName: "UpdateQuarantineAutoResponses",
-			Handler:    _Msg_UpdateQuarantineAutoResponses_Handler,
+			MethodName: "UpdateAutoResponses",
+			Handler:    _Msg_UpdateAutoResponses_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "cosmos/quarantine/v1beta1/tx.proto",
 }
 
-func (m *MsgQuarantineOptIn) Marshal() (dAtA []byte, err error) {
+func (m *MsgOptIn) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -790,12 +787,12 @@ func (m *MsgQuarantineOptIn) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgQuarantineOptIn) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgOptIn) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgQuarantineOptIn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgOptIn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -810,7 +807,7 @@ func (m *MsgQuarantineOptIn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgQuarantineOptInResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgOptInResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -820,12 +817,12 @@ func (m *MsgQuarantineOptInResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgQuarantineOptInResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgOptInResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgQuarantineOptInResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgOptInResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -833,7 +830,7 @@ func (m *MsgQuarantineOptInResponse) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgQuarantineOptOut) Marshal() (dAtA []byte, err error) {
+func (m *MsgOptOut) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -843,12 +840,12 @@ func (m *MsgQuarantineOptOut) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgQuarantineOptOut) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgOptOut) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgQuarantineOptOut) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgOptOut) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -863,7 +860,7 @@ func (m *MsgQuarantineOptOut) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgQuarantineOptOutResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgOptOutResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -873,12 +870,12 @@ func (m *MsgQuarantineOptOutResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgQuarantineOptOutResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgOptOutResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgQuarantineOptOutResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgOptOutResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -886,7 +883,7 @@ func (m *MsgQuarantineOptOutResponse) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgQuarantineAccept) Marshal() (dAtA []byte, err error) {
+func (m *MsgAccept) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -896,12 +893,12 @@ func (m *MsgQuarantineAccept) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgQuarantineAccept) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgAccept) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgQuarantineAccept) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgAccept) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -933,7 +930,7 @@ func (m *MsgQuarantineAccept) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgQuarantineAcceptResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgAcceptResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -943,12 +940,12 @@ func (m *MsgQuarantineAcceptResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgQuarantineAcceptResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgAcceptResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgQuarantineAcceptResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgAcceptResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -956,7 +953,7 @@ func (m *MsgQuarantineAcceptResponse) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgQuarantineDecline) Marshal() (dAtA []byte, err error) {
+func (m *MsgDecline) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -966,12 +963,12 @@ func (m *MsgQuarantineDecline) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgQuarantineDecline) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgDecline) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgQuarantineDecline) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgDecline) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1003,7 +1000,7 @@ func (m *MsgQuarantineDecline) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgQuarantineDeclineResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgDeclineResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1013,12 +1010,12 @@ func (m *MsgQuarantineDeclineResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgQuarantineDeclineResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgDeclineResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgQuarantineDeclineResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgDeclineResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1026,7 +1023,7 @@ func (m *MsgQuarantineDeclineResponse) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgUpdateQuarantineAutoResponses) Marshal() (dAtA []byte, err error) {
+func (m *MsgUpdateAutoResponses) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1036,12 +1033,12 @@ func (m *MsgUpdateQuarantineAutoResponses) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgUpdateQuarantineAutoResponses) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgUpdateAutoResponses) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgUpdateQuarantineAutoResponses) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgUpdateAutoResponses) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1070,7 +1067,7 @@ func (m *MsgUpdateQuarantineAutoResponses) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgUpdateQuarantineAutoResponsesResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgUpdateAutoResponsesResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1080,12 +1077,12 @@ func (m *MsgUpdateQuarantineAutoResponsesResponse) Marshal() (dAtA []byte, err e
 	return dAtA[:n], nil
 }
 
-func (m *MsgUpdateQuarantineAutoResponsesResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgUpdateAutoResponsesResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgUpdateQuarantineAutoResponsesResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgUpdateAutoResponsesResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1104,7 +1101,7 @@ func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *MsgQuarantineOptIn) Size() (n int) {
+func (m *MsgOptIn) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1117,7 +1114,7 @@ func (m *MsgQuarantineOptIn) Size() (n int) {
 	return n
 }
 
-func (m *MsgQuarantineOptInResponse) Size() (n int) {
+func (m *MsgOptInResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1126,29 +1123,7 @@ func (m *MsgQuarantineOptInResponse) Size() (n int) {
 	return n
 }
 
-func (m *MsgQuarantineOptOut) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ToAddress)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	return n
-}
-
-func (m *MsgQuarantineOptOutResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *MsgQuarantineAccept) Size() (n int) {
+func (m *MsgOptOut) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1158,17 +1133,10 @@ func (m *MsgQuarantineAccept) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	l = len(m.FromAddress)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	if m.Permanent {
-		n += 2
-	}
 	return n
 }
 
-func (m *MsgQuarantineAcceptResponse) Size() (n int) {
+func (m *MsgOptOutResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1177,7 +1145,7 @@ func (m *MsgQuarantineAcceptResponse) Size() (n int) {
 	return n
 }
 
-func (m *MsgQuarantineDecline) Size() (n int) {
+func (m *MsgAccept) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1197,7 +1165,7 @@ func (m *MsgQuarantineDecline) Size() (n int) {
 	return n
 }
 
-func (m *MsgQuarantineDeclineResponse) Size() (n int) {
+func (m *MsgAcceptResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1206,7 +1174,36 @@ func (m *MsgQuarantineDeclineResponse) Size() (n int) {
 	return n
 }
 
-func (m *MsgUpdateQuarantineAutoResponses) Size() (n int) {
+func (m *MsgDecline) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ToAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.FromAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.Permanent {
+		n += 2
+	}
+	return n
+}
+
+func (m *MsgDeclineResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgUpdateAutoResponses) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1225,7 +1222,7 @@ func (m *MsgUpdateQuarantineAutoResponses) Size() (n int) {
 	return n
 }
 
-func (m *MsgUpdateQuarantineAutoResponsesResponse) Size() (n int) {
+func (m *MsgUpdateAutoResponsesResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1240,7 +1237,7 @@ func sovTx(x uint64) (n int) {
 func sozTx(x uint64) (n int) {
 	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *MsgQuarantineOptIn) Unmarshal(dAtA []byte) error {
+func (m *MsgOptIn) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1263,10 +1260,10 @@ func (m *MsgQuarantineOptIn) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgQuarantineOptIn: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgOptIn: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgQuarantineOptIn: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgOptIn: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1322,7 +1319,7 @@ func (m *MsgQuarantineOptIn) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgQuarantineOptInResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgOptInResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1345,10 +1342,10 @@ func (m *MsgQuarantineOptInResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgQuarantineOptInResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgOptInResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgQuarantineOptInResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgOptInResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
@@ -1372,7 +1369,7 @@ func (m *MsgQuarantineOptInResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgQuarantineOptOut) Unmarshal(dAtA []byte) error {
+func (m *MsgOptOut) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1395,142 +1392,10 @@ func (m *MsgQuarantineOptOut) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgQuarantineOptOut: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgOptOut: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgQuarantineOptOut: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ToAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgQuarantineOptOutResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgQuarantineOptOutResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgQuarantineOptOutResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgQuarantineAccept) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgQuarantineAccept: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgQuarantineAccept: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgOptOut: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1565,58 +1430,6 @@ func (m *MsgQuarantineAccept) Unmarshal(dAtA []byte) error {
 			}
 			m.ToAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.FromAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Permanent", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Permanent = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
@@ -1638,7 +1451,7 @@ func (m *MsgQuarantineAccept) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgQuarantineAcceptResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgOptOutResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1661,10 +1474,10 @@ func (m *MsgQuarantineAcceptResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgQuarantineAcceptResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgOptOutResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgQuarantineAcceptResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgOptOutResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
@@ -1688,7 +1501,7 @@ func (m *MsgQuarantineAcceptResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgQuarantineDecline) Unmarshal(dAtA []byte) error {
+func (m *MsgAccept) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1711,10 +1524,10 @@ func (m *MsgQuarantineDecline) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgQuarantineDecline: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgAccept: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgQuarantineDecline: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgAccept: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1822,7 +1635,7 @@ func (m *MsgQuarantineDecline) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgQuarantineDeclineResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgAcceptResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1845,10 +1658,10 @@ func (m *MsgQuarantineDeclineResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgQuarantineDeclineResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgAcceptResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgQuarantineDeclineResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgAcceptResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
@@ -1872,7 +1685,7 @@ func (m *MsgQuarantineDeclineResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgUpdateQuarantineAutoResponses) Unmarshal(dAtA []byte) error {
+func (m *MsgDecline) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1895,10 +1708,194 @@ func (m *MsgUpdateQuarantineAutoResponses) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgUpdateQuarantineAutoResponses: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgDecline: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgUpdateQuarantineAutoResponses: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgDecline: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FromAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Permanent", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Permanent = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgDeclineResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgDeclineResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgDeclineResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdateAutoResponses) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdateAutoResponses: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdateAutoResponses: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1962,7 +1959,7 @@ func (m *MsgUpdateQuarantineAutoResponses) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Updates = append(m.Updates, &QuarantineAutoResponseUpdate{})
+			m.Updates = append(m.Updates, &AutoResponseUpdate{})
 			if err := m.Updates[len(m.Updates)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -1988,7 +1985,7 @@ func (m *MsgUpdateQuarantineAutoResponses) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgUpdateQuarantineAutoResponsesResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgUpdateAutoResponsesResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2011,10 +2008,10 @@ func (m *MsgUpdateQuarantineAutoResponsesResponse) Unmarshal(dAtA []byte) error 
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgUpdateQuarantineAutoResponsesResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgUpdateAutoResponsesResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgUpdateQuarantineAutoResponsesResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgUpdateAutoResponsesResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

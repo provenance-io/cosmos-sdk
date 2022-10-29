@@ -14,16 +14,16 @@ import (
 func NewDecodeStore(cdc codec.Codec) func(kvA, kvB kv.Pair) string {
 	return func(kvA, kvB kv.Pair) string {
 		switch {
-		case bytes.HasPrefix(kvA.Key, quarantine.QuarantineOptInPrefix):
+		case bytes.HasPrefix(kvA.Key, quarantine.OptInPrefix):
 			// The values are all supposed to be [0x00]. So just output the raw byte slice.
 			return fmt.Sprintf("AddrA: %v\nAddrB: %v", kvA.Value, kvA.Value)
 
-		case bytes.HasPrefix(kvA.Key, quarantine.QuarantineAutoResponsePrefix):
-			respA := quarantine.ToQuarantineAutoResponse(kvA.Value)
-			respB := quarantine.ToQuarantineAutoResponse(kvB.Value)
+		case bytes.HasPrefix(kvA.Key, quarantine.AutoResponsePrefix):
+			respA := quarantine.ToAutoResponse(kvA.Value)
+			respB := quarantine.ToAutoResponse(kvB.Value)
 			return fmt.Sprintf("%s\n%s", respA.String(), respB.String())
 
-		case bytes.HasPrefix(kvA.Key, quarantine.QuarantineRecordPrefix):
+		case bytes.HasPrefix(kvA.Key, quarantine.RecordPrefix):
 			var qrA, qrB quarantine.QuarantineRecord
 			cdc.MustUnmarshal(kvA.Value, &qrA)
 			cdc.MustUnmarshal(kvB.Value, &qrB)

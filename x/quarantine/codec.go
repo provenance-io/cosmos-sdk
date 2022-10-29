@@ -13,20 +13,20 @@ import (
 // RegisterLegacyAminoCodec registers all the necessary types and interfaces for the
 // governance module.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	legacy.RegisterAminoMsg(cdc, &MsgQuarantineOptIn{}, "cosmos-sdk/MsgQuarantineOptIn")
-	legacy.RegisterAminoMsg(cdc, &MsgQuarantineOptOut{}, "cosmos-sdk/MsgQuarantineOptOut")
-	legacy.RegisterAminoMsg(cdc, &MsgQuarantineAccept{}, "cosmos-sdk/MsgQuarantineAccept")
-	legacy.RegisterAminoMsg(cdc, &MsgQuarantineDecline{}, "cosmos-sdk/MsgQuarantineDecline")
-	legacy.RegisterAminoMsg(cdc, &MsgUpdateQuarantineAutoResponses{}, "cosmos-sdk/MsgUpdateQuarantineAutoResponses")
+	legacy.RegisterAminoMsg(cdc, &MsgOptIn{}, "cosmos-sdk/MsgQuarantineOptIn")
+	legacy.RegisterAminoMsg(cdc, &MsgOptOut{}, "cosmos-sdk/MsgQuarantineOptOut")
+	legacy.RegisterAminoMsg(cdc, &MsgAccept{}, "cosmos-sdk/MsgQuarantineAccept")
+	legacy.RegisterAminoMsg(cdc, &MsgDecline{}, "cosmos-sdk/MsgQuarantineDecline")
+	legacy.RegisterAminoMsg(cdc, &MsgUpdateAutoResponses{}, "cosmos-sdk/MsgUpdateQuarantineAutoResponses")
 }
 
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgQuarantineOptIn{},
-		&MsgQuarantineOptOut{},
-		&MsgQuarantineAccept{},
-		&MsgQuarantineDecline{},
-		&MsgUpdateQuarantineAutoResponses{},
+		&MsgOptIn{},
+		&MsgOptOut{},
+		&MsgAccept{},
+		&MsgDecline{},
+		&MsgUpdateAutoResponses{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)

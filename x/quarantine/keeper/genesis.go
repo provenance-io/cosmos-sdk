@@ -15,13 +15,13 @@ func (k Keeper) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawM
 
 	for _, toAddrStr := range genesisState.QuarantinedAddresses {
 		toAddr := sdk.MustAccAddressFromBech32(toAddrStr)
-		k.SetQuarantineOptIn(ctx, toAddr)
+		k.SetOptIn(ctx, toAddr)
 	}
 
-	for _, qar := range genesisState.QuarantineAutoResponses {
+	for _, qar := range genesisState.AutoResponses {
 		toAddr := sdk.MustAccAddressFromBech32(qar.ToAddress)
 		fromAddr := sdk.MustAccAddressFromBech32(qar.FromAddress)
-		k.SetQuarantineAutoResponse(ctx, toAddr, fromAddr, qar.Response)
+		k.SetAutoResponse(ctx, toAddr, fromAddr, qar.Response)
 	}
 
 	totalQuarantined := sdk.Coins{}
@@ -33,17 +33,17 @@ func (k Keeper) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawM
 	}
 
 	if !totalQuarantined.IsZero() {
-		qFundHolderBalance := k.bankKeeper.GetAllBalances(ctx, k.quarantinedFundsHolder)
+		qFundHolderBalance := k.bankKeeper.GetAllBalances(ctx, k.fundsHolder)
 		if _, hasNeg := qFundHolderBalance.SafeSub(totalQuarantined...); hasNeg {
 			panic(fmt.Errorf("quarantine fund holder account %q does not have enough funds %q to cover quarantined funds %q",
-				k.quarantinedFundsHolder.String(), qFundHolderBalance.String(), totalQuarantined.String()))
+				k.fundsHolder.String(), qFundHolderBalance.String(), totalQuarantined.String()))
 		}
 	}
 }
 
-func (k Keeper) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) *quarantine.GenesisState {
+func (k Keeper) ExportGenesis(ctx sdk.Context, _ codec.JSONCodec) *quarantine.GenesisState {
 	qAddrs := k.GetAllQuarantinedAccounts(ctx)
-	autoResps := k.GetAllQuarantineAutoResponseEntries(ctx)
+	autoResps := k.GetAllAutoResponseEntries(ctx)
 	qFunds := k.GetAllQuarantinedFunds(ctx)
 
 	return quarantine.NewGenesisState(qAddrs, autoResps, qFunds)

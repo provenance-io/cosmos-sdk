@@ -9,89 +9,58 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 )
 
-// QuarantineKeeper defines a module interface that facilitates management of account and fund quarantines.
-type QuarantineKeeper interface {
-	GetQuarantinedFundsHolder() sdk.AccAddress
-
-	IsQuarantinedAddr(ctx sdk.Context, toAddr sdk.AccAddress) bool
-	SetQuarantineOptIn(ctx sdk.Context, toAddr sdk.AccAddress)
-	SetQuarantineOptOut(ctx sdk.Context, toAddr sdk.AccAddress)
-	IterateQuarantinedAccounts(ctx sdk.Context, cb func(addr sdk.AccAddress) (stop bool))
-	GetAllQuarantinedAccounts(ctx sdk.Context) []string
-
-	GetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) quarantine.QuarantineAutoResponse
-	IsAutoAccept(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) bool
-	IsAutoDecline(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) bool
-	SetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, response quarantine.QuarantineAutoResponse)
-	IterateQuarantineAutoResponses(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, response quarantine.QuarantineAutoResponse) (stop bool))
-	GetAllQuarantineAutoResponseEntries(ctx sdk.Context) []*quarantine.QuarantineAutoResponseEntry
-
-	GetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) quarantine.QuarantineRecord
-	SetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, funds *quarantine.QuarantineRecord)
-	AddQuarantinedCoins(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, coins sdk.Coins)
-	IterateQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, funds quarantine.QuarantineRecord) (stop bool))
-	GetAllQuarantinedFunds(ctx sdk.Context) []*quarantine.QuarantinedFunds
-	SetQuarantineRecordAccepted(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress)
-	SetQuarantineRecordDeclined(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress)
-}
-
-var _ QuarantineKeeper = (*Keeper)(nil)
-
 type Keeper struct {
 	cdc      codec.BinaryCodec
 	storeKey storetypes.StoreKey
 
 	bankKeeper quarantine.BankKeeper
 
-	quarantinedFundsHolder sdk.AccAddress
+	fundsHolder sdk.AccAddress
 }
 
-func NewKeeper(
-	cdc codec.BinaryCodec, storeKey storetypes.StoreKey, bankKeeper quarantine.BankKeeper,
-	quarantinedFundsHolder sdk.AccAddress,
-) Keeper {
-	if len(quarantinedFundsHolder) == 0 {
-		quarantinedFundsHolder = authtypes.NewModuleAddress(quarantine.ModuleName)
+func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey, bankKeeper quarantine.BankKeeper, fundsHolder sdk.AccAddress) Keeper {
+	if len(fundsHolder) == 0 {
+		fundsHolder = authtypes.NewModuleAddress(quarantine.ModuleName)
 	}
 	rv := Keeper{
-		cdc:                    cdc,
-		storeKey:               storeKey,
-		bankKeeper:             bankKeeper,
-		quarantinedFundsHolder: quarantinedFundsHolder,
+		cdc:         cdc,
+		storeKey:    storeKey,
+		bankKeeper:  bankKeeper,
+		fundsHolder: fundsHolder,
 	}
 	bankKeeper.SetQuarantineKeeper(rv)
 	return rv
 }
 
-// GetQuarantinedFundsHolder returns the account address that holds quarantined funds.
-func (k Keeper) GetQuarantinedFundsHolder() sdk.AccAddress {
-	return k.quarantinedFundsHolder
+// GetFundsHolder returns the account address that holds quarantined funds.
+func (k Keeper) GetFundsHolder() sdk.AccAddress {
+	return k.fundsHolder
 }
 
 // IsQuarantinedAddr returns true if the given address has opted into quarantine.
 func (k Keeper) IsQuarantinedAddr(ctx sdk.Context, toAddr sdk.AccAddress) bool {
 	store := ctx.KVStore(k.storeKey)
-	key := quarantine.CreateQuarantineOptInKey(toAddr)
+	key := quarantine.CreateOptInKey(toAddr)
 	return store.Has(key)
 }
 
-// SetQuarantineOptIn records that an address has opted into quarantine.
-func (k Keeper) SetQuarantineOptIn(ctx sdk.Context, toAddr sdk.AccAddress) {
+// SetOptIn records that an address has opted into quarantine.
+func (k Keeper) SetOptIn(ctx sdk.Context, toAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := quarantine.CreateQuarantineOptInKey(toAddr)
+	key := quarantine.CreateOptInKey(toAddr)
 	store.Set(key, []byte{0x00})
 }
 
-// SetQuarantineOptOut removes an address' quarantine opt-in record.
-func (k Keeper) SetQuarantineOptOut(ctx sdk.Context, toAddr sdk.AccAddress) {
+// SetOptOut removes an address' quarantine opt-in record.
+func (k Keeper) SetOptOut(ctx sdk.Context, toAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
-	key := quarantine.CreateQuarantineOptInKey(toAddr)
+	key := quarantine.CreateOptInKey(toAddr)
 	store.Delete(key)
 }
 
 // getQuarantinedAccountsPrefixStore returns a kv store prefixed for quarantine opt-in entries.
 func (k Keeper) getQuarantinedAccountsPrefixStore(ctx sdk.Context) sdk.KVStore {
-	return prefix.NewStore(ctx.KVStore(k.storeKey), quarantine.QuarantineOptInPrefix)
+	return prefix.NewStore(ctx.KVStore(k.storeKey), quarantine.OptInPrefix)
 }
 
 // IterateQuarantinedAccounts iterates over all quarantine account addresses.
@@ -103,7 +72,7 @@ func (k Keeper) IterateQuarantinedAccounts(ctx sdk.Context, cb func(toAddr sdk.A
 	defer iter.Close()
 
 	for ; iter.Valid(); iter.Next() {
-		addr := quarantine.ParseQuarantineOptInKey(iter.Key())
+		addr := quarantine.ParseOptInKey(iter.Key())
 		if cb(addr) {
 			break
 		}
@@ -120,30 +89,30 @@ func (k Keeper) GetAllQuarantinedAccounts(ctx sdk.Context) []string {
 	return rv
 }
 
-// GetQuarantineAutoResponse returns the quarantine auto-response for the given to/from addresses.
-func (k Keeper) GetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) quarantine.QuarantineAutoResponse {
+// GetAutoResponse returns the quarantine auto-response for the given to/from addresses.
+func (k Keeper) GetAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) quarantine.AutoResponse {
 	store := ctx.KVStore(k.storeKey)
-	key := quarantine.CreateQuarantineAutoResponseKey(toAddr, fromAddr)
+	key := quarantine.CreateAutoResponseKey(toAddr, fromAddr)
 	bz := store.Get(key)
-	return quarantine.ToQuarantineAutoResponse(bz)
+	return quarantine.ToAutoResponse(bz)
 }
 
 // IsAutoAccept returns true if the to address has enabled auto-accept from the from address.
 func (k Keeper) IsAutoAccept(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) bool {
-	return k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr).IsAccept()
+	return k.GetAutoResponse(ctx, toAddr, fromAddr).IsAccept()
 }
 
 // IsAutoDecline returns true if the to address has enabled auto-decline from the from address.
 func (k Keeper) IsAutoDecline(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) bool {
-	return k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr).IsDecline()
+	return k.GetAutoResponse(ctx, toAddr, fromAddr).IsDecline()
 }
 
-// SetQuarantineAutoResponse sets the auto response of sends to toAddr from fromAddr.
-// If the response is QUARANTINE_AUTO_RESPONSE_UNSPECIFIED, the auto-response record is deleted,
+// SetAutoResponse sets the auto response of sends to toAddr from fromAddr.
+// If the response is AUTO_RESPONSE_UNSPECIFIED, the auto-response record is deleted,
 // otherwise it is created/updated with the given setting.
-func (k Keeper) SetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, response quarantine.QuarantineAutoResponse) {
+func (k Keeper) SetAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, response quarantine.AutoResponse) {
 	store := ctx.KVStore(k.storeKey)
-	key := quarantine.CreateQuarantineAutoResponseKey(toAddr, fromAddr)
+	key := quarantine.CreateAutoResponseKey(toAddr, fromAddr)
 	val := quarantine.ToAutoB(response)
 	if val == quarantine.NoAutoB {
 		store.Delete(key)
@@ -152,39 +121,39 @@ func (k Keeper) SetQuarantineAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.
 	}
 }
 
-// getQuarantineAutoResponsesPrefixStore returns a kv store prefixed for quarantine auto-responses to the given address.
+// getAutoResponsesPrefixStore returns a kv store prefixed for quarantine auto-responses to the given address.
 // If toAddr is empty, it will be prefixed for all quarantine auto-responses.
-func (k Keeper) getQuarantineAutoResponsesPrefixStore(ctx sdk.Context, toAddr sdk.AccAddress) sdk.KVStore {
-	pre := quarantine.QuarantineAutoResponsePrefix
+func (k Keeper) getAutoResponsesPrefixStore(ctx sdk.Context, toAddr sdk.AccAddress) sdk.KVStore {
+	pre := quarantine.AutoResponsePrefix
 	if len(toAddr) > 0 {
-		pre = quarantine.CreateQuarantineAutoResponseToAddrPrefix(toAddr)
+		pre = quarantine.CreateAutoResponseToAddrPrefix(toAddr)
 	}
 	return prefix.NewStore(ctx.KVStore(k.storeKey), pre)
 }
 
-// IterateQuarantineAutoResponses iterates over the auto-responses for a given recipient address,
+// IterateAutoResponses iterates over the auto-responses for a given recipient address,
 // or if no address is provided, iterates over all auto-response entries.
 // The callback function should accept a to address, from address, and auto-response setting (in that order).
 // It should return whether to stop iteration early. I.e. false will allow iteration to continue, true will stop iteration.
-func (k Keeper) IterateQuarantineAutoResponses(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, response quarantine.QuarantineAutoResponse) (stop bool)) {
-	store := k.getQuarantineAutoResponsesPrefixStore(ctx, toAddr)
+func (k Keeper) IterateAutoResponses(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, response quarantine.AutoResponse) (stop bool)) {
+	store := k.getAutoResponsesPrefixStore(ctx, toAddr)
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
 
 	for ; iter.Valid(); iter.Next() {
-		kToAddr, kFromAddr := quarantine.ParseQuarantineAutoResponseKey(iter.Key())
-		val := quarantine.ToQuarantineAutoResponse(iter.Value())
+		kToAddr, kFromAddr := quarantine.ParseAutoResponseKey(iter.Key())
+		val := quarantine.ToAutoResponse(iter.Value())
 		if cb(kToAddr, kFromAddr, val) {
 			break
 		}
 	}
 }
 
-// GetAllQuarantineAutoResponseEntries gets a QuarantineAutoResponseEntry entry for every quarantine auto-response that has been set.
-func (k Keeper) GetAllQuarantineAutoResponseEntries(ctx sdk.Context) []*quarantine.QuarantineAutoResponseEntry {
-	var rv []*quarantine.QuarantineAutoResponseEntry
-	k.IterateQuarantineAutoResponses(ctx, nil, func(toAddr, fromAddr sdk.AccAddress, resp quarantine.QuarantineAutoResponse) bool {
-		rv = append(rv, quarantine.NewQuarantineAutoResponseEntry(toAddr, fromAddr, resp))
+// GetAllAutoResponseEntries gets a AutoResponseEntry entry for every quarantine auto-response that has been set.
+func (k Keeper) GetAllAutoResponseEntries(ctx sdk.Context) []*quarantine.AutoResponseEntry {
+	var rv []*quarantine.AutoResponseEntry
+	k.IterateAutoResponses(ctx, nil, func(toAddr, fromAddr sdk.AccAddress, resp quarantine.AutoResponse) bool {
+		rv = append(rv, quarantine.NewAutoResponseEntry(toAddr, fromAddr, resp))
 		return false
 	})
 	return rv
@@ -194,7 +163,7 @@ func (k Keeper) GetAllQuarantineAutoResponseEntries(ctx sdk.Context) []*quaranti
 // If there are no such funds, this will return a QuarantineRecord with zero coins.
 func (k Keeper) GetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) quarantine.QuarantineRecord {
 	store := ctx.KVStore(k.storeKey)
-	key := quarantine.CreateQuarantineRecordKey(toAddr, fromAddr)
+	key := quarantine.CreateRecordKey(toAddr, fromAddr)
 	bz := store.Get(key)
 	return k.mustBzToQuarantineRecord(bz)
 }
@@ -203,7 +172,7 @@ func (k Keeper) GetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAdd
 // If funds is nil, this will delete any existing entry.
 func (k Keeper) SetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, funds *quarantine.QuarantineRecord) {
 	store := ctx.KVStore(k.storeKey)
-	key := quarantine.CreateQuarantineRecordKey(toAddr, fromAddr)
+	key := quarantine.CreateRecordKey(toAddr, fromAddr)
 	if funds == nil {
 		store.Delete(key)
 	} else {
@@ -216,16 +185,16 @@ func (k Keeper) SetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAdd
 func (k Keeper) AddQuarantinedCoins(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, coins sdk.Coins) {
 	qf := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
 	qf.Add(coins...)
-	qf.Declined = k.GetQuarantineAutoResponse(ctx, toAddr, fromAddr) == quarantine.QUARANTINE_AUTO_RESPONSE_DECLINE
+	qf.Declined = k.GetAutoResponse(ctx, toAddr, fromAddr) == quarantine.AUTO_RESPONSE_DECLINE
 	k.SetQuarantineRecord(ctx, toAddr, fromAddr, &qf)
 }
 
 // getQuarantineRecordPrefixStore returns a kv store prefixed for quarantine records to the given address.
 // If toAddr is empty, it will be prefixed for all quarantine records.
 func (k Keeper) getQuarantineRecordPrefixStore(ctx sdk.Context, toAddr sdk.AccAddress) sdk.KVStore {
-	pre := quarantine.QuarantineRecordPrefix
+	pre := quarantine.RecordPrefix
 	if len(toAddr) > 0 {
-		pre = quarantine.CreateQuarantineRecordToAddrPrefix(toAddr)
+		pre = quarantine.CreateRecordToAddrPrefix(toAddr)
 	}
 	return prefix.NewStore(ctx.KVStore(k.storeKey), pre)
 }
@@ -240,7 +209,7 @@ func (k Keeper) IterateQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress,
 	defer iter.Close()
 
 	for ; iter.Valid(); iter.Next() {
-		kToAddr, kFromAddr := quarantine.ParseQuarantineRecordKey(iter.Key())
+		kToAddr, kFromAddr := quarantine.ParseRecordKey(iter.Key())
 		qf := k.mustBzToQuarantineRecord(iter.Value())
 
 		if cb(kToAddr, kFromAddr, qf) {
