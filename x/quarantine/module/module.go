@@ -74,7 +74,7 @@ func (a AppModuleBasic) GetQueryCmd() *cobra.Command {
 
 // GetTxCmd returns the transaction commands for the quarantine module
 func (a AppModuleBasic) GetTxCmd() *cobra.Command {
-	return cli.TxCmd(a.Name())
+	return cli.TxCmd()
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the quarantine module.

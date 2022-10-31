@@ -58,14 +58,6 @@ func (e AutoResponseEntry) Validate() error {
 	return nil
 }
 
-// NewAutoResponseUpdate creates a new quarantine auto-response update.
-func NewAutoResponseUpdate(fromAddr sdk.AccAddress, response AutoResponse) *AutoResponseUpdate {
-	return &AutoResponseUpdate{
-		FromAddress: fromAddr.String(),
-		Response:    response,
-	}
-}
-
 // Validate does simple stateless validation of this update.
 func (u AutoResponseUpdate) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(u.FromAddress); err != nil {

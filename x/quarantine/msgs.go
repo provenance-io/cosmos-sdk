@@ -61,10 +61,10 @@ var _ sdk.Msg = &MsgAccept{}
 // TODO[1046]: Implement the LegacyMsg interface for MsgAccept? GetSignBytes() []byte, Route() string, Type() string
 
 // NewMsgAccept creates a new msg to accept quarantined funds.
-func NewMsgAccept(toAddr, fromAddr sdk.AccAddress, permanent bool) *MsgAccept {
+func NewMsgAccept(toAddr sdk.AccAddress, fromAddrStr string, permanent bool) *MsgAccept {
 	return &MsgAccept{
-		FromAddress: fromAddr.String(),
 		ToAddress:   toAddr.String(),
+		FromAddress: fromAddrStr,
 		Permanent:   permanent,
 	}
 }
@@ -91,10 +91,10 @@ var _ sdk.Msg = &MsgDecline{}
 // TODO[1046]: Implement the LegacyMsg interface for MsgDecline? GetSignBytes() []byte, Route() string, Type() string
 
 // NewMsgDecline creates a new msg to decline quarantined funds.
-func NewMsgDecline(toAddr, fromAddr sdk.AccAddress, permanent bool) *MsgDecline {
+func NewMsgDecline(toAddr sdk.AccAddress, fromAddrStr string, permanent bool) *MsgDecline {
 	return &MsgDecline{
-		FromAddress: fromAddr.String(),
 		ToAddress:   toAddr.String(),
+		FromAddress: fromAddrStr,
 		Permanent:   permanent,
 	}
 }
