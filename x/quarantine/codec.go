@@ -17,7 +17,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgOptOut{}, "cosmos-sdk/MsgQuarantineOptOut")
 	legacy.RegisterAminoMsg(cdc, &MsgAccept{}, "cosmos-sdk/MsgQuarantineAccept")
 	legacy.RegisterAminoMsg(cdc, &MsgDecline{}, "cosmos-sdk/MsgQuarantineDecline")
-	legacy.RegisterAminoMsg(cdc, &MsgUpdateAutoResponses{}, "cosmos-sdk/MsgUpdateQuarantineAutoResponses")
+	legacy.RegisterAminoMsg(cdc, &MsgUpdateAutoResponses{}, "cosmos-sdk/MsgUpdateQuarantineAutoResp")
 }
 
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
