@@ -88,8 +88,8 @@ message QueryAutoResponsesRequest {
 
 // QueryAutoResponsesResponse defines the RPC response of a AutoResponses query.
 message QueryAutoResponsesResponse {
-  // results are the auto-response entries from the provided query.
-  repeated AutoResponseEntry results = 1;
+  // auto_responses are the auto-response entries from the provided query.
+  repeated AutoResponseEntry auto_responses = 1;
 
   // pagination defines the pagination in the response.
   cosmos.base.query.v1beta1.PageResponse pagination = 2;

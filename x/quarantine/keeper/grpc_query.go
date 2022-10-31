@@ -12,6 +12,27 @@ import (
 
 var _ quarantine.QueryServer = Keeper{}
 
+func (k Keeper) IsQuarantined(goCtx context.Context, req *quarantine.QueryIsQuarantinedRequest) (*quarantine.QueryIsQuarantinedResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	if len(req.ToAddress) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "to address cannot be empty")
+	}
+
+	toAddr, err := sdk.AccAddressFromBech32(req.ToAddress)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid to address: %s", err.Error())
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	resp := &quarantine.QueryIsQuarantinedResponse{
+		IsQuarantined: k.IsQuarantinedAddr(ctx, toAddr),
+	}
+
+	return resp, nil
+}
+
 func (k Keeper) QuarantinedFunds(goCtx context.Context, req *quarantine.QueryQuarantinedFundsRequest) (*quarantine.QueryQuarantinedFundsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -72,27 +93,6 @@ func (k Keeper) QuarantinedFunds(goCtx context.Context, req *quarantine.QueryQua
 	return resp, nil
 }
 
-func (k Keeper) IsQuarantined(goCtx context.Context, req *quarantine.QueryIsQuarantinedRequest) (*quarantine.QueryIsQuarantinedResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-	if len(req.ToAddress) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "to address cannot be empty")
-	}
-
-	toAddr, err := sdk.AccAddressFromBech32(req.ToAddress)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid to address: %s", err.Error())
-	}
-
-	ctx := sdk.UnwrapSDKContext(goCtx)
-	resp := &quarantine.QueryIsQuarantinedResponse{
-		IsQuarantined: k.IsQuarantinedAddr(ctx, toAddr),
-	}
-
-	return resp, nil
-}
-
 func (k Keeper) AutoResponses(goCtx context.Context, req *quarantine.QueryAutoResponsesRequest) (*quarantine.QueryAutoResponsesResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -120,7 +120,7 @@ func (k Keeper) AutoResponses(goCtx context.Context, req *quarantine.QueryAutoRe
 	if len(fromAddr) > 0 {
 		qar := k.GetAutoResponse(ctx, toAddr, fromAddr)
 		r := quarantine.NewAutoResponseEntry(toAddr, fromAddr, qar)
-		resp.Results = append(resp.Results, r)
+		resp.AutoResponses = append(resp.AutoResponses, r)
 	} else {
 		store := k.getAutoResponsesPrefixStore(ctx, toAddr)
 		resp.Pagination, err = query.Paginate(
@@ -129,7 +129,7 @@ func (k Keeper) AutoResponses(goCtx context.Context, req *quarantine.QueryAutoRe
 				kToAddr, kFromAddr := quarantine.ParseAutoResponseKey(key)
 				qar := quarantine.ToAutoResponse(value)
 				r := quarantine.NewAutoResponseEntry(kToAddr, kFromAddr, qar)
-				resp.Results = append(resp.Results, r)
+				resp.AutoResponses = append(resp.AutoResponses, r)
 				return nil
 			},
 		)
