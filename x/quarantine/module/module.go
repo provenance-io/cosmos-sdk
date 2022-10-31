@@ -69,7 +69,7 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ sdkclient.TxEncodin
 
 // GetQueryCmd returns the cli query commands for the quarantine module
 func (a AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return cli.QueryCmd(a.Name())
+	return cli.QueryCmd()
 }
 
 // GetTxCmd returns the transaction commands for the quarantine module
