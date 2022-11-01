@@ -1,6 +1,7 @@
 package quarantine
 
 import (
+	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -1070,5 +1071,341 @@ func TestQuarantineRecordIsZero(t *testing.T) {
 	}
 }
 
-// TODO[1046]: QuarantineRecord.Add(coins ...sdk.Coin)
-// TODO[1046]: QuarantineRecord.AsQuarantinedFunds
+func TestQuarantineRecordAdd(t *testing.T) {
+	moreCoinMakers := map[string]coinMaker{
+		"empty":          coinMakerMap["empty"],
+		"nil":            coinMakerMap["nil"],
+		"0acorn":         func() sdk.Coins { return sdk.Coins{sdk.NewInt64Coin("acorn", 0)} },
+		"50acorn":        func() sdk.Coins { return sdk.NewCoins(sdk.NewInt64Coin("acorn", 50)) },
+		"32almond":       func() sdk.Coins { return sdk.NewCoins(sdk.NewInt64Coin("almond", 32)) },
+		"8acorn,9almond": func() sdk.Coins { return sdk.NewCoins(sdk.NewInt64Coin("acorn", 8), sdk.NewInt64Coin("almond", 9)) },
+	}
+
+	tests := []struct {
+		qrCoinKey  string
+		addCoinKey string
+		expected   sdk.Coins
+	}{
+		// empty
+		{
+			qrCoinKey:  "empty",
+			addCoinKey: "empty",
+			expected:   nil,
+		},
+		{
+			qrCoinKey:  "empty",
+			addCoinKey: "nil",
+			expected:   nil,
+		},
+		{
+			qrCoinKey:  "empty",
+			addCoinKey: "0acorn",
+			expected:   nil,
+		},
+		{
+			qrCoinKey:  "empty",
+			addCoinKey: "50acorn",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 50)),
+		},
+		{
+			qrCoinKey:  "empty",
+			addCoinKey: "32almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("almond", 32)),
+		},
+		{
+			qrCoinKey:  "empty",
+			addCoinKey: "8acorn,9almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 8), sdk.NewInt64Coin("almond", 9)),
+		},
+
+		// nil
+		{
+			qrCoinKey:  "nil",
+			addCoinKey: "empty",
+			expected:   nil,
+		},
+		{
+			qrCoinKey:  "nil",
+			addCoinKey: "nil",
+			expected:   nil,
+		},
+		{
+			qrCoinKey:  "nil",
+			addCoinKey: "0acorn",
+			expected:   nil,
+		},
+		{
+			qrCoinKey:  "nil",
+			addCoinKey: "50acorn",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 50)),
+		},
+		{
+			qrCoinKey:  "nil",
+			addCoinKey: "32almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("almond", 32)),
+		},
+		{
+			qrCoinKey:  "nil",
+			addCoinKey: "8acorn,9almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 8), sdk.NewInt64Coin("almond", 9)),
+		},
+
+		// 0acorn
+		{
+			qrCoinKey:  "0acorn",
+			addCoinKey: "empty",
+			expected:   nil,
+		},
+		{
+			qrCoinKey:  "0acorn",
+			addCoinKey: "nil",
+			expected:   nil,
+		},
+		{
+			qrCoinKey:  "0acorn",
+			addCoinKey: "0acorn",
+			expected:   nil,
+		},
+		{
+			qrCoinKey:  "0acorn",
+			addCoinKey: "50acorn",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 50)),
+		},
+		{
+			qrCoinKey:  "0acorn",
+			addCoinKey: "32almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("almond", 32)),
+		},
+		{
+			qrCoinKey:  "0acorn",
+			addCoinKey: "8acorn,9almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 8), sdk.NewInt64Coin("almond", 9)),
+		},
+
+		// 50acorn
+		{
+			qrCoinKey:  "50acorn",
+			addCoinKey: "empty",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 50)),
+		},
+		{
+			qrCoinKey:  "50acorn",
+			addCoinKey: "nil",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 50)),
+		},
+		{
+			qrCoinKey:  "50acorn",
+			addCoinKey: "0acorn",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 50)),
+		},
+		{
+			qrCoinKey:  "50acorn",
+			addCoinKey: "50acorn",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 100)),
+		},
+		{
+			qrCoinKey:  "50acorn",
+			addCoinKey: "32almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 50), sdk.NewInt64Coin("almond", 32)),
+		},
+		{
+			qrCoinKey:  "50acorn",
+			addCoinKey: "8acorn,9almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 58), sdk.NewInt64Coin("almond", 9)),
+		},
+
+		// 32almond
+		{
+			qrCoinKey:  "32almond",
+			addCoinKey: "empty",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("almond", 32)),
+		},
+		{
+			qrCoinKey:  "32almond",
+			addCoinKey: "nil",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("almond", 32)),
+		},
+		{
+			qrCoinKey:  "32almond",
+			addCoinKey: "0acorn",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("almond", 32)),
+		},
+		{
+			qrCoinKey:  "32almond",
+			addCoinKey: "50acorn",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 50), sdk.NewInt64Coin("almond", 32)),
+		},
+		{
+			qrCoinKey:  "32almond",
+			addCoinKey: "32almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("almond", 64)),
+		},
+		{
+			qrCoinKey:  "32almond",
+			addCoinKey: "8acorn,9almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 8), sdk.NewInt64Coin("almond", 41)),
+		},
+
+		// 8acorn,9almond
+		{
+			qrCoinKey:  "8acorn,9almond",
+			addCoinKey: "empty",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 8), sdk.NewInt64Coin("almond", 9)),
+		},
+		{
+			qrCoinKey:  "8acorn,9almond",
+			addCoinKey: "nil",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 8), sdk.NewInt64Coin("almond", 9)),
+		},
+		{
+			qrCoinKey:  "8acorn,9almond",
+			addCoinKey: "0acorn",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 8), sdk.NewInt64Coin("almond", 9)),
+		},
+		{
+			qrCoinKey:  "8acorn,9almond",
+			addCoinKey: "50acorn",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 58), sdk.NewInt64Coin("almond", 9)),
+		},
+		{
+			qrCoinKey:  "8acorn,9almond",
+			addCoinKey: "32almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 8), sdk.NewInt64Coin("almond", 41)),
+		},
+		{
+			qrCoinKey:  "8acorn,9almond",
+			addCoinKey: "8acorn,9almond",
+			expected:   sdk.NewCoins(sdk.NewInt64Coin("acorn", 16), sdk.NewInt64Coin("almond", 18)),
+		},
+	}
+
+	for _, declined := range []bool{false, true} {
+		for _, tc := range tests {
+			t.Run(fmt.Sprintf("%q+%q=%q %t", tc.qrCoinKey, tc.addCoinKey, tc.expected.String(), declined), func(t *testing.T) {
+				expected := QuarantineRecord{
+					Coins:    tc.expected,
+					Declined: declined,
+				}
+				qr := QuarantineRecord{
+					Coins:    moreCoinMakers[tc.qrCoinKey](),
+					Declined: declined,
+				}
+				addCoinsOrig := moreCoinMakers[tc.addCoinKey]()
+				addCoins := moreCoinMakers[tc.addCoinKey]()
+				qr.Add(addCoins...)
+				assert.Equal(t, expected, qr, "QuarantineRecord after Add")
+				assert.Equal(t, addCoinsOrig, addCoins, "Coins before and after")
+			})
+		}
+	}
+}
+
+func TestQuarantineRecordAsQuarantinedFunds(t *testing.T) {
+	testAddrs := []sdk.AccAddress{
+		testAddr("qrasqf test addr 0"),
+		testAddr("qrasqf test addr 1"),
+	}
+	tests := []struct {
+		name     string
+		coinMkr  coinMaker
+		declined bool
+		toAddr   sdk.AccAddress
+		fromAddr sdk.AccAddress
+		expected *QuarantinedFunds
+	}{
+		{
+			name:     "control",
+			coinMkr:  coinMakerMap["ok"],
+			declined: false,
+			toAddr:   testAddrs[0],
+			fromAddr: testAddrs[1],
+			expected: &QuarantinedFunds{
+				ToAddress:   testAddrs[0].String(),
+				FromAddress: testAddrs[1].String(),
+				Coins:       coinMakerMap["ok"](),
+				Declined:    false,
+			},
+		},
+		{
+			name:     "declined",
+			coinMkr:  coinMakerMap["ok"],
+			declined: true,
+			toAddr:   testAddrs[0],
+			fromAddr: testAddrs[1],
+			expected: &QuarantinedFunds{
+				ToAddress:   testAddrs[0].String(),
+				FromAddress: testAddrs[1].String(),
+				Coins:       coinMakerMap["ok"](),
+				Declined:    true,
+			},
+		},
+		{
+			name:     "bad coins",
+			coinMkr:  coinMakerMap["bad"],
+			declined: false,
+			toAddr:   testAddrs[0],
+			fromAddr: testAddrs[1],
+			expected: &QuarantinedFunds{
+				ToAddress:   testAddrs[0].String(),
+				FromAddress: testAddrs[1].String(),
+				Coins:       coinMakerMap["bad"](),
+				Declined:    false,
+			},
+		},
+		{
+			name:     "empty coins",
+			coinMkr:  coinMakerMap["empty"],
+			declined: false,
+			toAddr:   testAddrs[0],
+			fromAddr: testAddrs[1],
+			expected: &QuarantinedFunds{
+				ToAddress:   testAddrs[0].String(),
+				FromAddress: testAddrs[1].String(),
+				Coins:       coinMakerMap["empty"](),
+				Declined:    false,
+			},
+		},
+		{
+			name:     "no to address",
+			coinMkr:  coinMakerMap["ok"],
+			declined: false,
+			toAddr:   nil,
+			fromAddr: testAddrs[1],
+			expected: &QuarantinedFunds{
+				ToAddress:   "",
+				FromAddress: testAddrs[1].String(),
+				Coins:       coinMakerMap["ok"](),
+				Declined:    false,
+			},
+		},
+		{
+			name:     "no from address",
+			coinMkr:  coinMakerMap["ok"],
+			declined: false,
+			toAddr:   testAddrs[0],
+			fromAddr: nil,
+			expected: &QuarantinedFunds{
+				ToAddress:   testAddrs[0].String(),
+				FromAddress: "",
+				Coins:       coinMakerMap["ok"](),
+				Declined:    false,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			qrOrig := QuarantineRecord{
+				Coins:    tc.coinMkr(),
+				Declined: tc.declined,
+			}
+			qr := QuarantineRecord{
+				Coins:    tc.coinMkr(),
+				Declined: tc.declined,
+			}
+			actual := qr.AsQuarantinedFunds(tc.toAddr, tc.fromAddr)
+			assert.Equal(t, tc.expected, actual, "resulting QuarantinedFunds")
+			assert.Equal(t, qrOrig, qr, "QuarantineRecord before and after")
+		})
+	}
+}
