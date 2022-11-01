@@ -77,6 +77,12 @@ func NewBaseSendKeeper(
 // circular dependencies, and fix the bootstrap problem of both keepers needing to know each other.
 // If no QuarantineKeeper is ever provided, quarantine functionality is disabled.
 func (k *BaseSendKeeper) SetQuarantineKeeper(qk types.QuarantineKeeper) {
+	// Allow setting it when it's currently not set. Also allow unsetting it.
+	// And if the provided one is the same as what's already set, that's okay too.
+	// But if it's already set, and is being changed, it's probably not on purpose, so panic.
+	if k.qk != nil && qk != nil && k.qk != qk {
+		panic("the quarantine keeper has already been set")
+	}
 	k.qk = qk
 }
 
