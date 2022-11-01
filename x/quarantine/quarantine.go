@@ -139,7 +139,7 @@ func (r QuarantineRecord) IsZero() bool {
 
 // Add adds coins to this.
 func (r *QuarantineRecord) Add(coins ...sdk.Coin) {
-	r.Coins.Add(coins...)
+	r.Coins = r.Coins.Add(coins...)
 }
 
 // AsQuarantinedFunds creates a new QuarantinedFunds using fields in this and the provided addresses.
