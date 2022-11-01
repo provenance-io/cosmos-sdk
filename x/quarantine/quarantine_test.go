@@ -24,9 +24,14 @@ var coinMakerMap = map[string]coinMaker{
 	"bad":   func() sdk.Coins { return sdk.Coins{sdk.Coin{Denom: "badcoin", Amount: sdk.NewInt(-1)}} },
 }
 
-func assertErrorContainsMulti(t *testing.T, theError error, contains []string, msgAndArgs ...interface{}) bool {
+// assertErrorContents asserts that, if contains is empty, there's no error.
+// Otherwaise, asserts that there is an error, and that it contains each of the provided strings.
+func assertErrorContents(t *testing.T, theError error, contains []string, msgAndArgs ...interface{}) bool {
 	t.Helper()
-	rv := assert.Error(t, theError)
+	if len(contains) == 0 {
+		return assert.NoError(t, theError, msgAndArgs)
+	}
+	rv := assert.Error(t, theError, msgAndArgs...)
 	if rv {
 		for _, expInErr := range contains {
 			rv = assert.ErrorContains(t, theError, expInErr, msgAndArgs...) && rv
@@ -144,7 +149,7 @@ func TestNewQuarantinedFunds(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			actual := NewQuarantinedFunds(tc.toAddr, tc.fromAddr, tc.Coins, tc.declined)
-			assert.Equal(t, tc.expected, actual)
+			assert.Equal(t, tc.expected, actual, "NewQuarantinedFunds")
 		})
 	}
 }
@@ -373,11 +378,7 @@ func TestQuarantinedFundsValidate(t *testing.T) {
 				Declined:    tc.declined,
 			}
 			err := qf.Validate()
-			if len(tc.expectedInErr) == 0 {
-				assert.NoError(t, err, "Validate")
-			} else {
-				assertErrorContainsMulti(t, err, tc.expectedInErr, "Validate")
-			}
+			assertErrorContents(t, err, tc.expectedInErr, "Validate")
 			assert.Equal(t, qfOrig, qf, "QuarantinedFunds before and after")
 		})
 	}
@@ -467,7 +468,7 @@ func TestNewAutoResponseEntry(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			actual := NewAutoResponseEntry(tc.toAddr, tc.fromAddr, tc.resp)
-			assert.Equal(t, tc.expected, actual)
+			assert.Equal(t, tc.expected, actual, "NewAutoResponseEntry")
 		})
 	}
 }
@@ -564,11 +565,7 @@ func TestAutoResponseEntryValidate(t *testing.T) {
 				Response:    tc.resp,
 			}
 			err := entry.Validate()
-			if len(tc.expectedInErr) == 0 {
-				assert.NoError(t, err, "Validate")
-			} else {
-				assertErrorContainsMulti(t, err, tc.expectedInErr, "Validate")
-			}
+			assertErrorContents(t, err, tc.expectedInErr, "Validate")
 			assert.Equal(t, entryOrig, entry, "AutoResponseEntry before and after")
 		})
 	}
@@ -642,11 +639,7 @@ func TestAutoResponseUpdateValidate(t *testing.T) {
 				Response:    tc.resp,
 			}
 			err := update.Validate()
-			if len(tc.expectedInErr) == 0 {
-				assert.NoError(t, err, "Validate")
-			} else {
-				assertErrorContainsMulti(t, err, tc.expectedInErr, "Validate")
-			}
+			assertErrorContents(t, err, tc.expectedInErr, "Validate")
 			assert.Equal(t, updateOrig, update, "AutoResponseUpdate before and after")
 		})
 	}
@@ -882,8 +875,200 @@ func TestAutoResponseIsDecline(t *testing.T) {
 	}
 }
 
-// TODO[1046]: NewQuarantineRecord
-// TODO[1046]: QuarantineRecord.Validate()
-// TODO[1046]: QuarantineRecord.IsZero()
+func TestNewQuarantineRecord(t *testing.T) {
+	tests := []struct {
+		name     string
+		coins    sdk.Coins
+		declined bool
+		expected *QuarantineRecord
+	}{
+		{
+			name:     "control",
+			coins:    coinMakerMap["ok"](),
+			declined: false,
+			expected: &QuarantineRecord{
+				Coins:    coinMakerMap["ok"](),
+				Declined: false,
+			},
+		},
+		{
+			name:     "declined",
+			coins:    coinMakerMap["ok"](),
+			declined: true,
+			expected: &QuarantineRecord{
+				Coins:    coinMakerMap["ok"](),
+				Declined: true,
+			},
+		},
+		{
+			name:     "multi coins",
+			coins:    coinMakerMap["multi"](),
+			declined: false,
+			expected: &QuarantineRecord{
+				Coins:    coinMakerMap["multi"](),
+				Declined: false,
+			},
+		},
+		{
+			name:     "empty coins",
+			coins:    coinMakerMap["empty"](),
+			declined: false,
+			expected: &QuarantineRecord{
+				Coins:    coinMakerMap["empty"](),
+				Declined: false,
+			},
+		},
+		{
+			name:     "nil coins",
+			coins:    coinMakerMap["nil"](),
+			declined: false,
+			expected: &QuarantineRecord{
+				Coins:    coinMakerMap["nil"](),
+				Declined: false,
+			},
+		},
+		{
+			name:     "bad coins",
+			coins:    coinMakerMap["bad"](),
+			declined: false,
+			expected: &QuarantineRecord{
+				Coins:    coinMakerMap["bad"](),
+				Declined: false,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := NewQuarantineRecord(tc.coins, tc.declined)
+			assert.Equal(t, tc.expected, actual, "NewQuarantineRecord")
+		})
+	}
+}
+
+func TestQuarantineRecordValidate(t *testing.T) {
+	tests := []struct {
+		name          string
+		coinMkr       coinMaker
+		declined      bool
+		expectedInErr []string
+	}{
+		{
+			name:          "control",
+			coinMkr:       coinMakerMap["ok"],
+			declined:      false,
+			expectedInErr: nil,
+		},
+		{
+			name:          "declined",
+			coinMkr:       coinMakerMap["ok"],
+			declined:      true,
+			expectedInErr: nil,
+		},
+		{
+			name:          "multi coins",
+			coinMkr:       coinMakerMap["multi"],
+			declined:      false,
+			expectedInErr: nil,
+		},
+		{
+			name:          "empty coins",
+			coinMkr:       coinMakerMap["empty"],
+			declined:      false,
+			expectedInErr: nil,
+		},
+		{
+			name:          "nil coins",
+			coinMkr:       coinMakerMap["nil"],
+			declined:      false,
+			expectedInErr: nil,
+		},
+		{
+			name:          "bad coins",
+			coinMkr:       coinMakerMap["bad"],
+			declined:      false,
+			expectedInErr: []string{coinMakerMap["bad"]().String(), "amount is not positive"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			qrOrig := QuarantineRecord{
+				Coins:    tc.coinMkr(),
+				Declined: tc.declined,
+			}
+			qr := QuarantineRecord{
+				Coins:    tc.coinMkr(),
+				Declined: tc.declined,
+			}
+			err := qr.Validate()
+			assertErrorContents(t, err, tc.expectedInErr, "Validate")
+			assert.Equal(t, qrOrig, qr, "QuarantineRecord before and after")
+		})
+	}
+}
+
+func TestQuarantineRecordIsZero(t *testing.T) {
+	tests := []struct {
+		name     string
+		coinMkr  coinMaker
+		declined bool
+		expected bool
+	}{
+		{
+			name:     "control",
+			coinMkr:  coinMakerMap["ok"],
+			declined: false,
+			expected: false,
+		},
+		{
+			name:     "declined",
+			coinMkr:  coinMakerMap["ok"],
+			declined: true,
+			expected: false,
+		},
+		{
+			name:     "multi coins",
+			coinMkr:  coinMakerMap["multi"],
+			declined: false,
+			expected: false,
+		},
+		{
+			name:     "empty coins",
+			coinMkr:  coinMakerMap["empty"],
+			declined: false,
+			expected: true,
+		},
+		{
+			name:     "nil coins",
+			coinMkr:  coinMakerMap["nil"],
+			declined: false,
+			expected: true,
+		},
+		{
+			name:     "bad coins",
+			coinMkr:  coinMakerMap["bad"],
+			declined: false,
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			qrOrig := QuarantineRecord{
+				Coins:    tc.coinMkr(),
+				Declined: tc.declined,
+			}
+			qr := QuarantineRecord{
+				Coins:    tc.coinMkr(),
+				Declined: tc.declined,
+			}
+			actual := qr.IsZero()
+			assert.Equal(t, tc.expected, actual, "IsZero()")
+			assert.Equal(t, qrOrig, qr, "QuarantineRecord before and after")
+		})
+	}
+}
+
 // TODO[1046]: QuarantineRecord.Add(coins ...sdk.Coin)
 // TODO[1046]: QuarantineRecord.AsQuarantinedFunds
