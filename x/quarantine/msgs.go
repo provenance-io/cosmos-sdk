@@ -4,6 +4,7 @@ import (
 	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	qerrors "github.com/cosmos/cosmos-sdk/x/quarantine/errors"
 )
 
 var _ sdk.Msg = &MsgOptIn{}
@@ -123,9 +124,12 @@ func (msg MsgUpdateAutoResponses) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
+	if len(msg.Updates) == 0 {
+		return qerrors.ErrInvalidValue.Wrap("no updates")
+	}
 	for i, update := range msg.Updates {
 		if err := update.Validate(); err != nil {
-			return errors.Wrapf(err, "invalid update %d", i)
+			return errors.Wrapf(err, "invalid update %d", i+1)
 		}
 	}
 	return nil
