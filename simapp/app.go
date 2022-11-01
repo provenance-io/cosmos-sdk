@@ -132,6 +132,7 @@ var (
 		groupmodule.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		nftmodule.AppModuleBasic{},
+		quarantinemodule.AppModuleBasic{},
 	)
 
 	// module account permissions
