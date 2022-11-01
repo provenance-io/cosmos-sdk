@@ -8,8 +8,6 @@ import (
 
 var _ sdk.Msg = &MsgOptIn{}
 
-// TODO[1046]: Implement the LegacyMsg interface for MsgOptIn? GetSignBytes() []byte, Route() string, Type() string
-
 // NewMsgOptIn creates a new msg to opt in to account quarantine.
 func NewMsgOptIn(toAddr sdk.AccAddress) *MsgOptIn {
 	return &MsgOptIn{
@@ -33,8 +31,6 @@ func (msg MsgOptIn) GetSigners() []sdk.AccAddress {
 
 var _ sdk.Msg = &MsgOptOut{}
 
-// TODO[1046]: Implement the LegacyMsg interface for MsgOptOut? GetSignBytes() []byte, Route() string, Type() string
-
 // NewMsgOptOut creates a new msg to opt out of account quarantine.
 func NewMsgOptOut(toAddr sdk.AccAddress) *MsgOptOut {
 	return &MsgOptOut{
@@ -57,8 +53,6 @@ func (msg MsgOptOut) GetSigners() []sdk.AccAddress {
 }
 
 var _ sdk.Msg = &MsgAccept{}
-
-// TODO[1046]: Implement the LegacyMsg interface for MsgAccept? GetSignBytes() []byte, Route() string, Type() string
 
 // NewMsgAccept creates a new msg to accept quarantined funds.
 func NewMsgAccept(toAddr sdk.AccAddress, fromAddrStr string, permanent bool) *MsgAccept {
@@ -88,8 +82,6 @@ func (msg MsgAccept) GetSigners() []sdk.AccAddress {
 
 var _ sdk.Msg = &MsgDecline{}
 
-// TODO[1046]: Implement the LegacyMsg interface for MsgDecline? GetSignBytes() []byte, Route() string, Type() string
-
 // NewMsgDecline creates a new msg to decline quarantined funds.
 func NewMsgDecline(toAddr sdk.AccAddress, fromAddrStr string, permanent bool) *MsgDecline {
 	return &MsgDecline{
@@ -117,8 +109,6 @@ func (msg MsgDecline) GetSigners() []sdk.AccAddress {
 }
 
 var _ sdk.Msg = &MsgUpdateAutoResponses{}
-
-// TODO[1046]: Implement the LegacyMsg interface for MsgUpdateAutoResponses? GetSignBytes() []byte, Route() string, Type() string
 
 // NewMsgUpdateAutoResponses creates a new msg to update quarantined auto-responses.
 func NewMsgUpdateAutoResponses(toAddr sdk.AccAddress, updates []*AutoResponseUpdate) *MsgUpdateAutoResponses {
