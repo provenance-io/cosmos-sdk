@@ -11,8 +11,8 @@ option go_package = "github.com/cosmos/cosmos-sdk/x/quarantine";
 message QuarantinedFunds {
   // to_address is the intended recipient of the coins that have been quarantined.
   string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  // from_address is the sender of the coins.
-  string from_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // unaccepted_from_addresses are the senders that have not been part of an accept yet for these coins.
+  repeated string unaccepted_from_addresses = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // coins is the amount currently in quarantined for the two addresses.
   repeated cosmos.base.v1beta1.Coin coins = 3
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
@@ -54,9 +54,11 @@ enum AutoResponse {
 
 // QuarantineRecord defines information regarding quarantined funds.
 message QuarantineRecord {
+  // unaccepted_from_addresses are the senders that have not been part of an accept yet for these coins.
+  repeated string unaccepted_from_addresses = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // coins is the amount that has been quarantined.
-  repeated cosmos.base.v1beta1.Coin coins = 1
+  repeated cosmos.base.v1beta1.Coin coins = 2
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
   // declined is whether these funds have been declined.
-  bool declined = 2;
+  bool declined = 3;
 }

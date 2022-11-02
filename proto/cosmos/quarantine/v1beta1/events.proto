@@ -19,16 +19,16 @@ message EventOptOut {
 
 // EventFundsQuarantined is an event emitted when funds are quarantined.
 message EventFundsQuarantined {
-  string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  string from_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string          to_address              = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated string from_addresses          = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   repeated cosmos.base.v1beta1.Coin coins = 3
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
 }
 
 // EventFundsReleased is an event emitted when funds are released from quarantine.
 message EventFundsReleased {
-  string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  string from_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string          to_address              = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated string from_addresses          = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   repeated cosmos.base.v1beta1.Coin coins = 3
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
 }
