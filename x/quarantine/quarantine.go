@@ -7,18 +7,22 @@ import (
 )
 
 // NewQuarantinedFunds creates a new quarantined funds object.
-func NewQuarantinedFunds(toAddr, fromAddr sdk.AccAddress, coins sdk.Coins, declined bool) *QuarantinedFunds {
-	return &QuarantinedFunds{
-		ToAddress:   toAddr.String(),
-		FromAddress: fromAddr.String(),
-		Coins:       coins,
-		Declined:    declined,
+func NewQuarantinedFunds(toAddr sdk.AccAddress, fromAddrs []sdk.AccAddress, coins sdk.Coins, declined bool) *QuarantinedFunds {
+	rv := &QuarantinedFunds{
+		ToAddress:               toAddr.String(),
+		UnacceptedFromAddresses: make([]string, len(fromAddrs)),
+		Coins:                   coins,
+		Declined:                declined,
 	}
+	for i, addr := range fromAddrs {
+		rv.UnacceptedFromAddresses[i] = addr.String()
+	}
+	return rv
 }
 
 // AsQuarantineRecord creates a new QuarantineRecord using the fields in this.
 func (f QuarantinedFunds) AsQuarantineRecord() *QuarantineRecord {
-	return NewQuarantineRecord(f.Coins, f.Declined)
+	return NewQuarantineRecord(f.UnacceptedFromAddresses, f.Coins, f.Declined)
 }
 
 // Validate does simple stateless validation of these quarantined funds.
@@ -26,8 +30,13 @@ func (f QuarantinedFunds) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(f.ToAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %v", err)
 	}
-	if _, err := sdk.AccAddressFromBech32(f.FromAddress); err != nil {
-		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
+	if len(f.UnacceptedFromAddresses) == 0 {
+		return errors.ErrInvalidValue.Wrap("at least one unaccepted from address is required")
+	}
+	for i, addr := range f.UnacceptedFromAddresses {
+		if _, err := sdk.AccAddressFromBech32(addr); err != nil {
+			return sdkerrors.ErrInvalidAddress.Wrapf("invalid unaccepted from address[i]: %v", i, err)
+		}
 	}
 	if err := f.Coins.Validate(); err != nil {
 		return err
@@ -120,15 +129,23 @@ func (r AutoResponse) IsDecline() bool {
 }
 
 // NewQuarantineRecord creates a new quarantine record object.
-func NewQuarantineRecord(coins sdk.Coins, declined bool) *QuarantineRecord {
-	return &QuarantineRecord{
-		Coins:    coins,
-		Declined: declined,
+func NewQuarantineRecord(unacceptedFromAddrs []string, coins sdk.Coins, declined bool) *QuarantineRecord {
+	rv := &QuarantineRecord{
+		UnacceptedFromAddresses: make([]sdk.AccAddress, len(unacceptedFromAddrs)),
+		Coins:                   coins,
+		Declined:                declined,
 	}
+	for i, addr := range unacceptedFromAddrs {
+		rv.UnacceptedFromAddresses[i] = sdk.MustAccAddressFromBech32(addr)
+	}
+	return rv
 }
 
 // Validate does simple stateless validation of these quarantined funds.
 func (r QuarantineRecord) Validate() error {
+	if len(r.UnacceptedFromAddresses) == 0 {
+		return errors.ErrInvalidValue.Wrap("at least one unaccepted from address is required")
+	}
 	return r.Coins.Validate()
 }
 
@@ -142,7 +159,27 @@ func (r *QuarantineRecord) Add(coins ...sdk.Coin) {
 	r.Coins = r.Coins.Add(coins...)
 }
 
+// AcceptFromAddrs removes the provided from addresses and removes them from this record's
+// unaccepted from addresses list. If none of the provided addresses are in this record's list,
+// this does nothing.
+func (r *QuarantineRecord) AcceptFromAddrs(addrs []sdk.AccAddress) {
+	newAddrs := make([]sdk.AccAddress, 0, len(r.UnacceptedFromAddresses))
+	for _, existing := range r.UnacceptedFromAddresses {
+		found := false
+		for _, toRemove := range addrs {
+			if existing.Equals(toRemove) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			newAddrs = append(newAddrs, existing)
+		}
+	}
+	r.UnacceptedFromAddresses = newAddrs
+}
+
 // AsQuarantinedFunds creates a new QuarantinedFunds using fields in this and the provided addresses.
-func (r QuarantineRecord) AsQuarantinedFunds(toAddr, fromAddr sdk.AccAddress) *QuarantinedFunds {
-	return NewQuarantinedFunds(toAddr, fromAddr, r.Coins, r.Declined)
+func (r QuarantineRecord) AsQuarantinedFunds(toAddr sdk.AccAddress) *QuarantinedFunds {
+	return NewQuarantinedFunds(toAddr, r.UnacceptedFromAddresses, r.Coins, r.Declined)
 }
