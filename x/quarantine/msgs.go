@@ -56,11 +56,11 @@ func (msg MsgOptOut) GetSigners() []sdk.AccAddress {
 var _ sdk.Msg = &MsgAccept{}
 
 // NewMsgAccept creates a new msg to accept quarantined funds.
-func NewMsgAccept(toAddr sdk.AccAddress, fromAddrStr string, permanent bool) *MsgAccept {
+func NewMsgAccept(toAddr sdk.AccAddress, fromAddrStrs []string, permanent bool) *MsgAccept {
 	return &MsgAccept{
-		ToAddress:   toAddr.String(),
-		FromAddress: fromAddrStr,
-		Permanent:   permanent,
+		ToAddress:     toAddr.String(),
+		FromAddresses: fromAddrStrs,
+		Permanent:     permanent,
 	}
 }
 
@@ -69,8 +69,13 @@ func (msg MsgAccept) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
-	if _, err := sdk.AccAddressFromBech32(msg.FromAddress); err != nil {
-		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %s", err)
+	for i, addr := range msg.FromAddresses {
+		if _, err := sdk.AccAddressFromBech32(addr); err != nil {
+			return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address[%d]: %s", i, err)
+		}
+	}
+	if msg.Permanent && len(msg.FromAddresses) == 0 {
+		return qerrors.ErrInvalidValue.Wrap("at least one from address is required when permanent = true")
 	}
 	return nil
 }
@@ -84,11 +89,11 @@ func (msg MsgAccept) GetSigners() []sdk.AccAddress {
 var _ sdk.Msg = &MsgDecline{}
 
 // NewMsgDecline creates a new msg to decline quarantined funds.
-func NewMsgDecline(toAddr sdk.AccAddress, fromAddrStr string, permanent bool) *MsgDecline {
+func NewMsgDecline(toAddr sdk.AccAddress, fromAddrStrs []string, permanent bool) *MsgDecline {
 	return &MsgDecline{
-		ToAddress:   toAddr.String(),
-		FromAddress: fromAddrStr,
-		Permanent:   permanent,
+		ToAddress:     toAddr.String(),
+		FromAddresses: fromAddrStrs,
+		Permanent:     permanent,
 	}
 }
 
@@ -97,8 +102,13 @@ func (msg MsgDecline) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
-	if _, err := sdk.AccAddressFromBech32(msg.FromAddress); err != nil {
-		return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %s", err)
+	for i, addr := range msg.FromAddresses {
+		if _, err := sdk.AccAddressFromBech32(addr); err != nil {
+			return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address[%d]: %s", i, err)
+		}
+	}
+	if msg.Permanent && len(msg.FromAddresses) == 0 {
+		return qerrors.ErrInvalidValue.Wrap("at least one from address is required when permanent = true")
 	}
 	return nil
 }
