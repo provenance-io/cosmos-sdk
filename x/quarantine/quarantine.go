@@ -33,10 +33,15 @@ func (f QuarantinedFunds) Validate() error {
 	if len(f.UnacceptedFromAddresses) == 0 {
 		return errors.ErrInvalidValue.Wrap("at least one unaccepted from address is required")
 	}
+	seen := make(map[string]struct{})
 	for i, addr := range f.UnacceptedFromAddresses {
 		if _, err := sdk.AccAddressFromBech32(addr); err != nil {
-			return sdkerrors.ErrInvalidAddress.Wrapf("invalid unaccepted from address[i]: %v", i, err)
+			return sdkerrors.ErrInvalidAddress.Wrapf("invalid unaccepted from address[%d]: %v", i, err)
 		}
+		if _, found := seen[addr]; found {
+			return errors.ErrInvalidValue.Wrapf("duplicate unaccepted from address: %q", addr)
+		}
+		seen[addr] = struct{}{}
 	}
 	if err := f.Coins.Validate(); err != nil {
 		return err
