@@ -457,10 +457,92 @@ func TestCreateRecordToAddrPrefix(t *testing.T) {
 	}
 }
 
+func TestCreateFromRecordId(t *testing.T) {
+	testAddrs := []sdk.AccAddress{
+		testAddr("cfri test addr 0"),
+		testAddr("cfri test addr 0"),
+		testAddr("cfri test addr 0"),
+	}
+
+	t.Run("panics if no addrs", func(t *testing.T) {
+		assert.PanicsWithError(t, "at least one fromAddr is required: internal logic error",
+			func() { createFromRecordId([]sdk.AccAddress{}) },
+			"createFromRecordId([]sdk.AccAddress{})",
+		)
+	})
+
+	t.Run("panics with nil addrs", func(t *testing.T) {
+		assert.PanicsWithError(t, "at least one fromAddr is required: internal logic error",
+			func() { createFromRecordId(nil) },
+			"createFromRecordId(nil)",
+		)
+	})
+
+	t.Run("single addrs are unchanged", func(t *testing.T) {
+		for i, addr := range testAddrs {
+			expected := make([]byte, len(addr))
+			copy(expected, addr)
+
+			actual := createFromRecordId([]sdk.AccAddress{addr})
+			assert.Equal(t, expected, actual, "test address %d", i)
+		}
+	})
+
+	t.Run("two addrs order does not matter", func(t *testing.T) {
+		input1 := []sdk.AccAddress{testAddrs[0], testAddrs[1]}
+		input2 := []sdk.AccAddress{testAddrs[1], testAddrs[2]}
+		expected := createFromRecordId(input1)
+		actual := createFromRecordId(input2)
+		assert.Equal(t, expected, actual, "test addresses 0 and 1, vs 1 and 0")
+	})
+
+	t.Run("three addrs order does not matter", func(t *testing.T) {
+		inputTestAddrsIndexes := [][]int{
+			{0, 1, 2},
+			{0, 2, 1},
+			{1, 0, 2},
+			{1, 2, 0},
+			{2, 0, 1},
+			{2, 1, 0},
+		}
+		inputs := make([][]sdk.AccAddress, len(inputTestAddrsIndexes))
+		outputs := make([][]byte, len(inputTestAddrsIndexes))
+		for i, taIndexes := range inputTestAddrsIndexes {
+			inputs[i] = make([]sdk.AccAddress, len(taIndexes))
+			for j, ind := range taIndexes {
+				inputs[i][j] = testAddrs[ind]
+			}
+			outputs[i] = createFromRecordId(inputs[i])
+		}
+		for i := 0; i < len(outputs)-1; i++ {
+			for j := i + 1; j < len(outputs); j++ {
+				assert.Equal(t, outputs[i], outputs[j], "test addrs %v vs %v", inputTestAddrsIndexes[i], inputTestAddrsIndexes[j])
+			}
+		}
+	})
+
+	t.Run("two addrs different alone vs together", func(t *testing.T) {
+		input1 := []sdk.AccAddress{testAddrs[1]}
+		input2 := []sdk.AccAddress{testAddrs[2]}
+		inputBoth := []sdk.AccAddress{testAddrs[1], testAddrs[2]}
+		actual1 := createFromRecordId(input1)
+		actual2 := createFromRecordId(input2)
+		actualBoth := createFromRecordId(inputBoth)
+
+		assert.NotEqual(t, actual1, actual2, "addr 1 vs addr 2")
+		assert.NotEqual(t, actual1, actualBoth, "addr 1 vs both")
+		assert.NotEqual(t, actual2, actualBoth, "addr 2 vs both")
+		assert.NotContains(t, actualBoth, actual1, "both vs addr 1")
+		assert.NotContains(t, actualBoth, actual2, "both vs addr 2")
+	})
+}
+
 func TestCreateRecordKey(t *testing.T) {
 	testAddrs := []sdk.AccAddress{
 		testAddr("crk test addr 0"),
 		testAddr("crk test addr 1"),
+		testAddr("crk test addr 2"),
+		testAddr("crk test addr 3"),
 	}
 	badAddr := make(sdk.AccAddress, address.MaxAddrLen+1)
 	for i := 0; i < len(badAddr); i++ {
@@ -470,58 +552,77 @@ func TestCreateRecordKey(t *testing.T) {
 	for i := 0; i < len(longAddr); i++ {
 		longAddr[i] = byte((i + 97) % 256)
 	}
-	makeExpected := func(pre []byte, toAddrBz, fromAddrBz []byte) []byte {
-		rv := make([]byte, 0, len(pre)+1+len(toAddrBz)+1+len(fromAddrBz))
-		rv = append(rv, pre...)
+	makeExpected := func(toAddrBz []byte, fromAddrs ...sdk.AccAddress) []byte {
+		fromRecordId := createFromRecordId(fromAddrs)
+		rv := make([]byte, 0, len(RecordPrefix)+1+len(toAddrBz)+1+len(fromRecordId))
+		rv = append(rv, RecordPrefix...)
 		rv = append(rv, byte(len(toAddrBz)))
 		rv = append(rv, toAddrBz...)
-		rv = append(rv, byte(len(fromAddrBz)))
-		rv = append(rv, fromAddrBz...)
+		rv = append(rv, byte(len(fromRecordId)))
+		rv = append(rv, fromRecordId...)
 		return rv
 	}
 
 	tests := []struct {
-		name     string
-		toAddr   sdk.AccAddress
-		fromAddr sdk.AccAddress
-		expected []byte
-		expPanic string
+		name      string
+		toAddr    sdk.AccAddress
+		fromAddrs []sdk.AccAddress
+		expected  []byte
+		expPanic  string
 	}{
 		{
-			name:     "addr 0 addr 1",
-			toAddr:   testAddrs[0],
-			fromAddr: testAddrs[1],
-			expected: makeExpected(RecordPrefix, testAddrs[0], testAddrs[1]),
+			name:      "addr 0 addr 1",
+			toAddr:    testAddrs[0],
+			fromAddrs: []sdk.AccAddress{testAddrs[1]},
+			expected:  makeExpected(testAddrs[0], testAddrs[1]),
 		},
 		{
-			name:     "addr 1 long addr",
-			toAddr:   testAddrs[1],
-			fromAddr: longAddr,
-			expected: makeExpected(RecordPrefix, testAddrs[1], longAddr),
+			name:      "addr 1 long addr",
+			toAddr:    testAddrs[1],
+			fromAddrs: []sdk.AccAddress{longAddr},
+			expected:  makeExpected(testAddrs[1], longAddr),
 		},
 		{
-			name:     "long addr addr 0",
-			toAddr:   longAddr,
-			fromAddr: testAddrs[0],
-			expected: makeExpected(RecordPrefix, longAddr, testAddrs[0]),
+			name:      "long addr addr 0",
+			toAddr:    longAddr,
+			fromAddrs: []sdk.AccAddress{testAddrs[0]},
+			expected:  makeExpected(longAddr, testAddrs[0]),
 		},
 		{
-			name:     "long addr long addr",
-			toAddr:   longAddr,
-			fromAddr: longAddr,
-			expected: makeExpected(RecordPrefix, longAddr, longAddr),
+			name:      "long addr long addr",
+			toAddr:    longAddr,
+			fromAddrs: []sdk.AccAddress{longAddr},
+			expected:  makeExpected(longAddr, longAddr),
 		},
 		{
-			name:     "bad toAddr",
-			toAddr:   badAddr,
-			fromAddr: testAddrs[0],
-			expPanic: fmt.Sprintf("address length should be max %d bytes, got %d: unknown address", address.MaxAddrLen, len(badAddr)),
+			name:      "to addr 3 from addrs 0 1 2 and long",
+			toAddr:    testAddrs[3],
+			fromAddrs: []sdk.AccAddress{testAddrs[0], testAddrs[1], testAddrs[2], longAddr},
+			expected:  makeExpected(testAddrs[3], testAddrs[0], testAddrs[1], testAddrs[2], longAddr),
 		},
 		{
-			name:     "bad fromAddr",
-			toAddr:   testAddrs[0],
-			fromAddr: badAddr,
-			expPanic: fmt.Sprintf("address length should be max %d bytes, got %d: unknown address", address.MaxAddrLen, len(badAddr)),
+			name:      "to addr 2 from addrs 1 0 diff order",
+			toAddr:    testAddrs[2],
+			fromAddrs: []sdk.AccAddress{testAddrs[1], testAddrs[0]},
+			expected:  makeExpected(testAddrs[2], testAddrs[0], testAddrs[1]),
+		},
+		{
+			name:      "bad toAddr panics",
+			toAddr:    badAddr,
+			fromAddrs: []sdk.AccAddress{testAddrs[0]},
+			expPanic:  fmt.Sprintf("address length should be max %d bytes, got %d: unknown address", address.MaxAddrLen, len(badAddr)),
+		},
+		{
+			name:      "bad fromAddr ok",
+			toAddr:    testAddrs[0],
+			fromAddrs: []sdk.AccAddress{badAddr},
+			expected:  makeExpected(testAddrs[0], badAddr),
+		},
+		{
+			name:      "no fromAddrs panics",
+			toAddr:    testAddrs[2],
+			fromAddrs: []sdk.AccAddress{},
+			expPanic:  "at least one fromAddr is required: internal logic error",
 		},
 	}
 
@@ -529,7 +630,7 @@ func TestCreateRecordKey(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var actual []byte
 			testFunc := func() {
-				actual = CreateRecordKey(tc.toAddr, tc.fromAddr)
+				actual = CreateRecordKey(tc.toAddr, tc.fromAddrs...)
 			}
 			if len(tc.expPanic) == 0 {
 				if assert.NotPanics(t, testFunc, "CreateRecordKey") {
@@ -546,6 +647,7 @@ func TestParseRecordKey(t *testing.T) {
 	testAddrs := []sdk.AccAddress{
 		testAddr("prk test addr 0"),
 		testAddr("prk test addr 1"),
+		testAddr("prk test addr 2"),
 	}
 	longAddr := make(sdk.AccAddress, 32)
 	for i := 0; i < len(longAddr); i++ {
@@ -591,6 +693,18 @@ func TestParseRecordKey(t *testing.T) {
 			key:         CreateRecordKey(testAddrs[0], longAddr),
 			expToAddr:   testAddrs[0],
 			expFromAddr: longAddr,
+		},
+		{
+			name:        "multiple from addrs",
+			key:         CreateRecordKey(testAddrs[0], testAddrs[1], testAddrs[2]),
+			expToAddr:   testAddrs[0],
+			expFromAddr: createFromRecordId([]sdk.AccAddress{testAddrs[1], testAddrs[2]}),
+		},
+		{
+			name:        "multiple from addrs diff order",
+			key:         CreateRecordKey(testAddrs[0], testAddrs[2], testAddrs[1]),
+			expToAddr:   testAddrs[0],
+			expFromAddr: createFromRecordId([]sdk.AccAddress{testAddrs[1], testAddrs[2]}),
 		},
 		{
 			name:     "bad toAddr len",

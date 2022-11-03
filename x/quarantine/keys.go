@@ -1,8 +1,13 @@
 package quarantine
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"sort"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const (
@@ -85,24 +90,45 @@ func CreateRecordToAddrPrefix(toAddr sdk.AccAddress) []byte {
 }
 
 // CreateRecordKey creates the key for quarantine funds.
-func CreateRecordKey(toAddr, fromAddr sdk.AccAddress) []byte {
+func CreateRecordKey(toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) []byte {
 	toAddrPreBz := CreateRecordToAddrPrefix(toAddr)
-	fromAddrBz := address.MustLengthPrefix(fromAddr)
-	key := make([]byte, len(toAddrPreBz)+len(fromAddrBz))
+	recordId := address.MustLengthPrefix(createFromRecordId(fromAddrs))
+	key := make([]byte, len(toAddrPreBz)+len(recordId))
 	copy(key, toAddrPreBz)
-	copy(key[len(toAddrPreBz):], fromAddrBz)
+	copy(key[len(toAddrPreBz):], recordId)
 	return key
 }
 
-// ParseRecordKey extracts the to address and from address from the provided quarantine funds key.
-func ParseRecordKey(key []byte) (toAddr, fromAddr sdk.AccAddress) {
+// createFromRecordId creates a single "address" to use for the provided from addresses.
+func createFromRecordId(fromAddrs []sdk.AccAddress) []byte {
+	switch len(fromAddrs) {
+	case 0:
+		panic(sdkerrors.ErrLogic.Wrap("at least one fromAddr is required"))
+	case 1:
+		return fromAddrs[0]
+	default:
+		// the same n addresses needs to always create the same result.
+		sort.Slice(fromAddrs, func(i, j int) bool {
+			return bytes.Compare(fromAddrs[i], fromAddrs[j]) < 0
+		})
+		var toHash []byte
+		for _, addr := range fromAddrs {
+			toHash = append(toHash, addr...)
+		}
+		hash := sha256.Sum256(toHash)
+		return hash[0:]
+	}
+}
+
+// ParseRecordKey extracts the to address and from record id from the provided quarantine funds key.
+func ParseRecordKey(key []byte) (toAddr, fromRecordId sdk.AccAddress) {
 	// key is of format:
 	// 0x22<to addr len><to addr bytes><from addr len><from addr bytes>
 	toAddrLen, toAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
 	toAddr, toAddrEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
 
 	fromAddrLen, fromAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrEndIndex+1, 1)
-	fromAddr, _ = sdk.ParseLengthPrefixedBytes(key, fromAddrLenEndIndex+1, int(fromAddrLen[0]))
+	fromRecordId, _ = sdk.ParseLengthPrefixedBytes(key, fromAddrLenEndIndex+1, int(fromAddrLen[0]))
 
-	return toAddr, fromAddr
+	return toAddr, fromRecordId
 }
