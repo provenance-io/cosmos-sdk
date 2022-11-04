@@ -118,9 +118,8 @@ func (m *EventOptOut) GetToAddress() string {
 
 // EventFundsQuarantined is an event emitted when funds are quarantined.
 type EventFundsQuarantined struct {
-	ToAddress     string                                   `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
-	FromAddresses []string                                 `protobuf:"bytes,2,rep,name=from_addresses,json=fromAddresses,proto3" json:"from_addresses,omitempty"`
-	Coins         github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,3,rep,name=coins,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"coins"`
+	ToAddress string                                   `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
+	Coins     github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,2,rep,name=coins,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"coins"`
 }
 
 func (m *EventFundsQuarantined) Reset()         { *m = EventFundsQuarantined{} }
@@ -163,13 +162,6 @@ func (m *EventFundsQuarantined) GetToAddress() string {
 	return ""
 }
 
-func (m *EventFundsQuarantined) GetFromAddresses() []string {
-	if m != nil {
-		return m.FromAddresses
-	}
-	return nil
-}
-
 func (m *EventFundsQuarantined) GetCoins() github_com_cosmos_cosmos_sdk_types.Coins {
 	if m != nil {
 		return m.Coins
@@ -177,11 +169,10 @@ func (m *EventFundsQuarantined) GetCoins() github_com_cosmos_cosmos_sdk_types.Co
 	return nil
 }
 
-// EventFundsReleased is an event emitted when funds are released from quarantine.
+// EventFundsReleased is an event emitted when quarantined funds are accepted and released.
 type EventFundsReleased struct {
-	ToAddress     string                                   `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
-	FromAddresses []string                                 `protobuf:"bytes,2,rep,name=from_addresses,json=fromAddresses,proto3" json:"from_addresses,omitempty"`
-	Coins         github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,3,rep,name=coins,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"coins"`
+	ToAddress string                                   `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
+	Coins     github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,2,rep,name=coins,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"coins"`
 }
 
 func (m *EventFundsReleased) Reset()         { *m = EventFundsReleased{} }
@@ -224,13 +215,6 @@ func (m *EventFundsReleased) GetToAddress() string {
 	return ""
 }
 
-func (m *EventFundsReleased) GetFromAddresses() []string {
-	if m != nil {
-		return m.FromAddresses
-	}
-	return nil
-}
-
 func (m *EventFundsReleased) GetCoins() github_com_cosmos_cosmos_sdk_types.Coins {
 	if m != nil {
 		return m.Coins
@@ -250,7 +234,7 @@ func init() {
 }
 
 var fileDescriptor_33c74f079d23a045 = []byte{
-	// 346 bytes of a gzipped FileDescriptorProto
+	// 322 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x4b, 0xce, 0x2f, 0xce,
 	0xcd, 0x2f, 0xd6, 0x2f, 0x2c, 0x4d, 0x2c, 0x4a, 0xcc, 0x2b, 0xc9, 0xcc, 0x4b, 0xd5, 0x2f, 0x33,
 	0x4c, 0x4a, 0x2d, 0x49, 0x34, 0xd4, 0x4f, 0x2d, 0x4b, 0xcd, 0x2b, 0x29, 0xd6, 0x2b, 0x28, 0xca,
@@ -261,18 +245,17 @@ var fileDescriptor_33c74f079d23a045 = []byte{
 	0xae, 0x92, 0xfc, 0xf8, 0xc4, 0x94, 0x94, 0xa2, 0xd4, 0xe2, 0x62, 0x09, 0x46, 0x05, 0x46, 0x0d,
 	0x4e, 0x27, 0x89, 0x4b, 0x5b, 0x74, 0x45, 0xa0, 0x26, 0x39, 0x42, 0x64, 0x82, 0x4b, 0x8a, 0x32,
 	0xf3, 0xd2, 0x83, 0x38, 0x4b, 0xf2, 0xa1, 0x02, 0x4a, 0x6e, 0x5c, 0xdc, 0x30, 0x63, 0xfc, 0x4b,
-	0x4b, 0xc8, 0x37, 0xe7, 0x0b, 0x23, 0x97, 0x28, 0xd8, 0x20, 0xb7, 0xd2, 0xbc, 0x94, 0xe2, 0x40,
-	0x78, 0x00, 0xa4, 0x90, 0x6d, 0xa4, 0x90, 0x3d, 0x17, 0x5f, 0x5a, 0x51, 0x7e, 0x2e, 0x4c, 0x6b,
-	0x6a, 0xb1, 0x04, 0x93, 0x02, 0x33, 0x5e, 0xcd, 0xbc, 0x20, 0xf5, 0x8e, 0x30, 0xe5, 0x42, 0x89,
-	0x5c, 0xac, 0xa0, 0x10, 0x2e, 0x96, 0x60, 0x56, 0x60, 0xd6, 0xe0, 0x36, 0x92, 0xd4, 0x83, 0x6a,
-	0x02, 0xc5, 0x01, 0x2c, 0x62, 0xf4, 0x9c, 0xf3, 0x33, 0xf3, 0x9c, 0x0c, 0x4e, 0xdc, 0x93, 0x67,
-	0x58, 0x75, 0x5f, 0x5e, 0x23, 0x3d, 0xb3, 0x24, 0xa3, 0x34, 0x49, 0x2f, 0x39, 0x3f, 0x17, 0x1a,
-	0x07, 0x50, 0x4a, 0xb7, 0x38, 0x25, 0x5b, 0xbf, 0xa4, 0xb2, 0x20, 0xb5, 0x18, 0xac, 0xa1, 0x38,
-	0x08, 0x62, 0xb2, 0xd2, 0x47, 0x46, 0x2e, 0x21, 0x84, 0xb7, 0x83, 0x52, 0x73, 0x52, 0x13, 0x8b,
-	0x87, 0xb9, 0x9f, 0x9d, 0x9c, 0x4f, 0x3c, 0x92, 0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23,
-	0x39, 0xc6, 0x09, 0x8f, 0xe5, 0x18, 0x2e, 0x3c, 0x96, 0x63, 0xb8, 0xf1, 0x58, 0x8e, 0x21, 0x4a,
-	0x13, 0xaf, 0x51, 0x15, 0x48, 0xf9, 0x27, 0x89, 0x0d, 0x9c, 0x8a, 0x8d, 0x01, 0x01, 0x00, 0x00,
-	0xff, 0xff, 0x0e, 0xb0, 0xb0, 0x16, 0x5b, 0x03, 0x00, 0x00,
+	0x4b, 0xc8, 0x37, 0x67, 0x33, 0x23, 0x97, 0x28, 0xd8, 0x20, 0xb7, 0xd2, 0xbc, 0x94, 0xe2, 0x40,
+	0x78, 0x00, 0xa4, 0x90, 0x6d, 0xa4, 0x50, 0x22, 0x17, 0x2b, 0x28, 0x80, 0x8a, 0x25, 0x98, 0x14,
+	0x98, 0x35, 0xb8, 0x8d, 0x24, 0xf5, 0xa0, 0x1a, 0x40, 0x41, 0x08, 0x0b, 0x57, 0x3d, 0xe7, 0xfc,
+	0xcc, 0x3c, 0x27, 0x83, 0x13, 0xf7, 0xe4, 0x19, 0x56, 0xdd, 0x97, 0xd7, 0x48, 0xcf, 0x2c, 0xc9,
+	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0x85, 0x06, 0x21, 0x94, 0xd2, 0x2d, 0x4e, 0xc9, 0xd6, 0x2f,
+	0xa9, 0x2c, 0x48, 0x2d, 0x06, 0x6b, 0x28, 0x0e, 0x82, 0x98, 0xac, 0xb4, 0x81, 0x91, 0x4b, 0x08,
+	0xe1, 0xea, 0xa0, 0xd4, 0x9c, 0xd4, 0xc4, 0xe2, 0xc1, 0xed, 0x64, 0x27, 0xe7, 0x13, 0x8f, 0xe4,
+	0x18, 0x2f, 0x3c, 0x92, 0x63, 0x7c, 0xf0, 0x48, 0x8e, 0x71, 0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f,
+	0xe5, 0x18, 0x6e, 0x3c, 0x96, 0x63, 0x88, 0xd2, 0xc4, 0x6b, 0x54, 0x05, 0x52, 0xea, 0x4d, 0x62,
+	0x03, 0xa7, 0x21, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0x10, 0x51, 0x65, 0x46, 0xd9, 0x02,
+	0x00, 0x00,
 }
 
 func (m *EventOptIn) Marshal() (dAtA []byte, err error) {
@@ -366,15 +349,6 @@ func (m *EventFundsQuarantined) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintEvents(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x1a
-		}
-	}
-	if len(m.FromAddresses) > 0 {
-		for iNdEx := len(m.FromAddresses) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.FromAddresses[iNdEx])
-			copy(dAtA[i:], m.FromAddresses[iNdEx])
-			i = encodeVarintEvents(dAtA, i, uint64(len(m.FromAddresses[iNdEx])))
-			i--
 			dAtA[i] = 0x12
 		}
 	}
@@ -418,15 +392,6 @@ func (m *EventFundsReleased) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i -= size
 				i = encodeVarintEvents(dAtA, i, uint64(size))
 			}
-			i--
-			dAtA[i] = 0x1a
-		}
-	}
-	if len(m.FromAddresses) > 0 {
-		for iNdEx := len(m.FromAddresses) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.FromAddresses[iNdEx])
-			copy(dAtA[i:], m.FromAddresses[iNdEx])
-			i = encodeVarintEvents(dAtA, i, uint64(len(m.FromAddresses[iNdEx])))
 			i--
 			dAtA[i] = 0x12
 		}
@@ -488,12 +453,6 @@ func (m *EventFundsQuarantined) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovEvents(uint64(l))
 	}
-	if len(m.FromAddresses) > 0 {
-		for _, s := range m.FromAddresses {
-			l = len(s)
-			n += 1 + l + sovEvents(uint64(l))
-		}
-	}
 	if len(m.Coins) > 0 {
 		for _, e := range m.Coins {
 			l = e.Size()
@@ -512,12 +471,6 @@ func (m *EventFundsReleased) Size() (n int) {
 	l = len(m.ToAddress)
 	if l > 0 {
 		n += 1 + l + sovEvents(uint64(l))
-	}
-	if len(m.FromAddresses) > 0 {
-		for _, s := range m.FromAddresses {
-			l = len(s)
-			n += 1 + l + sovEvents(uint64(l))
-		}
 	}
 	if len(m.Coins) > 0 {
 		for _, e := range m.Coins {
@@ -761,38 +714,6 @@ func (m *EventFundsQuarantined) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromAddresses", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowEvents
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthEvents
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthEvents
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.FromAddresses = append(m.FromAddresses, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Coins", wireType)
 			}
 			var msglen int
@@ -908,38 +829,6 @@ func (m *EventFundsReleased) Unmarshal(dAtA []byte) error {
 			m.ToAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromAddresses", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowEvents
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthEvents
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthEvents
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.FromAddresses = append(m.FromAddresses, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Coins", wireType)
 			}
