@@ -52,7 +52,7 @@ enum AutoResponse {
   AUTO_RESPONSE_DECLINE = 2;
 }
 
-// QuarantineRecord defines information regarding quarantined funds.
+// QuarantineRecord defines information regarding quarantined funds that is stored in state.
 message QuarantineRecord {
   // unaccepted_from_addresses are the senders that have not been part of an accept yet for these coins.
   repeated bytes unaccepted_from_addresses = 1 [(gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress"];
@@ -61,4 +61,9 @@ message QuarantineRecord {
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
   // declined is whether these funds have been declined.
   bool declined = 3;
+}
+
+// QuarantineRecordSuffixIndex defines a list of record suffixes that can be stored in state and used as an index.
+message QuarantineRecordSuffixIndex {
+  repeated bytes record_suffixes = 1;
 }
