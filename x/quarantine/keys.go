@@ -89,18 +89,34 @@ func CreateRecordToAddrPrefix(toAddr sdk.AccAddress) []byte {
 	return key
 }
 
-// CreateRecordKey creates the key for quarantine funds.
+// CreateRecordKey creates the key for a quarantine record.
+//
+// If there is only one fromAddr, it is used as the record suffix.
+// If there are more than one, a hash of them is used as the suffix.
+// Panics if no fromAddrs are provided.
+//
 func CreateRecordKey(toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) []byte {
+	// This is designed such that a known record suffix can be provided
+	// as a single "from address" to create the key with that suffix.
 	toAddrPreBz := CreateRecordToAddrPrefix(toAddr)
-	recordId := address.MustLengthPrefix(createFromRecordId(fromAddrs))
+	recordId := address.MustLengthPrefix(createRecordSuffix(fromAddrs))
 	key := make([]byte, len(toAddrPreBz)+len(recordId))
 	copy(key, toAddrPreBz)
 	copy(key[len(toAddrPreBz):], recordId)
 	return key
 }
 
-// createFromRecordId creates a single "address" to use for the provided from addresses.
-func createFromRecordId(fromAddrs []sdk.AccAddress) []byte {
+// createRecordSuffix creates a single "address" to use for the provided from addresses.
+// This is not to be confused with CreateRecordKey which creates the full key for a quarantine record.
+// This only creates a portion of the key.
+//
+// If one fromAddr is provided, it's what's returned.
+// If more than one is provided, they are sorted, combined, and hashed.
+//
+// Panics if none are provided.
+func createRecordSuffix(fromAddrs []sdk.AccAddress) []byte {
+	// This is designed such that a known record suffix can be provided
+	// as a single "from address" to create the key with that suffix.
 	switch len(fromAddrs) {
 	case 0:
 		panic(sdkerrors.ErrLogic.Wrap("at least one fromAddr is required"))
@@ -120,15 +136,15 @@ func createFromRecordId(fromAddrs []sdk.AccAddress) []byte {
 	}
 }
 
-// ParseRecordKey extracts the to address and from record id from the provided quarantine funds key.
-func ParseRecordKey(key []byte) (toAddr, fromRecordId sdk.AccAddress) {
+// ParseRecordKey extracts the to address and record suffix from the provided quarantine funds key.
+func ParseRecordKey(key []byte) (toAddr, recordSuffix sdk.AccAddress) {
 	// key is of format:
 	// 0x22<to addr len><to addr bytes><from addr len><from addr bytes>
 	toAddrLen, toAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
 	toAddr, toAddrEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
 
 	fromAddrLen, fromAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrEndIndex+1, 1)
-	fromRecordId, _ = sdk.ParseLengthPrefixedBytes(key, fromAddrLenEndIndex+1, int(fromAddrLen[0]))
+	recordSuffix, _ = sdk.ParseLengthPrefixedBytes(key, fromAddrLenEndIndex+1, int(fromAddrLen[0]))
 
-	return toAddr, fromRecordId
+	return toAddr, recordSuffix
 }

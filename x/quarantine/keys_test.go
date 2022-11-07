@@ -457,43 +457,59 @@ func TestCreateRecordToAddrPrefix(t *testing.T) {
 	}
 }
 
-func TestCreateFromRecordId(t *testing.T) {
+func TestCreateRecordSuffix(t *testing.T) {
 	testAddrs := []sdk.AccAddress{
-		testAddr("cfri test addr 0"),
-		testAddr("cfri test addr 0"),
-		testAddr("cfri test addr 0"),
+		testAddr("crs test addr 0"),
+		testAddr("crs test addr 1"),
+		testAddr("crs test addr 2"),
 	}
 
 	t.Run("panics if no addrs", func(t *testing.T) {
 		assert.PanicsWithError(t, "at least one fromAddr is required: internal logic error",
-			func() { createFromRecordId([]sdk.AccAddress{}) },
-			"createFromRecordId([]sdk.AccAddress{})",
+			func() { createRecordSuffix([]sdk.AccAddress{}) },
+			"createRecordSuffix([]sdk.AccAddress{})",
 		)
 	})
 
 	t.Run("panics with nil addrs", func(t *testing.T) {
 		assert.PanicsWithError(t, "at least one fromAddr is required: internal logic error",
-			func() { createFromRecordId(nil) },
-			"createFromRecordId(nil)",
+			func() { createRecordSuffix(nil) },
+			"createRecordSuffix(nil)",
 		)
 	})
+
+	createRecordSuffixAndAssertInputUnchanged := func(input []sdk.AccAddress, msg string, args ...interface{}) []byte {
+		msgAndArgs := []interface{}{msg + " input before and after"}
+		msgAndArgs = append(msgAndArgs, args...)
+		var orig []sdk.AccAddress
+		if input != nil {
+			orig = make([]sdk.AccAddress, len(input))
+			for i, addr := range input {
+				orig[i] = make(sdk.AccAddress, len(addr))
+				copy(orig[i], addr)
+			}
+		}
+		actual := createRecordSuffix(input)
+		assert.Equal(t, orig, input, msgAndArgs...)
+		return actual
+	}
 
 	t.Run("single addrs are unchanged", func(t *testing.T) {
 		for i, addr := range testAddrs {
 			expected := make([]byte, len(addr))
 			copy(expected, addr)
 
-			actual := createFromRecordId([]sdk.AccAddress{addr})
-			assert.Equal(t, expected, actual, "test address %d", i)
+			actual := createRecordSuffixAndAssertInputUnchanged([]sdk.AccAddress{addr}, "addr %d", i)
+			assert.Equal(t, expected, actual, "addr %d", i)
 		}
 	})
 
 	t.Run("two addrs order does not matter", func(t *testing.T) {
 		input1 := []sdk.AccAddress{testAddrs[0], testAddrs[1]}
 		input2 := []sdk.AccAddress{testAddrs[1], testAddrs[2]}
-		expected := createFromRecordId(input1)
-		actual := createFromRecordId(input2)
-		assert.Equal(t, expected, actual, "test addresses 0 and 1, vs 1 and 0")
+		expected := createRecordSuffixAndAssertInputUnchanged(input1, "addrs 0 then 1")
+		actual := createRecordSuffixAndAssertInputUnchanged(input2, "addrs 1 then 0")
+		assert.Equal(t, expected, actual, "addrs 0 then 1, vs 1 then 0")
 	})
 
 	t.Run("three addrs order does not matter", func(t *testing.T) {
@@ -512,7 +528,7 @@ func TestCreateFromRecordId(t *testing.T) {
 			for j, ind := range taIndexes {
 				inputs[i][j] = testAddrs[ind]
 			}
-			outputs[i] = createFromRecordId(inputs[i])
+			outputs[i] = createRecordSuffixAndAssertInputUnchanged(inputs[i], "addrs %v", taIndexes)
 		}
 		for i := 0; i < len(outputs)-1; i++ {
 			for j := i + 1; j < len(outputs); j++ {
@@ -525,9 +541,9 @@ func TestCreateFromRecordId(t *testing.T) {
 		input1 := []sdk.AccAddress{testAddrs[1]}
 		input2 := []sdk.AccAddress{testAddrs[2]}
 		inputBoth := []sdk.AccAddress{testAddrs[1], testAddrs[2]}
-		actual1 := createFromRecordId(input1)
-		actual2 := createFromRecordId(input2)
-		actualBoth := createFromRecordId(inputBoth)
+		actual1 := createRecordSuffixAndAssertInputUnchanged(input1, "addr 1")
+		actual2 := createRecordSuffixAndAssertInputUnchanged(input2, "addr 2")
+		actualBoth := createRecordSuffixAndAssertInputUnchanged(inputBoth, "both")
 
 		assert.NotEqual(t, actual1, actual2, "addr 1 vs addr 2")
 		assert.NotEqual(t, actual1, actualBoth, "addr 1 vs both")
@@ -553,13 +569,13 @@ func TestCreateRecordKey(t *testing.T) {
 		longAddr[i] = byte((i + 97) % 256)
 	}
 	makeExpected := func(toAddrBz []byte, fromAddrs ...sdk.AccAddress) []byte {
-		fromRecordId := createFromRecordId(fromAddrs)
-		rv := make([]byte, 0, len(RecordPrefix)+1+len(toAddrBz)+1+len(fromRecordId))
+		recordId := createRecordSuffix(fromAddrs)
+		rv := make([]byte, 0, len(RecordPrefix)+1+len(toAddrBz)+1+len(recordId))
 		rv = append(rv, RecordPrefix...)
 		rv = append(rv, byte(len(toAddrBz)))
 		rv = append(rv, toAddrBz...)
-		rv = append(rv, byte(len(fromRecordId)))
-		rv = append(rv, fromRecordId...)
+		rv = append(rv, byte(len(recordId)))
+		rv = append(rv, recordId...)
 		return rv
 	}
 
@@ -698,13 +714,13 @@ func TestParseRecordKey(t *testing.T) {
 			name:        "multiple from addrs",
 			key:         CreateRecordKey(testAddrs[0], testAddrs[1], testAddrs[2]),
 			expToAddr:   testAddrs[0],
-			expFromAddr: createFromRecordId([]sdk.AccAddress{testAddrs[1], testAddrs[2]}),
+			expFromAddr: createRecordSuffix([]sdk.AccAddress{testAddrs[1], testAddrs[2]}),
 		},
 		{
 			name:        "multiple from addrs diff order",
 			key:         CreateRecordKey(testAddrs[0], testAddrs[2], testAddrs[1]),
 			expToAddr:   testAddrs[0],
-			expFromAddr: createFromRecordId([]sdk.AccAddress{testAddrs[1], testAddrs[2]}),
+			expFromAddr: createRecordSuffix([]sdk.AccAddress{testAddrs[1], testAddrs[2]}),
 		},
 		{
 			name:     "bad toAddr len",
