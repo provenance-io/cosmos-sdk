@@ -27,6 +27,9 @@ var (
 
 	// RecordPrefix is the prefix for keys with the records of quarantined funds.
 	RecordPrefix = []byte{0x02}
+
+	// RecordIndexPrefix is the prefix for the index of record suffixes.
+	RecordIndexPrefix = []byte{0x03}
 )
 
 // CreateOptInKey creates the key for a quarantine opt-in record.
@@ -39,11 +42,11 @@ func CreateOptInKey(toAddr sdk.AccAddress) []byte {
 }
 
 // ParseOptInKey extracts the account address from the provided quarantine opt-in key.
-func ParseOptInKey(key []byte) sdk.AccAddress {
+func ParseOptInKey(key []byte) (toAddr sdk.AccAddress) {
 	// key is of format:
-	// 0x20<to addr len><to addr bytes>
+	// 0x00<to addr len><to addr bytes>
 	toAddrLen, toAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
-	toAddr, _ := sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
+	toAddr, _ = sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
 
 	return toAddr
 }
@@ -70,9 +73,10 @@ func CreateAutoResponseKey(toAddr, fromAddr sdk.AccAddress) []byte {
 // ParseAutoResponseKey extracts the to address and from address from the provided quarantine auto-response key.
 func ParseAutoResponseKey(key []byte) (toAddr, fromAddr sdk.AccAddress) {
 	// key is of format:
-	// 0x21<to addr len><to addr bytes><from addr len><from addr bytes>
+	// 0x01<to addr len><to addr bytes><from addr len><from addr bytes>
+	var toAddrEndIndex int
 	toAddrLen, toAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
-	toAddr, toAddrEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
+	toAddr, toAddrEndIndex = sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
 
 	fromAddrLen, fromAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrEndIndex+1, 1)
 	fromAddr, _ = sdk.ParseLengthPrefixedBytes(key, fromAddrLenEndIndex+1, int(fromAddrLen[0]))
@@ -139,12 +143,48 @@ func createRecordSuffix(fromAddrs []sdk.AccAddress) []byte {
 // ParseRecordKey extracts the to address and record suffix from the provided quarantine funds key.
 func ParseRecordKey(key []byte) (toAddr, recordSuffix sdk.AccAddress) {
 	// key is of format:
-	// 0x22<to addr len><to addr bytes><from addr len><from addr bytes>
+	// 0x02<to addr len><to addr bytes><record suffix len><record suffix bytes>
+	var toAddrEndIndex int
 	toAddrLen, toAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
-	toAddr, toAddrEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
+	toAddr, toAddrEndIndex = sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
 
-	fromAddrLen, fromAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrEndIndex+1, 1)
-	recordSuffix, _ = sdk.ParseLengthPrefixedBytes(key, fromAddrLenEndIndex+1, int(fromAddrLen[0]))
+	recordSuffixLen, recordSuffixLenEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrEndIndex+1, 1)
+	recordSuffix, _ = sdk.ParseLengthPrefixedBytes(key, recordSuffixLenEndIndex+1, int(recordSuffixLen[0]))
 
 	return toAddr, recordSuffix
+}
+
+// CreateRecordIndexToAddrPrefix creates a prefix for the quarantine record index entries for a receiving address.
+func CreateRecordIndexToAddrPrefix(toAddr sdk.AccAddress) []byte {
+	toAddrBz := address.MustLengthPrefix(toAddr)
+	key := make([]byte, len(RecordIndexPrefix)+len(toAddrBz))
+	copy(key, RecordIndexPrefix)
+	copy(key[len(RecordIndexPrefix):], toAddrBz)
+	return key
+}
+
+// CreateRecordIndexKey creates the key for the quarantine record suffix index.
+func CreateRecordIndexKey(toAddr, fromAddr sdk.AccAddress) []byte {
+	// This is designed such that a known record suffix can be provided
+	// as a single "from address" to create the key with that suffix.
+	toAddrPreBz := CreateRecordIndexToAddrPrefix(toAddr)
+	recordId := address.MustLengthPrefix(fromAddr)
+	key := make([]byte, len(toAddrPreBz)+len(recordId))
+	copy(key, toAddrPreBz)
+	copy(key[len(toAddrPreBz):], recordId)
+	return key
+}
+
+// ParseRecordIndexKey extracts the to address and from address from the provided quarantine record index key.
+func ParseRecordIndexKey(key []byte) (toAddr, fromAddr sdk.AccAddress) {
+	// key is of format:
+	// 0x03<to addr len><to addr bytes><from addr len><from addr bytes>
+	var toAddrEndIndex int
+	toAddrLen, toAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, 1, 1)
+	toAddr, toAddrEndIndex = sdk.ParseLengthPrefixedBytes(key, toAddrLenEndIndex+1, int(toAddrLen[0]))
+
+	fromAddrLen, fromAddrLenEndIndex := sdk.ParseLengthPrefixedBytes(key, toAddrEndIndex+1, 1)
+	fromAddr, _ = sdk.ParseLengthPrefixedBytes(key, fromAddrLenEndIndex+1, int(fromAddrLen[0]))
+
+	return toAddr, fromAddr
 }

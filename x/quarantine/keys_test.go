@@ -8,27 +8,75 @@ import (
 	"testing"
 )
 
+// makeIncAddr creates an sdk.AccAddress with the provided length.
+// The first byte will be the provided shift.
+// Each other byte is one more than the previous wrapping back to 0 after 255.
+func makeIncAddr(length, shift int) sdk.AccAddress {
+	rv := make(sdk.AccAddress, length)
+	for i := 0; i < length; i++ {
+		rv[i] = byte((i + shift) % 256)
+	}
+	return rv
+}
+
+// makeBadAddr makes an address that's longer than the max length.
+// The first byte is 33 (!) plus the provided shift.
+// Each other byte is one more than the previous wrapping back to 0 after 255.
+func makeBadAddr(shift int) sdk.AccAddress {
+	return makeIncAddr(address.MaxAddrLen+1, 33+shift)
+}
+
+// makeLongAddr makes an address that's 32 bytes long.
+// The first byte is 65 (A) plus the provided shift.
+// Each other byte is one more than the previous wrapping back to 0 after 255.
+func makeLongAddr(shift int) sdk.AccAddress {
+	return makeIncAddr(32, 65+shift)
+}
+
 func TestPrefixValues(t *testing.T) {
-	assert.Len(t, OptInPrefix, 1, "OptInPrefix")
-	assert.Len(t, AutoResponsePrefix, 1, "AutoResponsePrefix")
-	assert.Len(t, RecordPrefix, 1, "RecordPrefix")
-	assert.NotEqual(t, OptInPrefix[0], AutoResponsePrefix[0], "OptInPrefix vs AutoResponsePrefix")
-	assert.NotEqual(t, OptInPrefix[0], RecordPrefix[0], "OptInPrefix vs RecordPrefix")
-	assert.NotEqual(t, AutoResponsePrefix[0], RecordPrefix[0], "AutoResponsePrefix vs RecordPrefix")
+	prefixes := []struct {
+		name     string
+		prefix   []byte
+		expected []byte
+	}{
+		{name: "OptInPrefix", prefix: OptInPrefix, expected: []byte{0x00}},
+		{name: "AutoResponsePrefix", prefix: AutoResponsePrefix, expected: []byte{0x01}},
+		{name: "RecordPrefix", prefix: RecordPrefix, expected: []byte{0x02}},
+		{name: "RecordIndexPrefix", prefix: RecordIndexPrefix, expected: []byte{0x03}},
+	}
+
+	for _, p := range prefixes {
+		t.Run(fmt.Sprintf("%s expected value", p.name), func(t *testing.T) {
+			assert.Equal(t, p.prefix, p.expected, p.name)
+		})
+	}
+
+	for i := 0; i < len(prefixes)-1; i++ {
+		for j := i + 1; j < len(prefixes); j++ {
+			t.Run(fmt.Sprintf("%s is different from %s", prefixes[i].name, prefixes[j].name), func(t *testing.T) {
+				assert.NotEqual(t, prefixes[i].prefix, prefixes[j].prefix, "expected: %s, actual: %s", prefixes[i].name, prefixes[j].name)
+			})
+		}
+	}
 }
 
 func TestCreateOptInKey(t *testing.T) {
+	expectedPrefix := OptInPrefix
 	testAddrs := []sdk.AccAddress{
 		testAddr("coik test addr 0"),
 		testAddr("coik test addr 1"),
 	}
-	badAddr := make(sdk.AccAddress, address.MaxAddrLen+1)
-	for i := 0; i < len(badAddr); i++ {
-		badAddr[i] = byte((i + 41) % 256)
-	}
-	makeExpected := func(pre []byte, addrBz []byte) []byte {
-		rv := make([]byte, 0, len(pre)+1+len(addrBz))
-		rv = append(rv, pre...)
+	badAddr := makeBadAddr(0)
+
+	t.Run("starts with OptInPrefix", func(t *testing.T) {
+		key := CreateOptInKey(testAddrs[0])
+		actual := key[:len(expectedPrefix)]
+		assert.Equal(t, expectedPrefix, actual, "key prefix")
+	})
+
+	makeExpected := func(addrBz []byte) []byte {
+		rv := make([]byte, 0, len(expectedPrefix)+1+len(addrBz))
+		rv = append(rv, expectedPrefix...)
 		rv = append(rv, byte(len(addrBz)))
 		rv = append(rv, addrBz...)
 		return rv
@@ -42,17 +90,17 @@ func TestCreateOptInKey(t *testing.T) {
 		{
 			name:     "addr 0",
 			toAddr:   testAddrs[0],
-			expected: makeExpected(OptInPrefix, testAddrs[0]),
+			expected: makeExpected(testAddrs[0]),
 		},
 		{
 			name:     "addr 0",
 			toAddr:   testAddrs[1],
-			expected: makeExpected(OptInPrefix, testAddrs[1]),
+			expected: makeExpected(testAddrs[1]),
 		},
 		{
 			name:     "nil",
 			toAddr:   nil,
-			expected: OptInPrefix,
+			expected: expectedPrefix,
 		},
 		{
 			name:     "too long",
@@ -85,10 +133,8 @@ func TestParseOptInKey(t *testing.T) {
 		testAddr("poik test addr 1"),
 		testAddr("poik test addr 2"),
 	}
-	longAddr := make(sdk.AccAddress, 32)
-	for i := 0; i < len(longAddr); i++ {
-		longAddr[i] = byte((i + 65) % 256)
-	}
+	longAddr := makeLongAddr(0)
+
 	makeKey := func(pre []byte, addrLen int, addrBz []byte) []byte {
 		rv := make([]byte, 0, len(pre)+1+len(addrBz))
 		rv = append(rv, pre...)
@@ -167,17 +213,22 @@ func TestParseOptInKey(t *testing.T) {
 }
 
 func TestCreateAutoResponseToAddrPrefix(t *testing.T) {
+	expectedPrefix := AutoResponsePrefix
 	testAddrs := []sdk.AccAddress{
 		testAddr("cartap test addr 0"),
 		testAddr("cartap test addr 1"),
 	}
-	badAddr := make(sdk.AccAddress, address.MaxAddrLen+1)
-	for i := 0; i < len(badAddr); i++ {
-		badAddr[i] = byte((i + 45) % 256)
-	}
-	makeExpected := func(pre []byte, addrBz []byte) []byte {
-		rv := make([]byte, 0, len(pre)+1+len(addrBz))
-		rv = append(rv, pre...)
+	badAddr := makeBadAddr(1)
+
+	t.Run("starts with AutoResponsePrefix", func(t *testing.T) {
+		key := CreateAutoResponseToAddrPrefix(testAddrs[0])
+		actual := key[:len(expectedPrefix)]
+		assert.Equal(t, expectedPrefix, actual, "key prefix")
+	})
+
+	makeExpected := func(addrBz []byte) []byte {
+		rv := make([]byte, 0, len(expectedPrefix)+1+len(addrBz))
+		rv = append(rv, expectedPrefix...)
 		rv = append(rv, byte(len(addrBz)))
 		rv = append(rv, addrBz...)
 		return rv
@@ -192,17 +243,17 @@ func TestCreateAutoResponseToAddrPrefix(t *testing.T) {
 		{
 			name:     "addr 0",
 			toAddr:   testAddrs[0],
-			expected: makeExpected(AutoResponsePrefix, testAddrs[0]),
+			expected: makeExpected(testAddrs[0]),
 		},
 		{
-			name:     "addr 0",
+			name:     "addr 1",
 			toAddr:   testAddrs[1],
-			expected: makeExpected(AutoResponsePrefix, testAddrs[1]),
+			expected: makeExpected(testAddrs[1]),
 		},
 		{
 			name:     "nil",
 			toAddr:   nil,
-			expected: AutoResponsePrefix,
+			expected: expectedPrefix,
 		},
 		{
 			name:     "too long",
@@ -230,21 +281,23 @@ func TestCreateAutoResponseToAddrPrefix(t *testing.T) {
 }
 
 func TestCreateAutoResponseKey(t *testing.T) {
+	expectedPrefix := AutoResponsePrefix
 	testAddrs := []sdk.AccAddress{
 		testAddr("cark test addr 0"),
 		testAddr("cark test addr 1"),
 	}
-	badAddr := make(sdk.AccAddress, address.MaxAddrLen+1)
-	for i := 0; i < len(badAddr); i++ {
-		badAddr[i] = byte((i + 41) % 256)
-	}
-	longAddr := make(sdk.AccAddress, 32)
-	for i := 0; i < len(longAddr); i++ {
-		longAddr[i] = byte((i + 97) % 256)
-	}
-	makeExpected := func(pre []byte, toAddrBz, fromAddrBz []byte) []byte {
-		rv := make([]byte, 0, len(pre)+1+len(toAddrBz)+1+len(fromAddrBz))
-		rv = append(rv, pre...)
+	badAddr := makeBadAddr(2)
+	longAddr := makeLongAddr(1)
+
+	t.Run("starts with AutoResponsePrefix", func(t *testing.T) {
+		key := CreateAutoResponseKey(testAddrs[0], testAddrs[1])
+		actual := key[:len(expectedPrefix)]
+		assert.Equal(t, expectedPrefix, actual, "key prefix")
+	})
+
+	makeExpected := func(toAddrBz, fromAddrBz []byte) []byte {
+		rv := make([]byte, 0, len(expectedPrefix)+1+len(toAddrBz)+1+len(fromAddrBz))
+		rv = append(rv, expectedPrefix...)
 		rv = append(rv, byte(len(toAddrBz)))
 		rv = append(rv, toAddrBz...)
 		rv = append(rv, byte(len(fromAddrBz)))
@@ -263,25 +316,25 @@ func TestCreateAutoResponseKey(t *testing.T) {
 			name:     "addr 0 addr 1",
 			toAddr:   testAddrs[0],
 			fromAddr: testAddrs[1],
-			expected: makeExpected(AutoResponsePrefix, testAddrs[0], testAddrs[1]),
+			expected: makeExpected(testAddrs[0], testAddrs[1]),
 		},
 		{
 			name:     "addr 1 long addr",
 			toAddr:   testAddrs[1],
 			fromAddr: longAddr,
-			expected: makeExpected(AutoResponsePrefix, testAddrs[1], longAddr),
+			expected: makeExpected(testAddrs[1], longAddr),
 		},
 		{
 			name:     "long addr addr 0",
 			toAddr:   longAddr,
 			fromAddr: testAddrs[0],
-			expected: makeExpected(AutoResponsePrefix, longAddr, testAddrs[0]),
+			expected: makeExpected(longAddr, testAddrs[0]),
 		},
 		{
 			name:     "long addr long addr",
 			toAddr:   longAddr,
 			fromAddr: longAddr,
-			expected: makeExpected(AutoResponsePrefix, longAddr, longAddr),
+			expected: makeExpected(longAddr, longAddr),
 		},
 		{
 			name:     "bad toAddr",
@@ -319,10 +372,8 @@ func TestParseAutoResponseKey(t *testing.T) {
 		testAddr("park test addr 0"),
 		testAddr("park test addr 1"),
 	}
-	longAddr := make(sdk.AccAddress, 32)
-	for i := 0; i < len(longAddr); i++ {
-		longAddr[i] = byte((i + 65) % 256)
-	}
+	longAddr := makeLongAddr(2)
+
 	makeKey := func(pre []byte, toAddrLen int, toAddrBz []byte, fromAddrLen int, fromAddrBz []byte) []byte {
 		rv := make([]byte, 0, len(pre)+1+len(toAddrBz)+1+len(fromAddrBz))
 		rv = append(rv, pre...)
@@ -395,17 +446,22 @@ func TestParseAutoResponseKey(t *testing.T) {
 }
 
 func TestCreateRecordToAddrPrefix(t *testing.T) {
+	expectedPrefix := RecordPrefix
 	testAddrs := []sdk.AccAddress{
 		testAddr("crtap test addr 0"),
 		testAddr("crtap test addr 1"),
 	}
-	badAddr := make(sdk.AccAddress, address.MaxAddrLen+1)
-	for i := 0; i < len(badAddr); i++ {
-		badAddr[i] = byte((i + 45) % 256)
-	}
-	makeExpected := func(pre []byte, addrBz []byte) []byte {
-		rv := make([]byte, 0, len(pre)+1+len(addrBz))
-		rv = append(rv, pre...)
+	badAddr := makeBadAddr(3)
+
+	t.Run("starts with RecordPrefix", func(t *testing.T) {
+		key := CreateRecordToAddrPrefix(testAddrs[0])
+		actual := key[:len(expectedPrefix)]
+		assert.Equal(t, expectedPrefix, actual, "key prefix")
+	})
+
+	makeExpected := func(addrBz []byte) []byte {
+		rv := make([]byte, 0, len(expectedPrefix)+1+len(addrBz))
+		rv = append(rv, expectedPrefix...)
 		rv = append(rv, byte(len(addrBz)))
 		rv = append(rv, addrBz...)
 		return rv
@@ -420,17 +476,17 @@ func TestCreateRecordToAddrPrefix(t *testing.T) {
 		{
 			name:     "addr 0",
 			toAddr:   testAddrs[0],
-			expected: makeExpected(RecordPrefix, testAddrs[0]),
+			expected: makeExpected(testAddrs[0]),
 		},
 		{
-			name:     "addr 0",
+			name:     "addr 1",
 			toAddr:   testAddrs[1],
-			expected: makeExpected(RecordPrefix, testAddrs[1]),
+			expected: makeExpected(testAddrs[1]),
 		},
 		{
 			name:     "nil",
 			toAddr:   nil,
-			expected: RecordPrefix,
+			expected: expectedPrefix,
 		},
 		{
 			name:     "too long",
@@ -554,24 +610,26 @@ func TestCreateRecordSuffix(t *testing.T) {
 }
 
 func TestCreateRecordKey(t *testing.T) {
+	expectedPrefix := RecordPrefix
 	testAddrs := []sdk.AccAddress{
 		testAddr("crk test addr 0"),
 		testAddr("crk test addr 1"),
 		testAddr("crk test addr 2"),
 		testAddr("crk test addr 3"),
 	}
-	badAddr := make(sdk.AccAddress, address.MaxAddrLen+1)
-	for i := 0; i < len(badAddr); i++ {
-		badAddr[i] = byte((i + 41) % 256)
-	}
-	longAddr := make(sdk.AccAddress, 32)
-	for i := 0; i < len(longAddr); i++ {
-		longAddr[i] = byte((i + 97) % 256)
-	}
+	badAddr := makeBadAddr(4)
+	longAddr := makeLongAddr(3)
+
+	t.Run("starts with RecordPrefix", func(t *testing.T) {
+		key := CreateRecordKey(testAddrs[0], testAddrs[1])
+		actual := key[:len(expectedPrefix)]
+		assert.Equal(t, expectedPrefix, actual, "key prefix")
+	})
+
 	makeExpected := func(toAddrBz []byte, fromAddrs ...sdk.AccAddress) []byte {
 		recordId := createRecordSuffix(fromAddrs)
-		rv := make([]byte, 0, len(RecordPrefix)+1+len(toAddrBz)+1+len(recordId))
-		rv = append(rv, RecordPrefix...)
+		rv := make([]byte, 0, len(expectedPrefix)+1+len(toAddrBz)+1+len(recordId))
+		rv = append(rv, expectedPrefix...)
 		rv = append(rv, byte(len(toAddrBz)))
 		rv = append(rv, toAddrBz...)
 		rv = append(rv, byte(len(recordId)))
@@ -665,10 +723,8 @@ func TestParseRecordKey(t *testing.T) {
 		testAddr("prk test addr 1"),
 		testAddr("prk test addr 2"),
 	}
-	longAddr := make(sdk.AccAddress, 32)
-	for i := 0; i < len(longAddr); i++ {
-		longAddr[i] = byte((i + 65) % 256)
-	}
+	longAddr := makeLongAddr(4)
+
 	makeKey := func(pre []byte, toAddrLen int, toAddrBz []byte, fromAddrLen int, fromAddrBz []byte) []byte {
 		rv := make([]byte, 0, len(pre)+1+len(toAddrBz)+1+len(fromAddrBz))
 		rv = append(rv, pre...)
@@ -747,6 +803,239 @@ func TestParseRecordKey(t *testing.T) {
 				}
 			} else {
 				assert.PanicsWithValue(t, tc.expPanic, testFunc, "ParseRecordKey")
+			}
+		})
+	}
+}
+
+func TestCreateRecordIndexToAddrPrefix(t *testing.T) {
+	expectedPrefix := RecordIndexPrefix
+	testAddrs := []sdk.AccAddress{
+		testAddr("critap testing addr 0"),
+		testAddr("critap testing addr 1"),
+	}
+	badAddr := makeBadAddr(5)
+
+	t.Run("starts with RecordIndexPrefix", func(t *testing.T) {
+		key := CreateRecordIndexToAddrPrefix(testAddrs[0])
+		actual := key[:len(expectedPrefix)]
+		assert.Equal(t, expectedPrefix, actual, "key prefix")
+	})
+
+	makeExpected := func(addrBz []byte) []byte {
+		rv := make([]byte, 0, len(expectedPrefix)+1+len(addrBz))
+		rv = append(rv, expectedPrefix...)
+		rv = append(rv, byte(len(addrBz)))
+		rv = append(rv, addrBz...)
+		return rv
+	}
+
+	tests := []struct {
+		name     string
+		toAddr   sdk.AccAddress
+		expected []byte
+		expPanic string
+	}{
+		{
+			name:     "addr 0",
+			toAddr:   testAddrs[0],
+			expected: makeExpected(testAddrs[0]),
+		},
+		{
+			name:     "addr 1",
+			toAddr:   testAddrs[1],
+			expected: makeExpected(testAddrs[1]),
+		},
+		{
+			name:     "nil",
+			toAddr:   nil,
+			expected: expectedPrefix,
+		},
+		{
+			name:     "too long",
+			toAddr:   badAddr,
+			expected: nil,
+			expPanic: fmt.Sprintf("address length should be max %d bytes, got %d: unknown address", address.MaxAddrLen, len(badAddr)),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual []byte
+			testFunc := func() {
+				actual = CreateRecordIndexToAddrPrefix(tc.toAddr)
+			}
+			if len(tc.expPanic) == 0 {
+				if assert.NotPanics(t, testFunc, "CreateRecordIndexToAddrPrefix") {
+					assert.Equal(t, tc.expected, actual, "CreateRecordIndexToAddrPrefix result")
+				}
+			} else {
+				assert.PanicsWithError(t, tc.expPanic, testFunc, "CreateRecordIndexToAddrPrefix")
+			}
+		})
+	}
+}
+
+func TestCreateRecordIndexKey(t *testing.T) {
+	expectedPrefix := RecordIndexPrefix
+	testAddrs := []sdk.AccAddress{
+		testAddr("crik test addr 0"),
+		testAddr("crik test addr 1"),
+	}
+	badAddr := makeBadAddr(6)
+	longAddr := makeLongAddr(5)
+
+	t.Run("starts with RecordIndexPrefix", func(t *testing.T) {
+		key := CreateRecordIndexKey(testAddrs[0], testAddrs[1])
+		actual := key[:len(expectedPrefix)]
+		assert.Equal(t, expectedPrefix, actual, "key prefix")
+	})
+
+	makeExpected := func(toAddrBz, fromAddrBz []byte) []byte {
+		rv := make([]byte, 0, len(expectedPrefix)+1+len(toAddrBz)+1+len(fromAddrBz))
+		rv = append(rv, expectedPrefix...)
+		rv = append(rv, byte(len(toAddrBz)))
+		rv = append(rv, toAddrBz...)
+		rv = append(rv, byte(len(fromAddrBz)))
+		rv = append(rv, fromAddrBz...)
+		return rv
+	}
+
+	tests := []struct {
+		name     string
+		toAddr   sdk.AccAddress
+		fromAddr sdk.AccAddress
+		expected []byte
+		expPanic string
+	}{
+		{
+			name:     "addr 0 addr 1",
+			toAddr:   testAddrs[0],
+			fromAddr: testAddrs[1],
+			expected: makeExpected(testAddrs[0], testAddrs[1]),
+		},
+		{
+			name:     "addr 1 long addr",
+			toAddr:   testAddrs[1],
+			fromAddr: longAddr,
+			expected: makeExpected(testAddrs[1], longAddr),
+		},
+		{
+			name:     "long addr addr 0",
+			toAddr:   longAddr,
+			fromAddr: testAddrs[0],
+			expected: makeExpected(longAddr, testAddrs[0]),
+		},
+		{
+			name:     "long addr long addr",
+			toAddr:   longAddr,
+			fromAddr: longAddr,
+			expected: makeExpected(longAddr, longAddr),
+		},
+		{
+			name:     "bad toAddr",
+			toAddr:   badAddr,
+			fromAddr: testAddrs[0],
+			expPanic: fmt.Sprintf("address length should be max %d bytes, got %d: unknown address", address.MaxAddrLen, len(badAddr)),
+		},
+		{
+			name:     "bad fromAddr",
+			toAddr:   testAddrs[0],
+			fromAddr: badAddr,
+			expPanic: fmt.Sprintf("address length should be max %d bytes, got %d: unknown address", address.MaxAddrLen, len(badAddr)),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual []byte
+			testFunc := func() {
+				actual = CreateRecordIndexKey(tc.toAddr, tc.fromAddr)
+			}
+			if len(tc.expPanic) == 0 {
+				if assert.NotPanics(t, testFunc, "CreateRecordIndexKey") {
+					assert.Equal(t, tc.expected, actual, "CreateRecordIndexKey result")
+				}
+			} else {
+				assert.PanicsWithError(t, tc.expPanic, testFunc, "CreateRecordIndexKey")
+			}
+		})
+	}
+}
+
+func TestParseRecordIndexKey(t *testing.T) {
+	testAddrs := []sdk.AccAddress{
+		testAddr("prik test addr 0"),
+		testAddr("prik test addr 1"),
+	}
+	longAddr := makeLongAddr(6)
+
+	makeKey := func(pre []byte, toAddrLen int, toAddrBz []byte, fromAddrLen int, fromAddrBz []byte) []byte {
+		rv := make([]byte, 0, len(pre)+1+len(toAddrBz)+1+len(fromAddrBz))
+		rv = append(rv, pre...)
+		rv = append(rv, byte(toAddrLen))
+		rv = append(rv, toAddrBz...)
+		rv = append(rv, byte(fromAddrLen))
+		rv = append(rv, fromAddrBz...)
+		return rv
+	}
+
+	tests := []struct {
+		name        string
+		key         []byte
+		expToAddr   sdk.AccAddress
+		expFromAddr sdk.AccAddress
+		expPanic    string
+	}{
+		{
+			name:        "addr 0 addr 1",
+			key:         CreateRecordIndexKey(testAddrs[0], testAddrs[1]),
+			expToAddr:   testAddrs[0],
+			expFromAddr: testAddrs[1],
+		},
+		{
+			name:        "addr 1 addr 0",
+			key:         CreateRecordIndexKey(testAddrs[1], testAddrs[0]),
+			expToAddr:   testAddrs[1],
+			expFromAddr: testAddrs[0],
+		},
+		{
+			name:        "long addr addr 1",
+			key:         CreateRecordIndexKey(longAddr, testAddrs[1]),
+			expToAddr:   longAddr,
+			expFromAddr: testAddrs[1],
+		},
+		{
+			name:        "addr 0 long addr",
+			key:         CreateRecordIndexKey(testAddrs[0], longAddr),
+			expToAddr:   testAddrs[0],
+			expFromAddr: longAddr,
+		},
+		{
+			name:     "bad toAddr len",
+			key:      makeKey(RecordIndexPrefix, 200, testAddrs[0], 20, testAddrs[1]),
+			expPanic: fmt.Sprintf("expected key of length at least %d, got %d", 202, 43),
+		},
+		{
+			name:     "bad fromAddr len",
+			key:      makeKey(RecordIndexPrefix, len(testAddrs[1]), testAddrs[1], len(testAddrs[0])+1, testAddrs[0]),
+			expPanic: fmt.Sprintf("expected key of length at least %d, got %d", 44, 43),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actualToAddr, actualFromAddr sdk.AccAddress
+			testFunc := func() {
+				actualToAddr, actualFromAddr = ParseRecordIndexKey(tc.key)
+			}
+			if len(tc.expPanic) == 0 {
+				if assert.NotPanics(t, testFunc, "ParseRecordIndexKey") {
+					assert.Equal(t, tc.expToAddr, actualToAddr, "ParseRecordIndexKey toAddr")
+					assert.Equal(t, tc.expFromAddr, actualFromAddr, "ParseRecordIndexKey fromAddr")
+				}
+			} else {
+				assert.PanicsWithValue(t, tc.expPanic, testFunc, "ParseRecordIndexKey")
 			}
 		})
 	}
