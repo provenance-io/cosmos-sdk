@@ -1507,8 +1507,9 @@ func TestQuarantineRecordAddCoins(t *testing.T) {
 	}
 }
 
-// TODO[1046]: Test QuarantineRecord.AcceptFromAddrs
 // TODO[1046]: Test QuarantineRecord.IsFullyAccepted
+// TODO[1046]: Test QuarantineRecord.AcceptFrom
+// TODO[1046]: Test QuarantineRecord.GetAllFromAddrs
 
 func TestQuarantineRecordAsQuarantinedFunds(t *testing.T) {
 	testAddrs := []sdk.AccAddress{
@@ -1653,3 +1654,7 @@ func TestQuarantineRecordAsQuarantinedFunds(t *testing.T) {
 		})
 	}
 }
+
+// TODO[1046]: Test QuarantineRecordSuffixIndex.AddSuffixes
+// TODO[1046]: Test QuarantineRecordSuffixIndex.RemoveSuffixes
+// TODO[1046]: Test QuarantineRecordSuffixIndex.Simplify

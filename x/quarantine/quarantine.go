@@ -170,18 +170,29 @@ func (r QuarantineRecord) IsFullyAccepted() bool {
 	return len(r.UnacceptedFromAddresses) == 0
 }
 
-// AcceptFromAddrs moves the provided addrs from the unaccepted slice to the accepted slice.
+// AcceptFrom moves the provided addrs from the unaccepted slice to the accepted slice.
 // If none of the provided addresses are in this record's unaccepted slice, this does nothing.
-func (r *QuarantineRecord) AcceptFromAddrs(addrs []sdk.AccAddress) {
+// Returns true if this record was changed.
+func (r *QuarantineRecord) AcceptFrom(addrs []sdk.AccAddress) bool {
+	rv := false
 	leftoverAddrs := make([]sdk.AccAddress, 0, len(r.UnacceptedFromAddresses))
 	for _, existing := range r.UnacceptedFromAddresses {
 		if containsAddress(addrs, existing) {
+			rv = true
 			r.AcceptedFromAddresses = append(r.AcceptedFromAddresses, existing)
 		} else {
 			leftoverAddrs = append(leftoverAddrs, existing)
 		}
 	}
 	r.UnacceptedFromAddresses = leftoverAddrs
+	return rv
+}
+
+func (r *QuarantineRecord) GetAllFromAddrs() []sdk.AccAddress {
+	rv := make([]sdk.AccAddress, len(r.UnacceptedFromAddresses)+len(r.AcceptedFromAddresses))
+	copy(rv, r.UnacceptedFromAddresses)
+	copy(rv[len(r.UnacceptedFromAddresses):], r.AcceptedFromAddresses)
+	return rv
 }
 
 // containsAddress returns true if the addrToFind is an entry in the addrs.
@@ -205,31 +216,8 @@ func (s *QuarantineRecordSuffixIndex) AddSuffixes(suffixes ...[]byte) {
 	s.RecordSuffixes = append(s.RecordSuffixes, suffixes...)
 }
 
-// RemoveSuffixes removes the provided suffixes from this.
-// Any provided suffixes that are not in this are ignored.
-func (s *QuarantineRecordSuffixIndex) RemoveSuffixes(suffixes ...[]byte) {
-	firstRem := -1
-	for i := 0; i < len(s.RecordSuffixes); i++ {
-		if containsSuffix(suffixes, s.RecordSuffixes[i]) {
-			firstRem = i
-			break
-		}
-	}
-	if firstRem != -1 {
-		recordSuffixes := make([][]byte, firstRem, len(s.RecordSuffixes)-1)
-		copy(recordSuffixes, s.RecordSuffixes[:firstRem])
-		for i := firstRem + 1; i < len(s.RecordSuffixes); i++ {
-			if !containsSuffix(suffixes, s.RecordSuffixes[i]) {
-				recordSuffixes = append(recordSuffixes, s.RecordSuffixes[i])
-			}
-		}
-		s.RecordSuffixes = recordSuffixes
-	}
-
-}
-
 // Simplify updates the suffixes in this so that they are ordered and there aren't any duplicates.
-func (s *QuarantineRecordSuffixIndex) Simplify() {
+func (s *QuarantineRecordSuffixIndex) Simplify(toRemove ...[]byte) {
 	if len(s.RecordSuffixes) > 1 {
 		// Sort the suffixes first, so that deduplication is simpler.
 		sort.Slice(s.RecordSuffixes, func(i, j int) bool {
@@ -239,27 +227,37 @@ func (s *QuarantineRecordSuffixIndex) Simplify() {
 		// It's assumed that the slice has few duplicates, if any.
 		// This is a little extra complex so that the slice isn't just
 		// copied every time there aren't any duplicates.
-		//
-		// First, start going through looking for a dupe.
-		// If one is found, record its index and stop.
-		// Then, if a first dupe was found, copy the slice up to the entry before it,
-		// and iterate over the rest of the suffixes, this time copying the non-duplicates.
-		firstDup := -1
+
+		// func for testing whether an entry is worth keeping.
+		isKeeper := func(cur, other []byte) bool {
+			return !containsSuffix(toRemove, cur) && !bytes.Equal(cur, other)
+		}
+
+		// First, get rid of any non-keepers at the front of the slice.
+		for !isKeeper(s.RecordSuffixes[0], nil) {
+			s.RecordSuffixes = s.RecordSuffixes[1:]
+		}
+
+		// Then, look through the rest of the slice looking for one to remove.
+		// If one is found, note it and stop.
+		firstRem := -1
 		for i := 1; i < len(s.RecordSuffixes); i++ {
-			if bytes.Equal(s.RecordSuffixes[i-1], s.RecordSuffixes[i]) {
-				firstDup = i
+			if !isKeeper(s.RecordSuffixes[i], s.RecordSuffixes[i-1]) {
+				firstRem = i
 				break
 			}
 		}
-		if firstDup != -1 {
-			deduped := make([][]byte, firstDup, len(s.RecordSuffixes)-1)
-			copy(deduped, s.RecordSuffixes[:firstDup])
-			for i := firstDup + 1; i < len(s.RecordSuffixes); i++ {
-				if !bytes.Equal(s.RecordSuffixes[i-1], s.RecordSuffixes[i]) {
-					deduped = append(deduped, s.RecordSuffixes[i])
+		// If we found one to remove, we'll then create the new slice that doesn't have
+		// the unwanted entries.
+		if firstRem != -1 {
+			suffixes := make([][]byte, firstRem, len(s.RecordSuffixes)-1)
+			copy(suffixes, s.RecordSuffixes[:firstRem])
+			for i := firstRem + 1; i < len(s.RecordSuffixes); i++ {
+				if isKeeper(s.RecordSuffixes[i], s.RecordSuffixes[i-1]) {
+					suffixes = append(suffixes, s.RecordSuffixes[i])
 				}
 			}
-			s.RecordSuffixes = deduped
+			s.RecordSuffixes = suffixes
 		}
 	}
 

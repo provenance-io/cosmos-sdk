@@ -29,9 +29,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawM
 	totalQuarantined := sdk.Coins{}
 	for _, qf := range genesisState.QuarantinedFunds {
 		toAddr := sdk.MustAccAddressFromBech32(qf.ToAddress)
-		fromAddr := sdk.MustAccAddressFromBech32(qf.FromAddress)
 		qr := quarantine.NewQuarantineRecord(qf.UnacceptedFromAddresses, qf.Coins, qf.Declined)
-		k.SetQuarantineRecord(ctx, toAddr, fromAddr, qr)
+		k.SetQuarantineRecord(ctx, toAddr, qr)
 		totalQuarantined = totalQuarantined.Add(qf.Coins...)
 	}
 

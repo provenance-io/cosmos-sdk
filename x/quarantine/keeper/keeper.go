@@ -176,16 +176,32 @@ func (k Keeper) GetQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress, fro
 	return rv
 }
 
-// SetQuarantineRecord sets a quarantined funds entry.
-// If funds is nil, this will delete any existing entry.
-func (k Keeper) SetQuarantineRecord(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, funds *quarantine.QuarantineRecord) {
-	key := quarantine.CreateRecordKey(toAddr, fromAddr)
+// SetQuarantineRecord sets a quarantine record.
+// Panics if the record is nil.
+// If the record is fully accepted, it is deleted.
+// Otherwise, it is saved.
+func (k Keeper) SetQuarantineRecord(ctx sdk.Context, toAddr sdk.AccAddress, record *quarantine.QuarantineRecord) {
+	if record == nil {
+		panic("record cannot be nil")
+	}
+	fromAddrs := record.GetAllFromAddrs()
+	key := quarantine.CreateRecordKey(toAddr, fromAddrs...)
+	var suffix []byte
+	if len(fromAddrs) > 1 {
+		_, suffix = quarantine.ParseRecordIndexKey(key)
+	}
 	store := ctx.KVStore(k.storeKey)
-	if funds == nil {
+	if record.IsFullyAccepted() {
 		store.Delete(key)
+		if len(suffix) > 0 {
+			k.deleteQuarantineRecordSuffixIndexes(store, toAddr, fromAddrs, suffix)
+		}
 	} else {
-		val := k.cdc.MustMarshal(funds)
+		val := k.cdc.MustMarshal(record)
 		store.Set(key, val)
+		if len(suffix) > 0 {
+			k.addQuarantineRecordSuffixIndexes(store, toAddr, fromAddrs, suffix)
+		}
 	}
 }
 
@@ -241,17 +257,38 @@ func (k Keeper) GetAllQuarantinedFunds(ctx sdk.Context) []*quarantine.Quarantine
 	return rv
 }
 
-// SetQuarantineRecordAccepted marks quarantined funds as accepted.
-func (k Keeper) SetQuarantineRecordAccepted(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) {
-	k.SetQuarantineRecord(ctx, toAddr, fromAddr, nil)
+// AcceptQuarantinedFunds looks up all quarantined funds to toAddr from any of the fromAddrs.
+// It marks and saves each as accepted and, if fully accepted, releases the funds.
+func (k Keeper) AcceptQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) error {
+	for _, record := range k.GetQuarantineRecords(ctx, toAddr, fromAddrs...) {
+		if record.AcceptFrom(fromAddrs) {
+			k.SetQuarantineRecord(ctx, toAddr, record)
+			if record.IsFullyAccepted() {
+				err := k.bankKeeper.SendCoinsBypassQuarantine(ctx, k.fundsHolder, toAddr, record.Coins)
+				if err != nil {
+					return err
+				}
+
+				err = ctx.EventManager().EmitTypedEvent(&quarantine.EventFundsReleased{
+					ToAddress: toAddr.String(),
+					Coins:     record.Coins,
+				})
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
-// SetQuarantineRecordDeclined marks some quarantined funds as declined.
-func (k Keeper) SetQuarantineRecordDeclined(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) {
-	// TODO[1046]: Refactor this to account for multiple from addresses.
-	qf := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
-	qf.Declined = true
-	k.SetQuarantineRecord(ctx, toAddr, fromAddr, &qf)
+// DeclineQuarantinedFunds marks some quarantined funds as declined.
+func (k Keeper) DeclineQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) {
+	for _, record := range k.GetQuarantineRecords(ctx, toAddr, fromAddrs...) {
+		record.Declined = true
+		k.SetQuarantineRecord(ctx, toAddr, record)
+	}
 }
 
 // bzToQuarantineRecord converts the given byte slice into a QuarantineRecord or returns an error.
@@ -278,12 +315,18 @@ func (k Keeper) mustBzToQuarantineRecord(bz []byte) *quarantine.QuarantineRecord
 	return qf
 }
 
-func (k Keeper) setQuarantineRecordSuffixIndex(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, value *quarantine.QuarantineRecordSuffixIndex) {
-	value.RemoveSuffixes(fromAddr)
-	value.Simplify()
+// getQuarantineRecordSuffixIndex gets a quarantine record suffix entry and it's key.
+func (k Keeper) getQuarantineRecordSuffixIndex(store sdk.KVStore, toAddr, fromAddr sdk.AccAddress) (*quarantine.QuarantineRecordSuffixIndex, []byte) {
 	key := quarantine.CreateRecordIndexKey(toAddr, fromAddr)
-	store := ctx.KVStore(k.storeKey)
-	if len(value.RecordSuffixes) == 0 {
+	bz := store.Get(key)
+	rv := k.mustBzToQuarantineRecordSuffixIndex(bz)
+	return rv, key
+}
+
+// setQuarantineRecordSuffixIndex writes the provided suffix index.
+// If it is nil or there are no record suffixes, the entry is instead deleted.
+func (k Keeper) setQuarantineRecordSuffixIndex(store sdk.KVStore, key []byte, value *quarantine.QuarantineRecordSuffixIndex) {
+	if value == nil || len(value.RecordSuffixes) == 0 {
 		store.Delete(key)
 	} else {
 		val := k.cdc.MustMarshal(value)
@@ -291,13 +334,33 @@ func (k Keeper) setQuarantineRecordSuffixIndex(ctx sdk.Context, toAddr, fromAddr
 	}
 }
 
+// addQuarantineRecordSuffixIndexes adds the provided suffix to all to/from suffix index entries.
+func (k Keeper) addQuarantineRecordSuffixIndexes(store sdk.KVStore, toAddr sdk.AccAddress, fromAddrs []sdk.AccAddress, suffix []byte) {
+	for _, fromAddr := range fromAddrs {
+		ind, key := k.getQuarantineRecordSuffixIndex(store, toAddr, fromAddr)
+		ind.AddSuffixes(suffix)
+		ind.Simplify(fromAddr)
+		k.setQuarantineRecordSuffixIndex(store, key, ind)
+	}
+}
+
+// deleteQuarantineRecordSuffixIndexes removes the provided suffix from all to/from suffix index entries and either saves
+// the updated list or deletes it if it's now empty.
+func (k Keeper) deleteQuarantineRecordSuffixIndexes(store sdk.KVStore, toAddr sdk.AccAddress, fromAddrs []sdk.AccAddress, suffix []byte) {
+	for _, fromAddr := range fromAddrs {
+		ind, key := k.getQuarantineRecordSuffixIndex(store, toAddr, fromAddr)
+		ind.Simplify(fromAddr, suffix)
+		k.setQuarantineRecordSuffixIndex(store, key, ind)
+	}
+}
+
+// getQuarantineRecordSuffixes gets a sorted list of known record suffixes of quarantine records to toAddr
+// from any of the fromAddrs. The list will not contain duplicates, but may contain suffixes that don't point to records.
 func (k Keeper) getQuarantineRecordSuffixes(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) [][]byte {
 	store := ctx.KVStore(k.storeKey)
 	rv := &quarantine.QuarantineRecordSuffixIndex{}
 	for _, fromAddr := range fromAddrs {
-		key := quarantine.CreateRecordIndexKey(toAddr, fromAddr)
-		bz := store.Get(key)
-		suffixes := k.mustBzToQuarantineRecordSuffixIndex(bz)
+		suffixes, _ := k.getQuarantineRecordSuffixIndex(store, toAddr, fromAddr)
 		rv.AddSuffixes(suffixes.RecordSuffixes...)
 		rv.AddSuffixes(fromAddr)
 	}

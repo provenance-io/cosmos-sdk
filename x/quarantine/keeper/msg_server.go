@@ -56,28 +56,7 @@ func (k Keeper) Accept(goCtx context.Context, msg *quarantine.MsgAccept) (*quara
 		}
 	}
 
-	// TODO[1046]: Refactor this to account for multiple from addresses.
-	funds := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
-	if !funds.IsZero() {
-		qHolderAddr := k.GetFundsHolder()
-		if len(qHolderAddr) == 0 {
-			return nil, sdkerrors.ErrUnknownAddress.Wrapf("no quarantine holder account defined")
-		}
-
-		if err = k.bankKeeper.SendCoinsBypassQuarantine(ctx, qHolderAddr, toAddr, funds.Coins); err != nil {
-			return nil, err
-		}
-
-		err = ctx.EventManager().EmitTypedEvent(&quarantine.EventFundsReleased{
-			ToAddress: toAddr.String(),
-			Coins:     funds.Coins,
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	k.SetQuarantineRecordAccepted(ctx, toAddr, fromAddr)
+	err = k.AcceptQuarantinedFunds(ctx, toAddr, fromAddrs...)
 
 	if msg.Permanent {
 		for _, fromAddr := range fromAddrs {
@@ -104,7 +83,7 @@ func (k Keeper) Decline(goCtx context.Context, msg *quarantine.MsgDecline) (*qua
 		}
 	}
 
-	k.SetQuarantineRecordDeclined(ctx, toAddr, fromAddr)
+	k.DeclineQuarantinedFunds(ctx, toAddr, fromAddrs...)
 
 	if msg.Permanent {
 		for _, fromAddr := range fromAddrs {
