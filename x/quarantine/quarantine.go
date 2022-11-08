@@ -1,6 +1,9 @@
 package quarantine
 
 import (
+	"bytes"
+	"sort"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/quarantine/errors"
@@ -18,11 +21,6 @@ func NewQuarantinedFunds(toAddr sdk.AccAddress, fromAddrs []sdk.AccAddress, coin
 		rv.UnacceptedFromAddresses[i] = addr.String()
 	}
 	return rv
-}
-
-// AsQuarantineRecord creates a new QuarantineRecord using the fields in this.
-func (f QuarantinedFunds) AsQuarantineRecord() *QuarantineRecord {
-	return NewQuarantineRecord(f.UnacceptedFromAddresses, f.Coins, f.Declined)
 }
 
 // Validate does simple stateless validation of these quarantined funds.
@@ -136,12 +134,15 @@ func (r AutoResponse) IsDecline() bool {
 // NewQuarantineRecord creates a new quarantine record object.
 func NewQuarantineRecord(unacceptedFromAddrs []string, coins sdk.Coins, declined bool) *QuarantineRecord {
 	rv := &QuarantineRecord{
-		UnacceptedFromAddresses: make([]sdk.AccAddress, len(unacceptedFromAddrs)),
+		UnacceptedFromAddresses: nil,
+		AcceptedFromAddresses:   nil,
 		Coins:                   coins,
 		Declined:                declined,
 	}
-	for i, addr := range unacceptedFromAddrs {
-		rv.UnacceptedFromAddresses[i] = sdk.MustAccAddressFromBech32(addr)
+	if len(unacceptedFromAddrs) > 0 {
+		for i, addr := range unacceptedFromAddrs {
+			rv.UnacceptedFromAddresses[i] = sdk.MustAccAddressFromBech32(addr)
+		}
 	}
 	return rv
 }
@@ -159,32 +160,120 @@ func (r QuarantineRecord) IsZero() bool {
 	return r.Coins.IsZero()
 }
 
-// Add adds coins to this.
-func (r *QuarantineRecord) Add(coins ...sdk.Coin) {
+// AddCoins adds coins to this.
+func (r *QuarantineRecord) AddCoins(coins ...sdk.Coin) {
 	r.Coins = r.Coins.Add(coins...)
 }
 
-// AcceptFromAddrs removes the provided from addresses and removes them from this record's
-// unaccepted from addresses list. If none of the provided addresses are in this record's list,
-// this does nothing.
+// IsFullyAccepted returns true if this record has been accepted for all from addresses involved.
+func (r QuarantineRecord) IsFullyAccepted() bool {
+	return len(r.UnacceptedFromAddresses) == 0
+}
+
+// AcceptFromAddrs moves the provided addrs from the unaccepted slice to the accepted slice.
+// If none of the provided addresses are in this record's unaccepted slice, this does nothing.
 func (r *QuarantineRecord) AcceptFromAddrs(addrs []sdk.AccAddress) {
-	newAddrs := make([]sdk.AccAddress, 0, len(r.UnacceptedFromAddresses))
+	leftoverAddrs := make([]sdk.AccAddress, 0, len(r.UnacceptedFromAddresses))
 	for _, existing := range r.UnacceptedFromAddresses {
-		found := false
-		for _, toRemove := range addrs {
-			if existing.Equals(toRemove) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			newAddrs = append(newAddrs, existing)
+		if containsAddress(addrs, existing) {
+			r.AcceptedFromAddresses = append(r.AcceptedFromAddresses, existing)
+		} else {
+			leftoverAddrs = append(leftoverAddrs, existing)
 		}
 	}
-	r.UnacceptedFromAddresses = newAddrs
+	r.UnacceptedFromAddresses = leftoverAddrs
+}
+
+// containsAddress returns true if the addrToFind is an entry in the addrs.
+func containsAddress(addrs []sdk.AccAddress, addrToFind sdk.AccAddress) bool {
+	for _, addr := range addrs {
+		if addrToFind.Equals(addr) {
+			return true
+		}
+	}
+	return false
 }
 
 // AsQuarantinedFunds creates a new QuarantinedFunds using fields in this and the provided addresses.
 func (r QuarantineRecord) AsQuarantinedFunds(toAddr sdk.AccAddress) *QuarantinedFunds {
 	return NewQuarantinedFunds(toAddr, r.UnacceptedFromAddresses, r.Coins, r.Declined)
+}
+
+// AddSuffixes adds the provided suffixes to this.
+// No attempt is made to deduplicate entries. After using this, you should use Simplify before trying to save it.
+func (s *QuarantineRecordSuffixIndex) AddSuffixes(suffixes ...[]byte) {
+	s.RecordSuffixes = append(s.RecordSuffixes, suffixes...)
+}
+
+// RemoveSuffixes removes the provided suffixes from this.
+// Any provided suffixes that are not in this are ignored.
+func (s *QuarantineRecordSuffixIndex) RemoveSuffixes(suffixes ...[]byte) {
+	firstRem := -1
+	for i := 0; i < len(s.RecordSuffixes); i++ {
+		if containsSuffix(suffixes, s.RecordSuffixes[i]) {
+			firstRem = i
+			break
+		}
+	}
+	if firstRem != -1 {
+		recordSuffixes := make([][]byte, firstRem, len(s.RecordSuffixes)-1)
+		copy(recordSuffixes, s.RecordSuffixes[:firstRem])
+		for i := firstRem + 1; i < len(s.RecordSuffixes); i++ {
+			if !containsSuffix(suffixes, s.RecordSuffixes[i]) {
+				recordSuffixes = append(recordSuffixes, s.RecordSuffixes[i])
+			}
+		}
+		s.RecordSuffixes = recordSuffixes
+	}
+
+}
+
+// Simplify updates the suffixes in this so that they are ordered and there aren't any duplicates.
+func (s *QuarantineRecordSuffixIndex) Simplify() {
+	if len(s.RecordSuffixes) > 1 {
+		// Sort the suffixes first, so that deduplication is simpler.
+		sort.Slice(s.RecordSuffixes, func(i, j int) bool {
+			return bytes.Compare(s.RecordSuffixes[i], s.RecordSuffixes[j]) < 0
+		})
+		// Do as little work as possible for deduplication.
+		// It's assumed that the slice has few duplicates, if any.
+		// This is a little extra complex so that the slice isn't just
+		// copied every time there aren't any duplicates.
+		//
+		// First, start going through looking for a dupe.
+		// If one is found, record its index and stop.
+		// Then, if a first dupe was found, copy the slice up to the entry before it,
+		// and iterate over the rest of the suffixes, this time copying the non-duplicates.
+		firstDup := -1
+		for i := 1; i < len(s.RecordSuffixes); i++ {
+			if bytes.Equal(s.RecordSuffixes[i-1], s.RecordSuffixes[i]) {
+				firstDup = i
+				break
+			}
+		}
+		if firstDup != -1 {
+			deduped := make([][]byte, firstDup, len(s.RecordSuffixes)-1)
+			copy(deduped, s.RecordSuffixes[:firstDup])
+			for i := firstDup + 1; i < len(s.RecordSuffixes); i++ {
+				if !bytes.Equal(s.RecordSuffixes[i-1], s.RecordSuffixes[i]) {
+					deduped = append(deduped, s.RecordSuffixes[i])
+				}
+			}
+			s.RecordSuffixes = deduped
+		}
+	}
+
+	if len(s.RecordSuffixes) == 0 {
+		s.RecordSuffixes = nil
+	}
+}
+
+// containsSuffix returns true if the suffixToFind is in the suffixes.
+func containsSuffix(suffixes [][]byte, suffixToFind []byte) bool {
+	for _, suffix := range suffixes {
+		if bytes.Equal(suffixToFind, suffix) {
+			return true
+		}
+	}
+	return false
 }

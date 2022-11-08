@@ -56,11 +56,13 @@ enum AutoResponse {
 message QuarantineRecord {
   // unaccepted_from_addresses are the senders that have not been part of an accept yet for these coins.
   repeated bytes unaccepted_from_addresses = 1 [(gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress"];
+  // accepted_from_addresses are the senders that have already been part of an accept for these coins.
+  repeated bytes accepted_from_addresses = 2 [(gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress"];
   // coins is the amount that has been quarantined.
-  repeated cosmos.base.v1beta1.Coin coins = 2
+  repeated cosmos.base.v1beta1.Coin coins = 3
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
   // declined is whether these funds have been declined.
-  bool declined = 3;
+  bool declined = 4;
 }
 
 // QuarantineRecordSuffixIndex defines a list of record suffixes that can be stored in state and used as an index.

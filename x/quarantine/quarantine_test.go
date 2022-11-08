@@ -58,34 +58,43 @@ func makeCopyOfCoins(orig sdk.Coins) sdk.Coins {
 
 // makeCopyOfQuarantinedFunds creates a copy of the provided QuarantinedFunds and returns it.
 func makeCopyOfQuarantinedFunds(orig *QuarantinedFunds) *QuarantinedFunds {
-	rv := &QuarantinedFunds{
+	return &QuarantinedFunds{
 		ToAddress:               orig.ToAddress,
-		UnacceptedFromAddresses: nil,
+		UnacceptedFromAddresses: makeCopyOfStringSlice(orig.UnacceptedFromAddresses),
 		Coins:                   makeCopyOfCoins(orig.Coins),
 		Declined:                orig.Declined,
 	}
-	if orig.UnacceptedFromAddresses != nil {
-		rv.UnacceptedFromAddresses = make([]string, len(orig.UnacceptedFromAddresses))
-		for i, addr := range orig.UnacceptedFromAddresses {
-			rv.UnacceptedFromAddresses[i] = addr
-		}
+}
+
+// makeCopyOfStringSlice makes a copy of the provided string slice.
+func makeCopyOfStringSlice(orig []string) []string {
+	if orig == nil {
+		return nil
 	}
+	rv := make([]string, len(orig))
+	copy(rv, orig)
 	return rv
 }
 
 // makeCopyOfQuarantineRecord creates a copy of the provided QuarantineRecord and returns it.
 func makeCopyOfQuarantineRecord(orig *QuarantineRecord) *QuarantineRecord {
-	rv := &QuarantineRecord{
-		UnacceptedFromAddresses: nil,
+	return &QuarantineRecord{
+		UnacceptedFromAddresses: makeCopyOfAccAddresses(orig.UnacceptedFromAddresses),
+		AcceptedFromAddresses:   makeCopyOfAccAddresses(orig.AcceptedFromAddresses),
 		Coins:                   makeCopyOfCoins(orig.Coins),
 		Declined:                orig.Declined,
 	}
-	if orig.UnacceptedFromAddresses != nil {
-		rv.UnacceptedFromAddresses = make([]sdk.AccAddress, len(orig.UnacceptedFromAddresses))
-		for i, addr := range orig.UnacceptedFromAddresses {
-			rv.UnacceptedFromAddresses[i] = make(sdk.AccAddress, len(addr))
-			copy(rv.UnacceptedFromAddresses[i], addr)
-		}
+}
+
+// makeCopyOfAccAddresses makes a copy of the provided slice of acc addresses, copying each address too.
+func makeCopyOfAccAddresses(orig []sdk.AccAddress) []sdk.AccAddress {
+	if orig == nil {
+		return nil
+	}
+	rv := make([]sdk.AccAddress, len(orig))
+	for i, addr := range orig {
+		rv[i] = make(sdk.AccAddress, len(addr))
+		copy(rv[i], addr)
 	}
 	return rv
 }
@@ -213,169 +222,6 @@ func TestNewQuarantinedFunds(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actual := NewQuarantinedFunds(tc.toAddr, tc.fromAddrs, tc.Coins, tc.declined)
 			assert.Equal(t, tc.expected, actual, "NewQuarantinedFunds")
-		})
-	}
-}
-
-func TestQuarantinedFundsAsQuarantineRecord(t *testing.T) {
-	testAddrs := []sdk.AccAddress{
-		testAddr("qfaqr test addr 0"),
-		testAddr("qfaqr test addr 1"),
-		testAddr("qfaqr test addr 2"),
-	}
-	tests := []struct {
-		name     string
-		qf       *QuarantinedFunds
-		expected *QuarantineRecord
-	}{
-		{
-			name: "control",
-			qf: &QuarantinedFunds{
-				ToAddress:               "toAddr",
-				UnacceptedFromAddresses: []string{testAddrs[0].String()},
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                false,
-			},
-			expected: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                false,
-			},
-		},
-		{
-			name: "no toAddr",
-			qf: &QuarantinedFunds{
-				ToAddress:               "",
-				UnacceptedFromAddresses: []string{testAddrs[0].String()},
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                false,
-			},
-			expected: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                false,
-			},
-		},
-		{
-			name: "nil fromAddrs",
-			qf: &QuarantinedFunds{
-				ToAddress:               "toAddr",
-				UnacceptedFromAddresses: nil,
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                false,
-			},
-			expected: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{},
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                false,
-			},
-		},
-		{
-			name: "empty fromAddrs",
-			qf: &QuarantinedFunds{
-				ToAddress:               "toAddr",
-				UnacceptedFromAddresses: []string{},
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                false,
-			},
-			expected: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{},
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                false,
-			},
-		},
-		{
-			name: "three fromAddrs",
-			qf: &QuarantinedFunds{
-				ToAddress:               "toAddr",
-				UnacceptedFromAddresses: []string{testAddrs[0].String(), testAddrs[1].String(), testAddrs[2].String()},
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                false,
-			},
-			expected: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0], testAddrs[1], testAddrs[2]},
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                false,
-			},
-		},
-		{
-			name: "declined true",
-			qf: &QuarantinedFunds{
-				ToAddress:               "toAddr",
-				UnacceptedFromAddresses: []string{testAddrs[0].String()},
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                true,
-			},
-			expected: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
-				Coins:                   coinMakerMap["ok"](),
-				Declined:                true,
-			},
-		},
-		{
-			name: "multi coins",
-			qf: &QuarantinedFunds{
-				ToAddress:               "toAddr",
-				UnacceptedFromAddresses: []string{testAddrs[0].String()},
-				Coins:                   coinMakerMap["multi"](),
-				Declined:                false,
-			},
-			expected: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
-				Coins:                   coinMakerMap["multi"](),
-				Declined:                false,
-			},
-		},
-		{
-			name: "empty coins",
-			qf: &QuarantinedFunds{
-				ToAddress:               "toAddr",
-				UnacceptedFromAddresses: []string{testAddrs[0].String()},
-				Coins:                   coinMakerMap["empty"](),
-				Declined:                false,
-			},
-			expected: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
-				Coins:                   coinMakerMap["empty"](),
-				Declined:                false,
-			},
-		},
-		{
-			name: "nil coins",
-			qf: &QuarantinedFunds{
-				ToAddress:               "toAddr",
-				UnacceptedFromAddresses: []string{testAddrs[0].String()},
-				Coins:                   coinMakerMap["nil"](),
-				Declined:                false,
-			},
-			expected: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[1]},
-				Coins:                   coinMakerMap["nil"](),
-				Declined:                false,
-			},
-		},
-		{
-			name: "bad coins",
-			qf: &QuarantinedFunds{
-				ToAddress:               "toAddr",
-				UnacceptedFromAddresses: []string{testAddrs[0].String()},
-				Coins:                   coinMakerMap["bad"](),
-				Declined:                false,
-			},
-			expected: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[1]},
-				Coins:                   coinMakerMap["bad"](),
-				Declined:                false,
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			qfOrig := makeCopyOfQuarantinedFunds(tc.qf)
-			actual := tc.qf.AsQuarantineRecord()
-			assert.Equal(t, tc.expected, actual, "resulting QuarantineRecord")
-			assert.Equal(t, qfOrig, tc.qf, "QuarantinedFunds before and after")
 		})
 	}
 }
@@ -1059,125 +905,140 @@ func TestNewQuarantineRecord(t *testing.T) {
 	testAddrs := []sdk.AccAddress{
 		testAddr("nqr test addr 0"),
 		testAddr("nqr test addr 1"),
-		testAddr("nqr test addr 2"),
 	}
 	tests := []struct {
-		name      string
-		fromAddrs []string
-		coins     sdk.Coins
-		declined  bool
-		expected  *QuarantineRecord
-		expPanic  string
+		name        string
+		uaFromAddrs []string
+		coins       sdk.Coins
+		declined    bool
+		expected    *QuarantineRecord
+		expPanic    string
 	}{
 		{
-			name:      "control",
-			fromAddrs: []string{testAddrs[0].String()},
-			coins:     coinMakerMap["ok"](),
-			declined:  false,
+			name:        "control",
+			uaFromAddrs: []string{testAddrs[0].String()},
+			coins:       coinMakerMap["ok"](),
+			declined:    false,
 			expected: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{},
 				Coins:                   coinMakerMap["ok"](),
 				Declined:                false,
 			},
 		},
 		{
-			name:      "declined",
-			fromAddrs: []string{testAddrs[0].String()},
-			coins:     coinMakerMap["ok"](),
-			declined:  true,
+			name:        "declined",
+			uaFromAddrs: []string{testAddrs[0].String()},
+			coins:       coinMakerMap["ok"](),
+			declined:    true,
 			expected: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{},
 				Coins:                   coinMakerMap["ok"](),
 				Declined:                true,
 			},
 		},
 		{
-			name:      "multi coins",
-			fromAddrs: []string{testAddrs[0].String()},
-			coins:     coinMakerMap["multi"](),
-			declined:  false,
+			name:        "multi coins",
+			uaFromAddrs: []string{testAddrs[0].String()},
+			coins:       coinMakerMap["multi"](),
+			declined:    false,
 			expected: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{},
 				Coins:                   coinMakerMap["multi"](),
 				Declined:                false,
 			},
 		},
 		{
-			name:      "empty coins",
-			fromAddrs: []string{testAddrs[0].String()},
-			coins:     coinMakerMap["empty"](),
-			declined:  false,
+			name:        "empty coins",
+			uaFromAddrs: []string{testAddrs[0].String()},
+			coins:       coinMakerMap["empty"](),
+			declined:    false,
 			expected: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{},
 				Coins:                   coinMakerMap["empty"](),
 				Declined:                false,
 			},
 		},
 		{
-			name:      "nil coins",
-			fromAddrs: []string{testAddrs[0].String()},
-			coins:     coinMakerMap["nil"](),
-			declined:  false,
+			name:        "nil coins",
+			uaFromAddrs: []string{testAddrs[0].String()},
+			coins:       coinMakerMap["nil"](),
+			declined:    false,
 			expected: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{},
 				Coins:                   coinMakerMap["nil"](),
 				Declined:                false,
 			},
 		},
 		{
-			name:      "bad coins",
-			fromAddrs: []string{testAddrs[0].String()},
-			coins:     coinMakerMap["bad"](),
-			declined:  false,
+			name:        "bad coins",
+			uaFromAddrs: []string{testAddrs[0].String()},
+			coins:       coinMakerMap["bad"](),
+			declined:    false,
 			expected: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{},
 				Coins:                   coinMakerMap["bad"](),
 				Declined:                false,
 			},
 		},
 		{
-			name:      "bad addr panics",
-			fromAddrs: []string{"I'm a bad address"},
-			coins:     coinMakerMap["ok"](),
-			declined:  false,
-			expPanic:  "TODO",
+			name:        "bad unaccepted addr panics",
+			uaFromAddrs: []string{"I'm a bad address"},
+			coins:       coinMakerMap["ok"](),
+			declined:    false,
+			expPanic:    "TODO",
 		},
 		{
-			name:      "empty addr string panics",
-			fromAddrs: []string{""},
-			coins:     coinMakerMap["ok"](),
-			declined:  false,
-			expPanic:  "TODO",
+			name:        "empty unaccepted addr string panics",
+			uaFromAddrs: []string{""},
+			coins:       coinMakerMap["ok"](),
+			declined:    false,
+			expPanic:    "TODO",
 		},
 		{
-			name:      "two from addresses",
-			fromAddrs: []string{testAddrs[0].String(), testAddrs[1].String()},
-			coins:     coinMakerMap["ok"](),
-			declined:  false,
+			name:        "bad second unaccepted addr panics",
+			uaFromAddrs: []string{testAddrs[0].String(), "I'm a bad address"},
+			coins:       coinMakerMap["ok"](),
+			declined:    false,
+			expPanic:    "TODO",
+		},
+		{
+			name:        "two unaccepted addresses",
+			uaFromAddrs: []string{testAddrs[0].String(), testAddrs[1].String()},
+			coins:       coinMakerMap["ok"](),
+			declined:    false,
 			expected: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0], testAddrs[1]},
+				AcceptedFromAddresses:   []sdk.AccAddress{},
 				Coins:                   coinMakerMap["ok"](),
 				Declined:                false,
 			},
 		},
 		{
-			name:      "empty from addresses",
-			fromAddrs: []string{},
-			coins:     coinMakerMap["ok"](),
-			declined:  false,
+			name:        "empty unaccepted addresses",
+			uaFromAddrs: []string{},
+			coins:       coinMakerMap["ok"](),
+			declined:    false,
 			expected: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{},
+				AcceptedFromAddresses:   []sdk.AccAddress{},
 				Coins:                   coinMakerMap["ok"](),
 				Declined:                false,
 			},
 		},
 		{
-			name:      "nil from addresses",
-			fromAddrs: nil,
-			coins:     coinMakerMap["ok"](),
-			declined:  false,
+			name:        "nil unaccepted addresses",
+			uaFromAddrs: nil,
+			coins:       coinMakerMap["ok"](),
+			declined:    false,
 			expected: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{},
+				AcceptedFromAddresses:   []sdk.AccAddress{},
 				Coins:                   coinMakerMap["ok"](),
 				Declined:                false,
 			},
@@ -1188,7 +1049,7 @@ func TestNewQuarantineRecord(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var actual *QuarantineRecord
 			testFunc := func() {
-				actual = NewQuarantineRecord(tc.fromAddrs, tc.coins, tc.declined)
+				actual = NewQuarantineRecord(tc.uaFromAddrs, tc.coins, tc.declined)
 			}
 			if len(tc.expPanic) == 0 {
 				if assert.NotPanics(t, testFunc, "NewQuarantineRecord") {
@@ -1216,6 +1077,7 @@ func TestQuarantineRecordValidate(t *testing.T) {
 			name: "control",
 			qr: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddrs[1]},
 				Coins:                   coinMakerMap["ok"](),
 				Declined:                false,
 			},
@@ -1225,8 +1087,29 @@ func TestQuarantineRecordValidate(t *testing.T) {
 			name: "declined",
 			qr: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddrs[1]},
 				Coins:                   coinMakerMap["ok"](),
 				Declined:                true,
+			},
+			expectedInErr: nil,
+		},
+		{
+			name: "no accepted addresses is ok",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{},
+				Coins:                   coinMakerMap["ok"](),
+				Declined:                false,
+			},
+			expectedInErr: nil,
+		},
+		{
+			name: "nil accepted addresses is ok",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   nil,
+				Coins:                   coinMakerMap["ok"](),
+				Declined:                false,
 			},
 			expectedInErr: nil,
 		},
@@ -1234,6 +1117,7 @@ func TestQuarantineRecordValidate(t *testing.T) {
 			name: "multi coins",
 			qr: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddrs[1]},
 				Coins:                   coinMakerMap["multi"](),
 				Declined:                false,
 			},
@@ -1243,6 +1127,7 @@ func TestQuarantineRecordValidate(t *testing.T) {
 			name: "empty coins",
 			qr: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddrs[1]},
 				Coins:                   coinMakerMap["empty"](),
 				Declined:                false,
 			},
@@ -1252,6 +1137,7 @@ func TestQuarantineRecordValidate(t *testing.T) {
 			name: "nil coins",
 			qr: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddrs[1]},
 				Coins:                   coinMakerMap["nil"](),
 				Declined:                false,
 			},
@@ -1261,42 +1147,47 @@ func TestQuarantineRecordValidate(t *testing.T) {
 			name: "bad coins",
 			qr: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0]},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddrs[1]},
 				Coins:                   coinMakerMap["bad"](),
 				Declined:                false,
 			},
 			expectedInErr: []string{coinMakerMap["bad"]().String(), "amount is not positive"},
 		},
 		{
-			name: "nil from addrs",
+			name: "nil unaccepted addrs",
 			qr: &QuarantineRecord{
 				UnacceptedFromAddresses: nil,
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddrs[1]},
 				Coins:                   coinMakerMap["ok"](),
 				Declined:                false,
 			},
 			expectedInErr: []string{"at least one unaccepted from address is required"},
 		},
 		{
-			name: "empty from addrs",
+			name: "empty unaccepted addrs",
 			qr: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddrs[1]},
 				Coins:                   coinMakerMap["ok"](),
 				Declined:                false,
 			},
 			expectedInErr: []string{"at least one unaccepted from address is required"},
 		},
 		{
-			name: "two from addrs",
+			name: "two unaccepted addrs",
 			qr: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0], testAddrs[1]},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddrs[1]},
 				Coins:                   coinMakerMap["ok"](),
 				Declined:                false,
 			},
 			expectedInErr: nil,
 		},
 		{
-			name: "three from addrs",
+			name: "three unaccepted addrs",
 			qr: &QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{testAddrs[0], testAddrs[1], testAddrs[2]},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddrs[1]},
 				Coins:                   coinMakerMap["ok"](),
 				Declined:                false,
 			},
@@ -1387,7 +1278,7 @@ func TestQuarantineRecordIsZero(t *testing.T) {
 	}
 }
 
-func TestQuarantineRecordAdd(t *testing.T) {
+func TestQuarantineRecordAddCoins(t *testing.T) {
 	moreCoinMakers := map[string]coinMaker{
 		"empty":          coinMakerMap["empty"],
 		"nil":            coinMakerMap["nil"],
@@ -1608,8 +1499,8 @@ func TestQuarantineRecordAdd(t *testing.T) {
 				}
 				addCoinsOrig := moreCoinMakers[tc.addCoinKey]()
 				addCoins := moreCoinMakers[tc.addCoinKey]()
-				qr.Add(addCoins...)
-				assert.Equal(t, expected, qr, "QuarantineRecord after Add")
+				qr.AddCoins(addCoins...)
+				assert.Equal(t, expected, qr, "QuarantineRecord after AddCoins")
 				assert.Equal(t, addCoinsOrig, addCoins, "Coins before and after")
 			})
 		}
@@ -1617,6 +1508,7 @@ func TestQuarantineRecordAdd(t *testing.T) {
 }
 
 // TODO[1046]: Test QuarantineRecord.AcceptFromAddrs
+// TODO[1046]: Test QuarantineRecord.IsFullyAccepted
 
 func TestQuarantineRecordAsQuarantinedFunds(t *testing.T) {
 	testAddrs := []sdk.AccAddress{

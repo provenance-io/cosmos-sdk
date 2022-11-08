@@ -29,6 +29,12 @@ func NewDecodeStore(cdc codec.Codec) func(kvA, kvB kv.Pair) string {
 			cdc.MustUnmarshal(kvB.Value, &qrB)
 			return fmt.Sprintf("%v\n%v", qrA, qrB)
 
+		case bytes.HasPrefix(kvA.Key, quarantine.RecordIndexPrefix):
+			var riA, riB quarantine.QuarantineRecordSuffixIndex
+			cdc.MustUnmarshal(kvA.Value, &riA)
+			cdc.MustUnmarshal(kvB.Value, &riB)
+			return fmt.Sprintf("%v\n%v", riA, riB)
+
 		default:
 			panic(fmt.Sprintf("invalid quarantine key %X", kvA.Key))
 		}
