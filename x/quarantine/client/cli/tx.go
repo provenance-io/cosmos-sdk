@@ -126,16 +126,17 @@ $ %[1]s opt-out --from personal
 // TxAcceptCmd returns the command for executing an Accept Tx.
 func TxAcceptCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "accept <to_name_or_address> <from_address>",
+		Use:   "accept <to_name_or_address> <from_address> [<from_address 2> ...]",
 		Short: "Accept quarantined funds sent to <to_name_or_address> from <from_address>",
 		Long: `Accept quarantined funds sent to <to_name_or_address> from <from_address>.
 Note, the '--from' flag is ignored as it is implied from [to_name_or_address] (the signer of the message).`,
 		Example: fmt.Sprintf(`
 $ %[1]s accept %[2]s %[3]s
 $ %[1]s accept personal %[3]s
+$ %[1]s accept personal %[3]s %[4]s
 `,
-			exampleTxCmdBase, exampleAddr1, exampleAddr2),
-		Args: cobra.ExactArgs(2),
+			exampleTxCmdBase, exampleAddr1, exampleAddr2, exampleAddr3),
+		Args: cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args[0]) == 0 {
 				return fmt.Errorf("no to_name_or_address provided")
@@ -151,9 +152,12 @@ $ %[1]s accept personal %[3]s
 
 			toAddr := clientCtx.GetFromAddress()
 
-			fromAddrStr, err := validateAddress(args[1], "from_address")
-			if err != nil {
-				return err
+			fromAddrsStrs := make([]string, len(args)-1)
+			for i, fromAddrStr := range args[1:] {
+				fromAddrsStrs[i], err = validateAddress(fromAddrStr, fmt.Sprintf("from_address %d", i+1))
+				if err != nil {
+					return err
+				}
 			}
 
 			permanent, err := cmd.Flags().GetBool(FlagPermanent)
@@ -161,7 +165,7 @@ $ %[1]s accept personal %[3]s
 				return err
 			}
 
-			msg := quarantine.NewMsgAccept(toAddr, fromAddrStr, permanent)
+			msg := quarantine.NewMsgAccept(toAddr, fromAddrsStrs, permanent)
 			if err = msg.ValidateBasic(); err != nil {
 				return fmt.Errorf("message validation failed: %w", err)
 			}
@@ -170,7 +174,7 @@ $ %[1]s accept personal %[3]s
 		},
 	}
 
-	cmd.Flags().Bool(FlagPermanent, false, "Also set auto-accept for sends from from_address to to_address")
+	cmd.Flags().Bool(FlagPermanent, false, "Also set auto-accept for sends from any of the from_addresses to to_address")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
@@ -179,16 +183,17 @@ $ %[1]s accept personal %[3]s
 // TxDeclineCmd returns the command for executing a Decline Tx.
 func TxDeclineCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "decline <to_name_or_address> <from_address>",
+		Use:   "decline <to_name_or_address> <from_address> [<from_address 2> ...]",
 		Short: "Decline quarantined funds sent to <to_name_or_address> from <from_address>",
 		Long: `Decline quarantined funds sent to <to_name_or_address> from <from_address>.
 Note, the '--from' flag is ignored as it is implied from [to_name_or_address] (the signer of the message).`,
 		Example: fmt.Sprintf(`
 $ %[1]s decline %[2]s %[3]s
 $ %[1]s decline personal %[3]s
+$ %[1]s decline personal %[3]s %[4]s
 `,
-			exampleTxCmdBase, exampleAddr1, exampleAddr2),
-		Args: cobra.ExactArgs(2),
+			exampleTxCmdBase, exampleAddr1, exampleAddr2, exampleAddr3),
+		Args: cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args[0]) == 0 {
 				return fmt.Errorf("no to_name_or_address provided")
@@ -204,9 +209,12 @@ $ %[1]s decline personal %[3]s
 
 			toAddr := clientCtx.GetFromAddress()
 
-			fromAddrStr, err := validateAddress(args[1], "from_address")
-			if err != nil {
-				return err
+			fromAddrsStrs := make([]string, len(args)-1)
+			for i, fromAddrStr := range args[1:] {
+				fromAddrsStrs[i], err = validateAddress(fromAddrStr, fmt.Sprintf("from_address %d", i+1))
+				if err != nil {
+					return err
+				}
 			}
 
 			permanent, err := cmd.Flags().GetBool(FlagPermanent)
@@ -214,7 +222,7 @@ $ %[1]s decline personal %[3]s
 				return err
 			}
 
-			msg := quarantine.NewMsgDecline(toAddr, fromAddrStr, permanent)
+			msg := quarantine.NewMsgDecline(toAddr, fromAddrsStrs, permanent)
 			if err = msg.ValidateBasic(); err != nil {
 				return fmt.Errorf("message validation failed: %w", err)
 			}
@@ -223,7 +231,7 @@ $ %[1]s decline personal %[3]s
 		},
 	}
 
-	cmd.Flags().Bool(FlagPermanent, false, "Also set auto-decline for sends from from_address to to_address")
+	cmd.Flags().Bool(FlagPermanent, false, "Also set auto-decline for sends from any of the from_addresses to to_address")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

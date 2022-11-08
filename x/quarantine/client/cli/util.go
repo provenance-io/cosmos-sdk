@@ -19,10 +19,12 @@ func exampleAddr(name string) sdk.AccAddress {
 }
 
 var (
-	// exampleAddr1 is a random address to use in examples.
+	// exampleAddr1 is a random (but static) address to use in examples.
 	exampleAddr1 = exampleAddr("exampleAddr1")
-	// exampleAddr2 is another random address to use in examples.
+	// exampleAddr2 is another random (but static) address to use in examples.
 	exampleAddr2 = exampleAddr("exampleAddr2")
+	// exampleAddr3 is third random (but static) address to use in examples.
+	exampleAddr3 = exampleAddr("exampleAddr3")
 )
 
 // validateAddress checks to make sure the provided addr is a valid Bech32 address string.
