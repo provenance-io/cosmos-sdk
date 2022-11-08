@@ -48,11 +48,15 @@ func (k Keeper) Accept(goCtx context.Context, msg *quarantine.MsgAccept) (*quara
 		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %v", err)
 	}
 
-	fromAddr, err := sdk.AccAddressFromBech32(msg.FromAddress)
-	if err != nil {
-		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
+	fromAddrs := make([]sdk.AccAddress, len(msg.FromAddresses))
+	for i, addr := range msg.FromAddresses {
+		fromAddrs[i], err = sdk.AccAddressFromBech32(addr)
+		if err != nil {
+			return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address[%d]: %v", i, err)
+		}
 	}
 
+	// TODO[1046]: Refactor this to account for multiple from addresses.
 	funds := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
 	if !funds.IsZero() {
 		qHolderAddr := k.GetFundsHolder()
@@ -65,9 +69,8 @@ func (k Keeper) Accept(goCtx context.Context, msg *quarantine.MsgAccept) (*quara
 		}
 
 		err = ctx.EventManager().EmitTypedEvent(&quarantine.EventFundsReleased{
-			ToAddress:   toAddr.String(),
-			FromAddress: fromAddr.String(),
-			Coins:       funds.Coins,
+			ToAddress: toAddr.String(),
+			Coins:     funds.Coins,
 		})
 		if err != nil {
 			return nil, err
@@ -77,7 +80,9 @@ func (k Keeper) Accept(goCtx context.Context, msg *quarantine.MsgAccept) (*quara
 	k.SetQuarantineRecordAccepted(ctx, toAddr, fromAddr)
 
 	if msg.Permanent {
-		k.SetAutoResponse(ctx, toAddr, fromAddr, quarantine.AUTO_RESPONSE_ACCEPT)
+		for _, fromAddr := range fromAddrs {
+			k.SetAutoResponse(ctx, toAddr, fromAddr, quarantine.AUTO_RESPONSE_ACCEPT)
+		}
 	}
 
 	return &quarantine.MsgAcceptResponse{}, nil
@@ -91,15 +96,20 @@ func (k Keeper) Decline(goCtx context.Context, msg *quarantine.MsgDecline) (*qua
 		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %v", err)
 	}
 
-	fromAddr, err := sdk.AccAddressFromBech32(msg.FromAddress)
-	if err != nil {
-		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
+	fromAddrs := make([]sdk.AccAddress, len(msg.FromAddresses))
+	for i, addr := range msg.FromAddresses {
+		fromAddrs[i], err = sdk.AccAddressFromBech32(addr)
+		if err != nil {
+			return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address[%d]: %v", i, err)
+		}
 	}
 
 	k.SetQuarantineRecordDeclined(ctx, toAddr, fromAddr)
 
 	if msg.Permanent {
-		k.SetAutoResponse(ctx, toAddr, fromAddr, quarantine.AUTO_RESPONSE_DECLINE)
+		for _, fromAddr := range fromAddrs {
+			k.SetAutoResponse(ctx, toAddr, fromAddr, quarantine.AUTO_RESPONSE_DECLINE)
+		}
 	}
 
 	return &quarantine.MsgDeclineResponse{}, nil
@@ -113,10 +123,10 @@ func (k Keeper) UpdateAutoResponses(goCtx context.Context, msg *quarantine.MsgUp
 		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %v", err)
 	}
 
-	for _, update := range msg.Updates {
+	for i, update := range msg.Updates {
 		fromAddr, err := sdk.AccAddressFromBech32(update.FromAddress)
 		if err != nil {
-			return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %v", err)
+			return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address[%d]: %v", i, err)
 		}
 		k.SetAutoResponse(ctx, toAddr, fromAddr, update.Response)
 	}

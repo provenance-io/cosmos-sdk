@@ -49,7 +49,7 @@ func (k Keeper) QuarantinedFunds(goCtx context.Context, req *quarantine.QueryQua
 			return nil, status.Errorf(codes.InvalidArgument, "invalid to address: %s", err.Error())
 		}
 	}
-	if len(req.ToAddress) > 0 {
+	if len(req.FromAddress) > 0 {
 		fromAddr, err = sdk.AccAddressFromBech32(req.FromAddress)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid from address: %s", err.Error())
@@ -60,16 +60,22 @@ func (k Keeper) QuarantinedFunds(goCtx context.Context, req *quarantine.QueryQua
 
 	resp := &quarantine.QueryQuarantinedFundsResponse{}
 
-	if len(toAddr) > 0 && len(fromAddr) > 0 {
-		qr := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
-		qf := qr.AsQuarantinedFunds(toAddr, fromAddr)
-		resp.QuarantinedFunds = append(resp.QuarantinedFunds, qf)
+	if len(fromAddr) > 0 {
+		// Not paginating here because it's assumed that there are few results.
+		// Also, there's no way to use query.FilteredPaginate to iterate over just these specific entries.
+		// So it'd be doing a lot of extra unneeded work.
+		qRecords := k.GetQuarantineRecords(ctx, toAddr, fromAddr)
+		for _, qr := range qRecords {
+			qf := qr.AsQuarantinedFunds(toAddr)
+			resp.QuarantinedFunds = append(resp.QuarantinedFunds, qf)
+		}
 	} else {
 		store := k.getQuarantineRecordPrefixStore(ctx, toAddr)
 		resp.Pagination, err = query.FilteredPaginate(
 			store, req.Pagination,
 			func(key, value []byte, accumulate bool) (bool, error) {
-				var qr quarantine.QuarantineRecord
+				var qr *quarantine.QuarantineRecord
+
 				qr, err = k.bzToQuarantineRecord(value)
 				if err != nil {
 					return false, err
@@ -78,13 +84,14 @@ func (k Keeper) QuarantinedFunds(goCtx context.Context, req *quarantine.QueryQua
 					return false, nil
 				}
 				if accumulate {
-					kToAddr, kFromAddr := quarantine.ParseRecordKey(key)
-					qf := qr.AsQuarantinedFunds(kToAddr, kFromAddr)
+					kToAddr, _ := quarantine.ParseRecordKey(key)
+					qf := qr.AsQuarantinedFunds(kToAddr)
 					resp.QuarantinedFunds = append(resp.QuarantinedFunds, qf)
 				}
 				return true, nil
 			},
 		)
+
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
