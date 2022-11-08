@@ -699,9 +699,6 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 
 		events := ctx.EventManager().Events()
 
-		// GasMeter expected to be set in AnteHandler
-		gasWanted = ctx.GasMeter().Limit()
-
 		if err != nil {
 			return gInfo, nil, nil, 0, ctx, err
 		}
@@ -770,6 +767,9 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 	} else { // tx failed run aggregator for ante events only since result object is nil
 		anteEvents, _ = AggregateEvents(app, anteEvents, nil)
 	}
+	// GasMeter expected to be set in AnteHandler
+	// however provenance will depend on message fees and should match up to just gas consumed
+	gasWanted = ctx.GasMeter().GasConsumed()
 
 	return gInfo, result, anteEvents, priority, ctx, err
 }
