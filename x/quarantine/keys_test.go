@@ -534,7 +534,8 @@ func TestCreateRecordSuffix(t *testing.T) {
 		)
 	})
 
-	createRecordSuffixAndAssertInputUnchanged := func(input []sdk.AccAddress, msg string, args ...interface{}) []byte {
+	createRecordSuffixAndAssertInputUnchanged := func(t *testing.T, input []sdk.AccAddress, msg string, args ...interface{}) []byte {
+		t.Helper()
 		msgAndArgs := []interface{}{msg + " input before and after"}
 		msgAndArgs = append(msgAndArgs, args...)
 		var orig []sdk.AccAddress
@@ -555,16 +556,25 @@ func TestCreateRecordSuffix(t *testing.T) {
 			expected := make([]byte, len(addr))
 			copy(expected, addr)
 
-			actual := createRecordSuffixAndAssertInputUnchanged([]sdk.AccAddress{addr}, "addr %d", i)
+			actual := createRecordSuffixAndAssertInputUnchanged(t, []sdk.AccAddress{addr}, "addr %d", i)
 			assert.Equal(t, expected, actual, "addr %d", i)
 		}
 	})
 
+	t.Run("long addr is truncated", func(t *testing.T) {
+		badAddr := makeBadAddr(55)
+		expected := make([]byte, 32)
+		copy(expected, badAddr[:32])
+
+		actual := createRecordSuffixAndAssertInputUnchanged(t, []sdk.AccAddress{badAddr}, "bad addr")
+		assert.Equal(t, expected, actual, "bad addr as suffix")
+	})
+
 	t.Run("two addrs order does not matter", func(t *testing.T) {
 		input1 := []sdk.AccAddress{testAddrs[0], testAddrs[1]}
-		input2 := []sdk.AccAddress{testAddrs[1], testAddrs[2]}
-		expected := createRecordSuffixAndAssertInputUnchanged(input1, "addrs 0 then 1")
-		actual := createRecordSuffixAndAssertInputUnchanged(input2, "addrs 1 then 0")
+		input2 := []sdk.AccAddress{testAddrs[1], testAddrs[0]}
+		expected := createRecordSuffixAndAssertInputUnchanged(t, input1, "addrs 0 then 1")
+		actual := createRecordSuffixAndAssertInputUnchanged(t, input2, "addrs 1 then 0")
 		assert.Equal(t, expected, actual, "addrs 0 then 1, vs 1 then 0")
 	})
 
@@ -584,7 +594,7 @@ func TestCreateRecordSuffix(t *testing.T) {
 			for j, ind := range taIndexes {
 				inputs[i][j] = testAddrs[ind]
 			}
-			outputs[i] = createRecordSuffixAndAssertInputUnchanged(inputs[i], "addrs %v", taIndexes)
+			outputs[i] = createRecordSuffixAndAssertInputUnchanged(t, inputs[i], "addrs %v", taIndexes)
 		}
 		for i := 0; i < len(outputs)-1; i++ {
 			for j := i + 1; j < len(outputs); j++ {
@@ -597,9 +607,9 @@ func TestCreateRecordSuffix(t *testing.T) {
 		input1 := []sdk.AccAddress{testAddrs[1]}
 		input2 := []sdk.AccAddress{testAddrs[2]}
 		inputBoth := []sdk.AccAddress{testAddrs[1], testAddrs[2]}
-		actual1 := createRecordSuffixAndAssertInputUnchanged(input1, "addr 1")
-		actual2 := createRecordSuffixAndAssertInputUnchanged(input2, "addr 2")
-		actualBoth := createRecordSuffixAndAssertInputUnchanged(inputBoth, "both")
+		actual1 := createRecordSuffixAndAssertInputUnchanged(t, input1, "addr 1")
+		actual2 := createRecordSuffixAndAssertInputUnchanged(t, input2, "addr 2")
+		actualBoth := createRecordSuffixAndAssertInputUnchanged(t, inputBoth, "both")
 
 		assert.NotEqual(t, actual1, actual2, "addr 1 vs addr 2")
 		assert.NotEqual(t, actual1, actualBoth, "addr 1 vs both")

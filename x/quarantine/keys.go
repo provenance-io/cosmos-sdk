@@ -125,14 +125,20 @@ func createRecordSuffix(fromAddrs []sdk.AccAddress) []byte {
 	case 0:
 		panic(sdkerrors.ErrLogic.Wrap("at least one fromAddr is required"))
 	case 1:
+		if len(fromAddrs[0]) > 32 {
+			return fromAddrs[0][:32]
+		}
 		return fromAddrs[0]
 	default:
-		// the same n addresses needs to always create the same result.
-		sort.Slice(fromAddrs, func(i, j int) bool {
-			return bytes.Compare(fromAddrs[i], fromAddrs[j]) < 0
+		// The same n addresses needs to always create the same result.
+		// And we don't want to change the input slice.
+		addrs := make([]sdk.AccAddress, len(fromAddrs))
+		copy(addrs, fromAddrs)
+		sort.Slice(addrs, func(i, j int) bool {
+			return bytes.Compare(addrs[i], addrs[j]) < 0
 		})
 		var toHash []byte
-		for _, addr := range fromAddrs {
+		for _, addr := range addrs {
 			toHash = append(toHash, addr...)
 		}
 		hash := sha256.Sum256(toHash)
