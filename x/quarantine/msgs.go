@@ -56,10 +56,10 @@ func (msg MsgOptOut) GetSigners() []sdk.AccAddress {
 var _ sdk.Msg = &MsgAccept{}
 
 // NewMsgAccept creates a new msg to accept quarantined funds.
-func NewMsgAccept(toAddr sdk.AccAddress, fromAddrStrs []string, permanent bool) *MsgAccept {
+func NewMsgAccept(toAddr sdk.AccAddress, fromAddrsStrs []string, permanent bool) *MsgAccept {
 	return &MsgAccept{
 		ToAddress:     toAddr.String(),
-		FromAddresses: fromAddrStrs,
+		FromAddresses: fromAddrsStrs,
 		Permanent:     permanent,
 	}
 }
@@ -89,10 +89,10 @@ func (msg MsgAccept) GetSigners() []sdk.AccAddress {
 var _ sdk.Msg = &MsgDecline{}
 
 // NewMsgDecline creates a new msg to decline quarantined funds.
-func NewMsgDecline(toAddr sdk.AccAddress, fromAddrStrs []string, permanent bool) *MsgDecline {
+func NewMsgDecline(toAddr sdk.AccAddress, fromAddrsStrs []string, permanent bool) *MsgDecline {
 	return &MsgDecline{
 		ToAddress:     toAddr.String(),
-		FromAddresses: fromAddrStrs,
+		FromAddresses: fromAddrsStrs,
 		Permanent:     permanent,
 	}
 }

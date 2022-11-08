@@ -224,61 +224,83 @@ func TestNewMsgAccept(t *testing.T) {
 		testAddr("nma test addr 1"),
 	}
 	tests := []struct {
-		name        string
-		toAddr      sdk.AccAddress
-		fromAddrStr string
-		permanent   bool
-		expected    *MsgAccept
+		name      string
+		toAddr    sdk.AccAddress
+		fromAddrs []string
+		permanent bool
+		expected  *MsgAccept
 	}{
 		{
-			name:        "control",
-			toAddr:      testAddrs[0],
-			fromAddrStr: testAddrs[1].String(),
-			permanent:   false,
+			name:      "control",
+			toAddr:    testAddrs[0],
+			fromAddrs: []string{testAddrs[1].String()},
+			permanent: false,
 			expected: &MsgAccept{
-				ToAddress:   testAddrs[0].String(),
-				FromAddress: testAddrs[1].String(),
-				Permanent:   false,
+				ToAddress:     testAddrs[0].String(),
+				FromAddresses: []string{testAddrs[1].String()},
+				Permanent:     false,
 			},
 		},
 		{
-			name:        "nil toAddr",
-			toAddr:      nil,
-			fromAddrStr: testAddrs[1].String(),
-			permanent:   false,
+			name:      "nil toAddr",
+			toAddr:    nil,
+			fromAddrs: []string{testAddrs[1].String()},
+			permanent: false,
 			expected: &MsgAccept{
-				ToAddress:   "",
-				FromAddress: testAddrs[1].String(),
-				Permanent:   false,
+				ToAddress:     "",
+				FromAddresses: []string{testAddrs[1].String()},
+				Permanent:     false,
 			},
 		},
 		{
-			name:        "no fromAddr",
-			toAddr:      testAddrs[1],
-			fromAddrStr: "",
-			permanent:   false,
+			name:      "nil fromAddrsStrs",
+			toAddr:    testAddrs[1],
+			fromAddrs: nil,
+			permanent: false,
 			expected: &MsgAccept{
-				ToAddress:   testAddrs[1].String(),
-				FromAddress: "",
-				Permanent:   false,
+				ToAddress:     testAddrs[1].String(),
+				FromAddresses: nil,
+				Permanent:     false,
 			},
 		},
 		{
-			name:        "permanent",
-			toAddr:      testAddrs[1],
-			fromAddrStr: testAddrs[0].String(),
-			permanent:   true,
+			name:      "empty fromAddrsStrs",
+			toAddr:    testAddrs[1],
+			fromAddrs: []string{},
+			permanent: false,
 			expected: &MsgAccept{
-				ToAddress:   testAddrs[1].String(),
-				FromAddress: testAddrs[0].String(),
-				Permanent:   true,
+				ToAddress:     testAddrs[1].String(),
+				FromAddresses: []string{},
+				Permanent:     false,
+			},
+		},
+		{
+			name:      "three bad fromAddrsStrs",
+			toAddr:    testAddrs[1],
+			fromAddrs: []string{"one", "two", "three"},
+			permanent: false,
+			expected: &MsgAccept{
+				ToAddress:     testAddrs[1].String(),
+				FromAddresses: []string{"one", "two", "three"},
+				Permanent:     false,
+			},
+		},
+		{
+			name:      "permanent",
+			toAddr:    testAddrs[1],
+			fromAddrs: []string{testAddrs[0].String()},
+			permanent: true,
+			expected: &MsgAccept{
+				ToAddress:     testAddrs[1].String(),
+				FromAddresses: []string{testAddrs[0].String()},
+				Permanent:     true,
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := NewMsgAccept(tc.toAddr, tc.fromAddrStr, tc.permanent)
+			actual := NewMsgAccept(tc.toAddr, tc.fromAddrs, tc.permanent)
 			assert.Equal(t, tc.expected, actual, "NewMsgAccept")
 		})
 	}
@@ -288,69 +310,91 @@ func TestMsgAcceptValidateBasic(t *testing.T) {
 	testAddrs := []string{
 		testAddr("mavb test addr 0").String(),
 		testAddr("mavb test addr 1").String(),
+		testAddr("mavb test addr 2").String(),
 	}
 	tests := []struct {
 		name          string
 		toAddr        string
-		fromAddr      string
+		fromAddrs     []string
 		permanent     bool
 		expectedInErr []string
 	}{
 		{
 			name:          "control",
 			toAddr:        testAddrs[0],
-			fromAddr:      testAddrs[1],
+			fromAddrs:     []string{testAddrs[1]},
 			permanent:     false,
 			expectedInErr: nil,
 		},
 		{
 			name:          "permanent",
 			toAddr:        testAddrs[0],
-			fromAddr:      testAddrs[1],
+			fromAddrs:     []string{testAddrs[1]},
 			permanent:     true,
 			expectedInErr: nil,
 		},
 		{
+			name:          "permanent no from addresses",
+			toAddr:        testAddrs[2],
+			fromAddrs:     []string{},
+			permanent:     true,
+			expectedInErr: []string{"at least one from address is required when permanent = true", "invalid value"},
+		},
+		{
 			name:          "empty to address",
 			toAddr:        "",
-			fromAddr:      testAddrs[1],
+			fromAddrs:     []string{testAddrs[1]},
 			permanent:     false,
 			expectedInErr: []string{"invalid to address"},
 		},
 		{
 			name:          "bad to address",
 			toAddr:        "this address isn't",
-			fromAddr:      testAddrs[0],
+			fromAddrs:     []string{testAddrs[0]},
 			permanent:     false,
 			expectedInErr: []string{"invalid to address"},
 		},
 		{
-			name:          "empty from address",
+			name:          "nil from addresses",
 			toAddr:        testAddrs[1],
-			fromAddr:      "",
+			fromAddrs:     nil,
 			permanent:     false,
-			expectedInErr: []string{"invalid from address"},
+			expectedInErr: nil,
+		},
+		{
+			name:          "empty from addresses",
+			toAddr:        testAddrs[1],
+			fromAddrs:     []string{},
+			permanent:     false,
+			expectedInErr: nil,
 		},
 		{
 			name:          "bad from address",
 			toAddr:        testAddrs[0],
-			fromAddr:      "this one is a tunic",
+			fromAddrs:     []string{"this one is a tunic"},
 			permanent:     false,
-			expectedInErr: []string{"invalid from address"},
+			expectedInErr: []string{"invalid from address[0]"},
+		},
+		{
+			name:          "bad third from address",
+			toAddr:        testAddrs[0],
+			fromAddrs:     []string{testAddrs[1], testAddrs[2], "Michael Jackson (he's bad)"},
+			permanent:     false,
+			expectedInErr: []string{"invalid from address[2]"},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			msgOrig := MsgAccept{
-				ToAddress:   tc.toAddr,
-				FromAddress: tc.fromAddr,
-				Permanent:   tc.permanent,
+				ToAddress:     tc.toAddr,
+				FromAddresses: makeCopyOfStringSlice(tc.fromAddrs),
+				Permanent:     tc.permanent,
 			}
 			msg := MsgAccept{
-				ToAddress:   tc.toAddr,
-				FromAddress: tc.fromAddr,
-				Permanent:   tc.permanent,
+				ToAddress:     tc.toAddr,
+				FromAddresses: tc.fromAddrs,
+				Permanent:     tc.permanent,
 			}
 			err := msg.ValidateBasic()
 			assertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
@@ -363,53 +407,61 @@ func TestMsgAcceptGetSigners(t *testing.T) {
 	testAddrs := []sdk.AccAddress{
 		testAddr("mags test addr 0"),
 		testAddr("mags test addr 1"),
+		testAddr("mags test addr 2"),
 	}
 	tests := []struct {
 		name      string
 		toAddr    string
-		fromAddr  string
+		fromAddrs []string
 		permanent bool
 		expected  []sdk.AccAddress
 	}{
 		{
 			name:      "control",
 			toAddr:    testAddrs[0].String(),
-			fromAddr:  testAddrs[1].String(),
+			fromAddrs: []string{testAddrs[1].String()},
 			permanent: false,
 			expected:  []sdk.AccAddress{testAddrs[0]},
 		},
 		{
 			name:      "permanent",
 			toAddr:    testAddrs[0].String(),
-			fromAddr:  testAddrs[1].String(),
+			fromAddrs: []string{testAddrs[1].String()},
 			permanent: true,
 			expected:  []sdk.AccAddress{testAddrs[0]},
 		},
 		{
 			name:      "empty to address",
 			toAddr:    "",
-			fromAddr:  testAddrs[1].String(),
+			fromAddrs: []string{testAddrs[1].String()},
 			permanent: false,
 			expected:  []sdk.AccAddress{{}},
 		},
 		{
 			name:      "bad to address",
 			toAddr:    "this address isn't",
-			fromAddr:  testAddrs[0].String(),
+			fromAddrs: []string{testAddrs[0].String()},
 			permanent: false,
 			expected:  []sdk.AccAddress{nil},
 		},
 		{
-			name:      "empty from address",
+			name:      "empty from addresses",
 			toAddr:    testAddrs[1].String(),
-			fromAddr:  "",
+			fromAddrs: []string{},
 			permanent: false,
 			expected:  []sdk.AccAddress{testAddrs[1]},
 		},
 		{
+			name:      "two from addresses",
+			toAddr:    testAddrs[2].String(),
+			fromAddrs: []string{testAddrs[0].String(), testAddrs[1].String()},
+			permanent: false,
+			expected:  []sdk.AccAddress{testAddrs[2]},
+		},
+		{
 			name:      "bad from address",
 			toAddr:    testAddrs[0].String(),
-			fromAddr:  "this one is a tunic",
+			fromAddrs: []string{"this one is a tunic"},
 			permanent: false,
 			expected:  []sdk.AccAddress{testAddrs[0]},
 		},
@@ -418,14 +470,14 @@ func TestMsgAcceptGetSigners(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			msgOrig := MsgAccept{
-				ToAddress:   tc.toAddr,
-				FromAddress: tc.fromAddr,
-				Permanent:   tc.permanent,
+				ToAddress:     tc.toAddr,
+				FromAddresses: makeCopyOfStringSlice(tc.fromAddrs),
+				Permanent:     tc.permanent,
 			}
 			msg := MsgAccept{
-				ToAddress:   tc.toAddr,
-				FromAddress: tc.fromAddr,
-				Permanent:   tc.permanent,
+				ToAddress:     tc.toAddr,
+				FromAddresses: tc.fromAddrs,
+				Permanent:     tc.permanent,
 			}
 			actual := msg.GetSigners()
 			assert.Equal(t, tc.expected, actual, "GetSigners")
@@ -438,63 +490,86 @@ func TestNewMsgDecline(t *testing.T) {
 	testAddrs := []sdk.AccAddress{
 		testAddr("nmd test addr 0"),
 		testAddr("nmd test addr 1"),
+		testAddr("nmd test addr 2"),
 	}
 	tests := []struct {
-		name        string
-		toAddr      sdk.AccAddress
-		fromAddrStr string
-		permanent   bool
-		expected    *MsgDecline
+		name      string
+		toAddr    sdk.AccAddress
+		fromAddrs []string
+		permanent bool
+		expected  *MsgDecline
 	}{
 		{
-			name:        "control",
-			toAddr:      testAddrs[0],
-			fromAddrStr: testAddrs[1].String(),
-			permanent:   false,
+			name:      "control",
+			toAddr:    testAddrs[0],
+			fromAddrs: []string{testAddrs[1].String()},
+			permanent: false,
 			expected: &MsgDecline{
-				ToAddress:   testAddrs[0].String(),
-				FromAddress: testAddrs[1].String(),
-				Permanent:   false,
+				ToAddress:     testAddrs[0].String(),
+				FromAddresses: []string{testAddrs[1].String()},
+				Permanent:     false,
 			},
 		},
 		{
-			name:        "nil toAddr",
-			toAddr:      nil,
-			fromAddrStr: testAddrs[1].String(),
-			permanent:   false,
+			name:      "nil toAddr",
+			toAddr:    nil,
+			fromAddrs: []string{testAddrs[1].String()},
+			permanent: false,
 			expected: &MsgDecline{
-				ToAddress:   "",
-				FromAddress: testAddrs[1].String(),
-				Permanent:   false,
+				ToAddress:     "",
+				FromAddresses: []string{testAddrs[1].String()},
+				Permanent:     false,
 			},
 		},
 		{
-			name:        "no fromAddr",
-			toAddr:      testAddrs[1],
-			fromAddrStr: "",
-			permanent:   false,
+			name:      "nil fromAddrsStrs",
+			toAddr:    testAddrs[1],
+			fromAddrs: nil,
+			permanent: false,
 			expected: &MsgDecline{
-				ToAddress:   testAddrs[1].String(),
-				FromAddress: "",
-				Permanent:   false,
+				ToAddress:     testAddrs[1].String(),
+				FromAddresses: nil,
+				Permanent:     false,
 			},
 		},
 		{
-			name:        "permanent",
-			toAddr:      testAddrs[1],
-			fromAddrStr: testAddrs[0].String(),
-			permanent:   true,
+			name:      "empty fromAddrsStrs",
+			toAddr:    testAddrs[1],
+			fromAddrs: []string{},
+			permanent: false,
 			expected: &MsgDecline{
-				ToAddress:   testAddrs[1].String(),
-				FromAddress: testAddrs[0].String(),
-				Permanent:   true,
+				ToAddress:     testAddrs[1].String(),
+				FromAddresses: []string{},
+				Permanent:     false,
+			},
+		},
+		{
+			name:      "three bad fromAddrsStrs",
+			toAddr:    testAddrs[1],
+			fromAddrs: []string{"one", "two", "three"},
+			permanent: false,
+			expected: &MsgDecline{
+				ToAddress:     testAddrs[1].String(),
+				FromAddresses: []string{"one", "two", "three"},
+				Permanent:     false,
+			},
+		},
+		{
+			name:      "permanent",
+			toAddr:    testAddrs[1],
+			fromAddrs: []string{testAddrs[0].String()},
+			permanent: true,
+			expected: &MsgDecline{
+				ToAddress:     testAddrs[1].String(),
+				FromAddresses: []string{testAddrs[0].String()},
+				Permanent:     true,
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := NewMsgDecline(tc.toAddr, tc.fromAddrStr, tc.permanent)
+			actual := NewMsgDecline(tc.toAddr, tc.fromAddrs, tc.permanent)
 			assert.Equal(t, tc.expected, actual, "NewMsgDecline")
 		})
 	}
@@ -504,69 +579,91 @@ func TestMsgDeclineValidateBasic(t *testing.T) {
 	testAddrs := []string{
 		testAddr("mdvb test addr 0").String(),
 		testAddr("mdvb test addr 1").String(),
+		testAddr("mdvb test addr 2").String(),
 	}
 	tests := []struct {
 		name          string
 		toAddr        string
-		fromAddr      string
+		fromAddrs     []string
 		permanent     bool
 		expectedInErr []string
 	}{
 		{
 			name:          "control",
 			toAddr:        testAddrs[0],
-			fromAddr:      testAddrs[1],
+			fromAddrs:     []string{testAddrs[1]},
 			permanent:     false,
 			expectedInErr: nil,
 		},
 		{
 			name:          "permanent",
 			toAddr:        testAddrs[0],
-			fromAddr:      testAddrs[1],
+			fromAddrs:     []string{testAddrs[1]},
 			permanent:     true,
 			expectedInErr: nil,
 		},
 		{
+			name:          "permanent no from addresses",
+			toAddr:        testAddrs[2],
+			fromAddrs:     []string{},
+			permanent:     true,
+			expectedInErr: []string{"at least one from address is required when permanent = true", "invalid value"},
+		},
+		{
 			name:          "empty to address",
 			toAddr:        "",
-			fromAddr:      testAddrs[1],
+			fromAddrs:     []string{testAddrs[1]},
 			permanent:     false,
 			expectedInErr: []string{"invalid to address"},
 		},
 		{
 			name:          "bad to address",
 			toAddr:        "this address isn't",
-			fromAddr:      testAddrs[0],
+			fromAddrs:     []string{testAddrs[0]},
 			permanent:     false,
 			expectedInErr: []string{"invalid to address"},
 		},
 		{
-			name:          "empty from address",
+			name:          "nil from addresses",
 			toAddr:        testAddrs[1],
-			fromAddr:      "",
+			fromAddrs:     nil,
 			permanent:     false,
-			expectedInErr: []string{"invalid from address"},
+			expectedInErr: nil,
+		},
+		{
+			name:          "empty from addresses",
+			toAddr:        testAddrs[1],
+			fromAddrs:     []string{},
+			permanent:     false,
+			expectedInErr: nil,
 		},
 		{
 			name:          "bad from address",
 			toAddr:        testAddrs[0],
-			fromAddr:      "this one is a tunic",
+			fromAddrs:     []string{"this one is a tunic"},
 			permanent:     false,
-			expectedInErr: []string{"invalid from address"},
+			expectedInErr: []string{"invalid from address[0]"},
+		},
+		{
+			name:          "bad third from address",
+			toAddr:        testAddrs[0],
+			fromAddrs:     []string{testAddrs[1], testAddrs[2], "Michael Jackson (he's bad)"},
+			permanent:     false,
+			expectedInErr: []string{"invalid from address[2]"},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			msgOrig := MsgDecline{
-				ToAddress:   tc.toAddr,
-				FromAddress: tc.fromAddr,
-				Permanent:   tc.permanent,
+				ToAddress:     tc.toAddr,
+				FromAddresses: makeCopyOfStringSlice(tc.fromAddrs),
+				Permanent:     tc.permanent,
 			}
 			msg := MsgDecline{
-				ToAddress:   tc.toAddr,
-				FromAddress: tc.fromAddr,
-				Permanent:   tc.permanent,
+				ToAddress:     tc.toAddr,
+				FromAddresses: tc.fromAddrs,
+				Permanent:     tc.permanent,
 			}
 			err := msg.ValidateBasic()
 			assertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
@@ -579,53 +676,61 @@ func TestMsgDeclineGetSigners(t *testing.T) {
 	testAddrs := []sdk.AccAddress{
 		testAddr("mdgs test addr 0"),
 		testAddr("mdgs test addr 1"),
+		testAddr("mdgs test addr 2"),
 	}
 	tests := []struct {
 		name      string
 		toAddr    string
-		fromAddr  string
+		fromAddrs []string
 		permanent bool
 		expected  []sdk.AccAddress
 	}{
 		{
 			name:      "control",
 			toAddr:    testAddrs[0].String(),
-			fromAddr:  testAddrs[1].String(),
+			fromAddrs: []string{testAddrs[1].String()},
 			permanent: false,
 			expected:  []sdk.AccAddress{testAddrs[0]},
 		},
 		{
 			name:      "permanent",
 			toAddr:    testAddrs[0].String(),
-			fromAddr:  testAddrs[1].String(),
+			fromAddrs: []string{testAddrs[1].String()},
 			permanent: true,
 			expected:  []sdk.AccAddress{testAddrs[0]},
 		},
 		{
 			name:      "empty to address",
 			toAddr:    "",
-			fromAddr:  testAddrs[1].String(),
+			fromAddrs: []string{testAddrs[1].String()},
 			permanent: false,
 			expected:  []sdk.AccAddress{{}},
 		},
 		{
 			name:      "bad to address",
 			toAddr:    "this address isn't",
-			fromAddr:  testAddrs[0].String(),
+			fromAddrs: []string{testAddrs[0].String()},
 			permanent: false,
 			expected:  []sdk.AccAddress{nil},
 		},
 		{
-			name:      "empty from address",
+			name:      "empty from addresses",
 			toAddr:    testAddrs[1].String(),
-			fromAddr:  "",
+			fromAddrs: []string{},
 			permanent: false,
 			expected:  []sdk.AccAddress{testAddrs[1]},
 		},
 		{
+			name:      "two from addresses",
+			toAddr:    testAddrs[2].String(),
+			fromAddrs: []string{testAddrs[0].String(), testAddrs[1].String()},
+			permanent: false,
+			expected:  []sdk.AccAddress{testAddrs[2]},
+		},
+		{
 			name:      "bad from address",
 			toAddr:    testAddrs[0].String(),
-			fromAddr:  "this one is a tunic",
+			fromAddrs: []string{"this one is a tunic"},
 			permanent: false,
 			expected:  []sdk.AccAddress{testAddrs[0]},
 		},
@@ -634,14 +739,14 @@ func TestMsgDeclineGetSigners(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			msgOrig := MsgDecline{
-				ToAddress:   tc.toAddr,
-				FromAddress: tc.fromAddr,
-				Permanent:   tc.permanent,
+				ToAddress:     tc.toAddr,
+				FromAddresses: makeCopyOfStringSlice(tc.fromAddrs),
+				Permanent:     tc.permanent,
 			}
 			msg := MsgDecline{
-				ToAddress:   tc.toAddr,
-				FromAddress: tc.fromAddr,
-				Permanent:   tc.permanent,
+				ToAddress:     tc.toAddr,
+				FromAddresses: tc.fromAddrs,
+				Permanent:     tc.permanent,
 			}
 			actual := msg.GetSigners()
 			assert.Equal(t, tc.expected, actual, "GetSigners")
