@@ -181,7 +181,7 @@ func (k BaseSendKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAd
 		return err
 	}
 
-	return k.qk.AddQuarantinedCoins(ctx, toAddr, fromAddr, amt)
+	return k.qk.AddQuarantinedCoins(ctx, amt, toAddr, fromAddr)
 }
 
 // SendCoinsBypassQuarantine transfers amt coins from a sending account to a receiving account without consideration

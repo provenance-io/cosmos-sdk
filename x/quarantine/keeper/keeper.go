@@ -99,14 +99,24 @@ func (k Keeper) GetAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress
 	return quarantine.ToAutoResponse(bz)
 }
 
-// IsAutoAccept returns true if the to address has enabled auto-accept from the from address.
-func (k Keeper) IsAutoAccept(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) bool {
-	return k.GetAutoResponse(ctx, toAddr, fromAddr).IsAccept()
+// IsAutoAccept returns true if the to address has enabled auto-accept for ALL the from address.
+func (k Keeper) IsAutoAccept(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) bool {
+	for _, fromAddr := range fromAddrs {
+		if !k.GetAutoResponse(ctx, toAddr, fromAddr).IsAccept() {
+			return false
+		}
+	}
+	return true
 }
 
-// IsAutoDecline returns true if the to address has enabled auto-decline from the from address.
-func (k Keeper) IsAutoDecline(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) bool {
-	return k.GetAutoResponse(ctx, toAddr, fromAddr).IsDecline()
+// IsAutoDecline returns true if the to address has enabled auto-decline for ANY of the from address.
+func (k Keeper) IsAutoDecline(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) bool {
+	for _, fromAddr := range fromAddrs {
+		if k.GetAutoResponse(ctx, toAddr, fromAddr).IsDecline() {
+			return true
+		}
+	}
+	return false
 }
 
 // SetAutoResponse sets the auto response of sends to toAddr from fromAddr.
@@ -161,6 +171,19 @@ func (k Keeper) GetAllAutoResponseEntries(ctx sdk.Context) []*quarantine.AutoRes
 	return rv
 }
 
+// GetQuarantineRecord gets the single quarantine record to toAddr from the fromAddrs.
+// If the record doesn't exist, nil is returned.
+func (k Keeper) GetQuarantineRecord(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) *quarantine.QuarantineRecord {
+	store := ctx.KVStore(k.storeKey)
+	key := quarantine.CreateRecordKey(toAddr, fromAddrs...)
+	if store.Has(key) {
+		bz := store.Get(key)
+		qr := k.mustBzToQuarantineRecord(bz)
+		return qr
+	}
+	return nil
+}
+
 // GetQuarantineRecords gets all the quarantine records to toAddr that involved any of the fromAddrs.
 func (k Keeper) GetQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) []*quarantine.QuarantineRecord {
 	var rv []*quarantine.QuarantineRecord
@@ -206,12 +229,18 @@ func (k Keeper) SetQuarantineRecord(ctx sdk.Context, toAddr sdk.AccAddress, reco
 }
 
 // AddQuarantinedCoins records that some new funds have been quarantined.
-func (k Keeper) AddQuarantinedCoins(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress, coins sdk.Coins) error {
-	// TODO[1046]: Refactor this to account for multiple from addresses.
-	qf := k.GetQuarantineRecord(ctx, toAddr, fromAddr)
-	qf.AddCoins(coins...)
-	qf.Declined = k.IsAutoDecline(ctx, toAddr, fromAddr)
-	k.SetQuarantineRecord(ctx, toAddr, fromAddr, &qf)
+func (k Keeper) AddQuarantinedCoins(ctx sdk.Context, coins sdk.Coins, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) error {
+	qr := k.GetQuarantineRecord(ctx, toAddr, fromAddrs...)
+	if qr != nil {
+		qr.AddCoins(coins...)
+	} else {
+		qr = &quarantine.QuarantineRecord{
+			UnacceptedFromAddresses: fromAddrs,
+			Coins:                   coins,
+		}
+	}
+	qr.Declined = k.IsAutoDecline(ctx, toAddr, fromAddrs...)
+	k.SetQuarantineRecord(ctx, toAddr, qr)
 	return ctx.EventManager().EmitTypedEvent(&quarantine.EventFundsQuarantined{
 		ToAddress: toAddr.String(),
 		Coins:     coins,
