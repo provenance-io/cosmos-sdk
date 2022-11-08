@@ -140,6 +140,7 @@ func NewQuarantineRecord(unacceptedFromAddrs []string, coins sdk.Coins, declined
 		Declined:                declined,
 	}
 	if len(unacceptedFromAddrs) > 0 {
+		rv.UnacceptedFromAddresses = make([]sdk.AccAddress, len(unacceptedFromAddrs))
 		for i, addr := range unacceptedFromAddrs {
 			rv.UnacceptedFromAddresses[i] = sdk.MustAccAddressFromBech32(addr)
 		}
