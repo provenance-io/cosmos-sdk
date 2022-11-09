@@ -166,6 +166,15 @@ func makeCopyOfQuarantineRecord(orig *QuarantineRecord) *QuarantineRecord {
 	}
 }
 
+func makeCopyOfAccAddress(orig sdk.AccAddress) sdk.AccAddress {
+	if orig == nil {
+		return orig
+	}
+	rv := make(sdk.AccAddress, len(orig))
+	copy(rv, orig)
+	return rv
+}
+
 // makeCopyOfAccAddresses makes a copy of the provided slice of acc addresses, copying each address too.
 func makeCopyOfAccAddresses(orig []sdk.AccAddress) []sdk.AccAddress {
 	if orig == nil {
@@ -173,10 +182,543 @@ func makeCopyOfAccAddresses(orig []sdk.AccAddress) []sdk.AccAddress {
 	}
 	rv := make([]sdk.AccAddress, len(orig))
 	for i, addr := range orig {
-		rv[i] = make(sdk.AccAddress, len(addr))
-		copy(rv[i], addr)
+		rv[i] = makeCopyOfAccAddress(addr)
 	}
 	return rv
+}
+
+// makeCopyOfByteSlice makes a copy of the provided byte slice.
+func makeCopyOfByteSlice(orig []byte) []byte {
+	if orig == nil {
+		return nil
+	}
+	rv := make([]byte, len(orig))
+	copy(rv, orig)
+	return rv
+}
+
+// makeCopyOfByteSliceSlice makes a copy of the provided slice of byte slices.
+func makeCopyOfByteSliceSlice(orig [][]byte) [][]byte {
+	if orig == nil {
+		return nil
+	}
+	rv := make([][]byte, len(orig))
+	for i, bz := range orig {
+		rv[i] = makeCopyOfByteSlice(bz)
+	}
+	return rv
+}
+
+func TestContainsAddress(t *testing.T) {
+	// Technically, if containsAddress breaks, a lot of other tests should also break,
+	// but I figure it's better safe than sorry.
+	addrShort0 := makeTestAddr("cs", 0)
+	addrShort1 := makeTestAddr("cs", 1)
+	addrLong2 := makeLongAddr("cs", 2)
+	addrLong3 := makeLongAddr("cs", 3)
+	addrEmpty := make(sdk.AccAddress, 0)
+	addrShort0Almost := makeCopyOfAccAddress(addrShort0)
+	addrShort0Almost[len(addrShort0Almost)-1]++
+	addr2Almost := makeCopyOfAccAddress(addrLong2)
+	addr2Almost[len(addr2Almost)-1]++
+
+	tests := []struct {
+		name       string
+		addrs      []sdk.AccAddress
+		addrToFind sdk.AccAddress
+		expected   bool
+	}{
+		{
+			name:       "nil | nil",
+			addrs:      nil,
+			addrToFind: nil,
+			expected:   false,
+		},
+		{
+			name:       "nil | empty addr",
+			addrs:      nil,
+			addrToFind: addrEmpty,
+			expected:   false,
+		},
+		{
+			name:       "nil | short",
+			addrs:      nil,
+			addrToFind: addrShort0,
+			expected:   false,
+		},
+		{
+			name:       "nil | long",
+			addrs:      nil,
+			addrToFind: addrLong2,
+			expected:   false,
+		},
+		{
+			name:       "empty addr | empty addr",
+			addrs:      []sdk.AccAddress{addrEmpty},
+			addrToFind: addrEmpty,
+			expected:   true,
+		},
+		{
+			name:       "empty | nil",
+			addrs:      []sdk.AccAddress{},
+			addrToFind: nil,
+			expected:   false,
+		},
+		{
+			name:       "empty | empty addr",
+			addrs:      []sdk.AccAddress{},
+			addrToFind: addrEmpty,
+			expected:   false,
+		},
+		{
+			name:       "empty | short",
+			addrs:      []sdk.AccAddress{},
+			addrToFind: addrShort0,
+			expected:   false,
+		},
+		{
+			name:       "empty | long",
+			addrs:      []sdk.AccAddress{},
+			addrToFind: addrLong2,
+			expected:   false,
+		},
+		{
+			name:       "short0 | nil",
+			addrs:      []sdk.AccAddress{addrShort0},
+			addrToFind: nil,
+			expected:   false,
+		},
+		{
+			name:       "short0 | empty addr",
+			addrs:      []sdk.AccAddress{addrShort0},
+			addrToFind: addrEmpty,
+			expected:   false,
+		},
+		{
+			name:       "short0 | short0",
+			addrs:      []sdk.AccAddress{addrShort0},
+			addrToFind: addrShort0,
+			expected:   true,
+		},
+		{
+			name:       "short0 | short0 almost",
+			addrs:      []sdk.AccAddress{addrShort0},
+			addrToFind: addrShort0Almost,
+			expected:   false,
+		},
+		{
+			name:       "short0 | short1",
+			addrs:      []sdk.AccAddress{addrShort0},
+			addrToFind: addrShort1,
+			expected:   false,
+		},
+		{
+			name:       "short0 | long",
+			addrs:      []sdk.AccAddress{addrShort0},
+			addrToFind: addrLong2,
+			expected:   false,
+		},
+		{
+			name:       "long2 | nil",
+			addrs:      []sdk.AccAddress{addrLong2},
+			addrToFind: nil,
+			expected:   false,
+		},
+		{
+			name:       "long2 | empty addr",
+			addrs:      []sdk.AccAddress{addrLong2},
+			addrToFind: addrEmpty,
+			expected:   false,
+		},
+		{
+			name:       "long2 | long2",
+			addrs:      []sdk.AccAddress{addrLong2},
+			addrToFind: addrLong2,
+			expected:   true,
+		},
+		{
+			name:       "long2 | long2 almost",
+			addrs:      []sdk.AccAddress{addrLong2},
+			addrToFind: addr2Almost,
+			expected:   false,
+		},
+		{
+			name:       "long2 | long3",
+			addrs:      []sdk.AccAddress{addrLong2},
+			addrToFind: addrLong3,
+			expected:   false,
+		},
+		{
+			name:       "long2 | short",
+			addrs:      []sdk.AccAddress{addrLong2},
+			addrToFind: addrShort0,
+			expected:   false,
+		},
+		{
+			name:       "short0 long3 short1 long2 | empty",
+			addrs:      []sdk.AccAddress{addrShort0, addrLong3, addrShort1, addrLong2},
+			addrToFind: addrEmpty,
+			expected:   false,
+		},
+		{
+			name:       "short0 long3 short1 long2 | short0",
+			addrs:      []sdk.AccAddress{addrShort0, addrLong3, addrShort1, addrLong2},
+			addrToFind: addrShort0,
+			expected:   true,
+		},
+		{
+			name:       "short0 long3 short1 long2 | short1",
+			addrs:      []sdk.AccAddress{addrShort0, addrLong3, addrShort1, addrLong2},
+			addrToFind: addrShort1,
+			expected:   true,
+		},
+		{
+			name:       "short0 long3 short1 long2 | long2",
+			addrs:      []sdk.AccAddress{addrShort0, addrLong3, addrShort1, addrLong2},
+			addrToFind: addrLong2,
+			expected:   true,
+		},
+		{
+			name:       "short0 long3 short1 long2 | long3",
+			addrs:      []sdk.AccAddress{addrShort0, addrLong3, addrShort1, addrLong2},
+			addrToFind: addrLong3,
+			expected:   true,
+		},
+		{
+			name:       "short0 long3 short1 long2 | short0 almost",
+			addrs:      []sdk.AccAddress{addrShort0, addrLong3, addrShort1, addrLong2},
+			addrToFind: addrShort0Almost,
+			expected:   false,
+		},
+		{
+			name:       "short0 long3 short1 long2 | long2 almost",
+			addrs:      []sdk.AccAddress{addrShort0, addrLong3, addrShort1, addrLong2},
+			addrToFind: addr2Almost,
+			expected:   false,
+		},
+		{
+			name:       "long3 empty long3 | short1",
+			addrs:      []sdk.AccAddress{addrLong3, addrEmpty, addrLong3},
+			addrToFind: addrShort1,
+			expected:   false,
+		},
+		{
+			name:       "long3 empty long3 | long2",
+			addrs:      []sdk.AccAddress{addrLong3, addrEmpty, addrLong3},
+			addrToFind: addrLong2,
+			expected:   false,
+		},
+		{
+			name:       "long3 empty long3 | long3",
+			addrs:      []sdk.AccAddress{addrLong3, addrEmpty, addrLong3},
+			addrToFind: addrLong3,
+			expected:   true,
+		},
+		{
+			name:       "long3 empty long3 | empty",
+			addrs:      []sdk.AccAddress{addrLong3, addrEmpty, addrLong3},
+			addrToFind: addrEmpty,
+			expected:   true,
+		},
+		{
+			name:       "long3 empty long3 | nil",
+			addrs:      []sdk.AccAddress{addrLong3, addrEmpty, addrLong3},
+			addrToFind: nil,
+			expected:   true,
+		},
+		{
+			name:       "short0 almost short0 almost long2 almost | short0",
+			addrs:      []sdk.AccAddress{addrShort0Almost, addrShort0Almost, addr2Almost},
+			addrToFind: addrShort0,
+			expected:   false,
+		},
+		{
+			name:       "short0 almost short0 almost long2 almost | short0 almost",
+			addrs:      []sdk.AccAddress{addrShort0Almost, addrShort0Almost, addr2Almost},
+			addrToFind: addrShort0Almost,
+			expected:   true,
+		},
+		{
+			name:       "short0 almost short0 almost long2 almost | long2",
+			addrs:      []sdk.AccAddress{addrShort0Almost, addrShort0Almost, addr2Almost},
+			addrToFind: addrLong2,
+			expected:   false,
+		},
+		{
+			name:       "short0 almost short0 almost long2 almost | long2 almost",
+			addrs:      []sdk.AccAddress{addrShort0Almost, addrShort0Almost, addr2Almost},
+			addrToFind: addr2Almost,
+			expected:   true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			origSuffixes := makeCopyOfAccAddresses(tc.addrs)
+			origSuffixToFind := makeCopyOfAccAddress(tc.addrToFind)
+
+			actual := containsAddress(tc.addrs, tc.addrToFind)
+			assert.Equal(t, tc.expected, actual, "containsSuffix result")
+			assert.Equal(t, origSuffixes, tc.addrs, "addrs before and after containsSuffix")
+			assert.Equal(t, origSuffixToFind, tc.addrToFind, "addrToFind before and after containsSuffix")
+		})
+	}
+}
+
+func TestContainsSuffix(t *testing.T) {
+	// Technically, if containsSuffix breaks, a lot of other tests should also break,
+	// but I figure it's better safe than sorry.
+	suffixShort0 := []byte(makeTestAddr("cs", 0))
+	suffixShort1 := []byte(makeTestAddr("cs", 1))
+	suffixLong2 := []byte(makeLongAddr("cs", 2))
+	suffixLong3 := []byte(makeLongAddr("cs", 3))
+	suffixEmpty := make([]byte, 0)
+	suffixShort0Almost := makeCopyOfByteSlice(suffixShort0)
+	suffixShort0Almost[len(suffixShort0Almost)-1]++
+	suffixLong2Almost := makeCopyOfByteSlice(suffixLong2)
+	suffixLong2Almost[len(suffixLong2Almost)-1]++
+
+	tests := []struct {
+		name         string
+		suffixes     [][]byte
+		suffixToFind []byte
+		expected     bool
+	}{
+		{
+			name:         "nil | nil",
+			suffixes:     nil,
+			suffixToFind: nil,
+			expected:     false,
+		},
+		{
+			name:         "nil | empty suffix",
+			suffixes:     nil,
+			suffixToFind: suffixEmpty,
+			expected:     false,
+		},
+		{
+			name:         "nil | short",
+			suffixes:     nil,
+			suffixToFind: suffixShort0,
+			expected:     false,
+		},
+		{
+			name:         "nil | long",
+			suffixes:     nil,
+			suffixToFind: suffixLong2,
+			expected:     false,
+		},
+		{
+			name:         "empty suffix | empty suffix",
+			suffixes:     [][]byte{suffixEmpty},
+			suffixToFind: suffixEmpty,
+			expected:     true,
+		},
+		{
+			name:         "empty | nil",
+			suffixes:     [][]byte{},
+			suffixToFind: nil,
+			expected:     false,
+		},
+		{
+			name:         "empty | empty suffix",
+			suffixes:     [][]byte{},
+			suffixToFind: suffixEmpty,
+			expected:     false,
+		},
+		{
+			name:         "empty | short",
+			suffixes:     [][]byte{},
+			suffixToFind: suffixShort0,
+			expected:     false,
+		},
+		{
+			name:         "empty | long",
+			suffixes:     [][]byte{},
+			suffixToFind: suffixLong2,
+			expected:     false,
+		},
+		{
+			name:         "short0 | nil",
+			suffixes:     [][]byte{suffixShort0},
+			suffixToFind: nil,
+			expected:     false,
+		},
+		{
+			name:         "short0 | empty suffix",
+			suffixes:     [][]byte{suffixShort0},
+			suffixToFind: suffixEmpty,
+			expected:     false,
+		},
+		{
+			name:         "short0 | short0",
+			suffixes:     [][]byte{suffixShort0},
+			suffixToFind: suffixShort0,
+			expected:     true,
+		},
+		{
+			name:         "short0 | short0 almost",
+			suffixes:     [][]byte{suffixShort0},
+			suffixToFind: suffixShort0Almost,
+			expected:     false,
+		},
+		{
+			name:         "short0 | short1",
+			suffixes:     [][]byte{suffixShort0},
+			suffixToFind: suffixShort1,
+			expected:     false,
+		},
+		{
+			name:         "short0 | long",
+			suffixes:     [][]byte{suffixShort0},
+			suffixToFind: suffixLong2,
+			expected:     false,
+		},
+		{
+			name:         "long2 | nil",
+			suffixes:     [][]byte{suffixLong2},
+			suffixToFind: nil,
+			expected:     false,
+		},
+		{
+			name:         "long2 | empty suffix",
+			suffixes:     [][]byte{suffixLong2},
+			suffixToFind: suffixEmpty,
+			expected:     false,
+		},
+		{
+			name:         "long2 | long2",
+			suffixes:     [][]byte{suffixLong2},
+			suffixToFind: suffixLong2,
+			expected:     true,
+		},
+		{
+			name:         "long2 | long2 almost",
+			suffixes:     [][]byte{suffixLong2},
+			suffixToFind: suffixLong2Almost,
+			expected:     false,
+		},
+		{
+			name:         "long2 | long3",
+			suffixes:     [][]byte{suffixLong2},
+			suffixToFind: suffixLong3,
+			expected:     false,
+		},
+		{
+			name:         "long2 | short",
+			suffixes:     [][]byte{suffixLong2},
+			suffixToFind: suffixShort0,
+			expected:     false,
+		},
+		{
+			name:         "short0 long3 short1 long2 | empty",
+			suffixes:     [][]byte{suffixShort0, suffixLong3, suffixShort1, suffixLong2},
+			suffixToFind: suffixEmpty,
+			expected:     false,
+		},
+		{
+			name:         "short0 long3 short1 long2 | short0",
+			suffixes:     [][]byte{suffixShort0, suffixLong3, suffixShort1, suffixLong2},
+			suffixToFind: suffixShort0,
+			expected:     true,
+		},
+		{
+			name:         "short0 long3 short1 long2 | short1",
+			suffixes:     [][]byte{suffixShort0, suffixLong3, suffixShort1, suffixLong2},
+			suffixToFind: suffixShort1,
+			expected:     true,
+		},
+		{
+			name:         "short0 long3 short1 long2 | long2",
+			suffixes:     [][]byte{suffixShort0, suffixLong3, suffixShort1, suffixLong2},
+			suffixToFind: suffixLong2,
+			expected:     true,
+		},
+		{
+			name:         "short0 long3 short1 long2 | long3",
+			suffixes:     [][]byte{suffixShort0, suffixLong3, suffixShort1, suffixLong2},
+			suffixToFind: suffixLong3,
+			expected:     true,
+		},
+		{
+			name:         "short0 long3 short1 long2 | short0 almost",
+			suffixes:     [][]byte{suffixShort0, suffixLong3, suffixShort1, suffixLong2},
+			suffixToFind: suffixShort0Almost,
+			expected:     false,
+		},
+		{
+			name:         "short0 long3 short1 long2 | long2 almost",
+			suffixes:     [][]byte{suffixShort0, suffixLong3, suffixShort1, suffixLong2},
+			suffixToFind: suffixLong2Almost,
+			expected:     false,
+		},
+		{
+			name:         "long3 empty long3 | short1",
+			suffixes:     [][]byte{suffixLong3, suffixEmpty, suffixLong3},
+			suffixToFind: suffixShort1,
+			expected:     false,
+		},
+		{
+			name:         "long3 empty long3 | long2",
+			suffixes:     [][]byte{suffixLong3, suffixEmpty, suffixLong3},
+			suffixToFind: suffixLong2,
+			expected:     false,
+		},
+		{
+			name:         "long3 empty long3 | long3",
+			suffixes:     [][]byte{suffixLong3, suffixEmpty, suffixLong3},
+			suffixToFind: suffixLong3,
+			expected:     true,
+		},
+		{
+			name:         "long3 empty long3 | empty",
+			suffixes:     [][]byte{suffixLong3, suffixEmpty, suffixLong3},
+			suffixToFind: suffixEmpty,
+			expected:     true,
+		},
+		{
+			name:         "long3 empty long3 | nil",
+			suffixes:     [][]byte{suffixLong3, suffixEmpty, suffixLong3},
+			suffixToFind: nil,
+			expected:     true,
+		},
+		{
+			name:         "short0 almost short0 almost long2 almost | short0",
+			suffixes:     [][]byte{suffixShort0Almost, suffixShort0Almost, suffixLong2Almost},
+			suffixToFind: suffixShort0,
+			expected:     false,
+		},
+		{
+			name:         "short0 almost short0 almost long2 almost | short0 almost",
+			suffixes:     [][]byte{suffixShort0Almost, suffixShort0Almost, suffixLong2Almost},
+			suffixToFind: suffixShort0Almost,
+			expected:     true,
+		},
+		{
+			name:         "short0 almost short0 almost long2 almost | long2",
+			suffixes:     [][]byte{suffixShort0Almost, suffixShort0Almost, suffixLong2Almost},
+			suffixToFind: suffixLong2,
+			expected:     false,
+		},
+		{
+			name:         "short0 almost short0 almost long2 almost | long2 almost",
+			suffixes:     [][]byte{suffixShort0Almost, suffixShort0Almost, suffixLong2Almost},
+			suffixToFind: suffixLong2Almost,
+			expected:     true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			origSuffixes := makeCopyOfByteSliceSlice(tc.suffixes)
+			origSuffixToFind := makeCopyOfByteSlice(tc.suffixToFind)
+
+			actual := containsSuffix(tc.suffixes, tc.suffixToFind)
+			assert.Equal(t, tc.expected, actual, "containsSuffix result")
+			assert.Equal(t, origSuffixes, tc.suffixes, "suffixes before and after containsSuffix")
+			assert.Equal(t, origSuffixToFind, tc.suffixToFind, "suffixToFind before and after containsSuffix")
+		})
+	}
 }
 
 func TestNewQuarantinedFunds(t *testing.T) {

@@ -9,6 +9,26 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/quarantine/errors"
 )
 
+// containsAddress returns true if the addrToFind is an entry in the addrs.
+func containsAddress(addrs []sdk.AccAddress, addrToFind sdk.AccAddress) bool {
+	for _, addr := range addrs {
+		if addrToFind.Equals(addr) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsSuffix returns true if the suffixToFind is in the suffixes.
+func containsSuffix(suffixes [][]byte, suffixToFind []byte) bool {
+	for _, suffix := range suffixes {
+		if bytes.Equal(suffixToFind, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
 // NewQuarantinedFunds creates a new quarantined funds object.
 func NewQuarantinedFunds(toAddr sdk.AccAddress, fromAddrs []sdk.AccAddress, coins sdk.Coins, declined bool) *QuarantinedFunds {
 	rv := &QuarantinedFunds{
@@ -200,16 +220,6 @@ func (r *QuarantineRecord) GetAllFromAddrs() []sdk.AccAddress {
 	return rv
 }
 
-// containsAddress returns true if the addrToFind is an entry in the addrs.
-func containsAddress(addrs []sdk.AccAddress, addrToFind sdk.AccAddress) bool {
-	for _, addr := range addrs {
-		if addrToFind.Equals(addr) {
-			return true
-		}
-	}
-	return false
-}
-
 // AsQuarantinedFunds creates a new QuarantinedFunds using fields in this and the provided addresses.
 func (r QuarantineRecord) AsQuarantinedFunds(toAddr sdk.AccAddress) *QuarantinedFunds {
 	return NewQuarantinedFunds(toAddr, r.UnacceptedFromAddresses, r.Coins, r.Declined)
@@ -277,14 +287,4 @@ func (s *QuarantineRecordSuffixIndex) Simplify(toRemove ...[]byte) {
 	if len(s.RecordSuffixes) == 0 {
 		s.RecordSuffixes = nil
 	}
-}
-
-// containsSuffix returns true if the suffixToFind is in the suffixes.
-func containsSuffix(suffixes [][]byte, suffixToFind []byte) bool {
-	for _, suffix := range suffixes {
-		if bytes.Equal(suffixToFind, suffix) {
-			return true
-		}
-	}
-	return false
 }
