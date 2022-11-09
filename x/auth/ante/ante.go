@@ -36,7 +36,10 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	}
 
 	anteDecorators := []sdk.AnteDecorator{
-		NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
+		NewSetUpContextDecorator(GasLimit{
+			Limit:         0,
+			OverrideGasTx: false,
+		}), // outermost AnteDecorator. SetUpContext must be called first
 		NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
 		NewValidateBasicDecorator(),
 		NewTxTimeoutHeightDecorator(),
