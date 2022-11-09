@@ -171,8 +171,10 @@ func (k Keeper) GetAllAutoResponseEntries(ctx sdk.Context) []*quarantine.AutoRes
 	return rv
 }
 
-// GetQuarantineRecord gets the single quarantine record to toAddr from the fromAddrs.
+// GetQuarantineRecord gets the single quarantine record to toAddr from all the fromAddrs.
 // If the record doesn't exist, nil is returned.
+//
+// If you want all records from any of the fromAddrs, use GetQuarantineRecords.
 func (k Keeper) GetQuarantineRecord(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) *quarantine.QuarantineRecord {
 	store := ctx.KVStore(k.storeKey)
 	key := quarantine.CreateRecordKey(toAddr, fromAddrs...)
@@ -185,6 +187,8 @@ func (k Keeper) GetQuarantineRecord(ctx sdk.Context, toAddr sdk.AccAddress, from
 }
 
 // GetQuarantineRecords gets all the quarantine records to toAddr that involved any of the fromAddrs.
+//
+// If you want a single record from all the fromAddrs, use GetQuarantineRecord.
 func (k Keeper) GetQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) []*quarantine.QuarantineRecord {
 	var rv []*quarantine.QuarantineRecord
 	allSuffixes := k.getQuarantineRecordSuffixes(ctx, toAddr, fromAddrs...)

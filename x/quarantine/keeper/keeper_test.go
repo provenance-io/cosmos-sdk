@@ -76,12 +76,14 @@ func (s *TestSuite) TestGetFundsHolder() {
 // TODO[1046]: SetOptOut
 // TODO[1046]: IterateQuarantinedAccounts
 // TODO[1046]: GetAllQuarantinedAccounts
+
 // TODO[1046]: GetAutoResponse
 // TODO[1046]: IsAutoAccept
 // TODO[1046]: IsAutoDecline
 // TODO[1046]: SetAutoResponse
 // TODO[1046]: IterateAutoResponses
 // TODO[1046]: GetAllAutoResponseEntries
+
 // TODO[1046]: GetQuarantineRecord
 // TODO[1046]: GetQuarantineRecords
 // TODO[1046]: SetQuarantineRecord
@@ -91,6 +93,7 @@ func (s *TestSuite) TestGetFundsHolder() {
 // TODO[1046]: AcceptQuarantinedFunds
 // TODO[1046]: DeclineQuarantinedFunds
 // TODO[1046]: bzToQuarantineRecord
+
 // TODO[1046]: getQuarantineRecordSuffixIndex
 // TODO[1046]: setQuarantineRecordSuffixIndex
 // TODO[1046]: addQuarantineRecordSuffixIndexes
