@@ -93,6 +93,9 @@ func (k Keeper) GetAllQuarantinedAccounts(ctx sdk.Context) []string {
 
 // GetAutoResponse returns the quarantine auto-response for the given to/from addresses.
 func (k Keeper) GetAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress) quarantine.AutoResponse {
+	if toAddr.Equals(fromAddr) {
+		return quarantine.AUTO_RESPONSE_ACCEPT
+	}
 	key := quarantine.CreateAutoResponseKey(toAddr, fromAddr)
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(key)
@@ -239,10 +242,17 @@ func (k Keeper) AddQuarantinedCoins(ctx sdk.Context, coins sdk.Coins, toAddr sdk
 		qr.AddCoins(coins...)
 	} else {
 		qr = &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: fromAddrs,
-			Coins:                   coins,
+			Coins: coins,
+		}
+		for _, fromAddr := range fromAddrs {
+			if k.IsAutoAccept(ctx, toAddr, fromAddr) {
+				qr.AcceptedFromAddresses = append(qr.AcceptedFromAddresses, fromAddr)
+			} else {
+				qr.UnacceptedFromAddresses = append(qr.UnacceptedFromAddresses, fromAddr)
+			}
 		}
 	}
+	// Regardless of if its new or existing, set declined based on current auto-decline info.
 	qr.Declined = k.IsAutoDecline(ctx, toAddr, fromAddrs...)
 	k.SetQuarantineRecord(ctx, toAddr, qr)
 	return ctx.EventManager().EmitTypedEvent(&quarantine.EventFundsQuarantined{
