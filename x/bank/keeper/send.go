@@ -111,11 +111,14 @@ func (k BaseSendKeeper) InputOutputCoins(ctx sdk.Context, inputs []types.Input, 
 		return err
 	}
 
-	for _, in := range inputs {
+	allInputAddrs := make([]sdk.AccAddress, len(inputs))
+
+	for i, in := range inputs {
 		inAddress, err := sdk.AccAddressFromBech32(in.Address)
 		if err != nil {
 			return err
 		}
+		allInputAddrs[i] = inAddress
 
 		err = k.subUnlockedCoins(ctx, inAddress, in.Coins)
 		if err != nil {
@@ -130,20 +133,41 @@ func (k BaseSendKeeper) InputOutputCoins(ctx sdk.Context, inputs []types.Input, 
 		)
 	}
 
+	var qHolderAddrStr string
+
 	for _, out := range outputs {
 		outAddress, err := sdk.AccAddressFromBech32(out.Address)
 		if err != nil {
 			return err
 		}
+		outAddressStr := out.Address
+
+		if k.qk != nil && k.qk.IsQuarantinedAddr(ctx, outAddress) && !k.qk.IsAutoAccept(ctx, outAddress, allInputAddrs...) {
+			qHolderAddr := k.qk.GetFundsHolder()
+			if len(qHolderAddr) == 0 {
+				return sdkerrors.ErrUnknownAddress.Wrapf("no quarantine holder account defined")
+			}
+
+			err = k.qk.AddQuarantinedCoins(ctx, out.Coins, outAddress, allInputAddrs...)
+			if err != nil {
+				return err
+			}
+
+			outAddress = qHolderAddr
+			if len(qHolderAddrStr) == 0 {
+				qHolderAddrStr = qHolderAddr.String()
+			}
+			outAddressStr = qHolderAddrStr
+		}
+
 		err = k.addCoins(ctx, outAddress, out.Coins)
 		if err != nil {
 			return err
 		}
-
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypeTransfer,
-				sdk.NewAttribute(types.AttributeKeyRecipient, out.Address),
+				sdk.NewAttribute(types.AttributeKeyRecipient, outAddressStr),
 				sdk.NewAttribute(sdk.AttributeKeyAmount, out.Coins.String()),
 			),
 		)
