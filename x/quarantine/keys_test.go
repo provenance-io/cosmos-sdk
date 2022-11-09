@@ -2,36 +2,12 @@ package quarantine
 
 import (
 	"fmt"
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
-
-// makeIncAddr creates an sdk.AccAddress with the provided length.
-// The first byte will be the provided shift.
-// Each other byte is one more than the previous wrapping back to 0 after 255.
-func makeIncAddr(length, shift int) sdk.AccAddress {
-	rv := make(sdk.AccAddress, length)
-	for i := 0; i < length; i++ {
-		rv[i] = byte((i + shift) % 256)
-	}
-	return rv
-}
-
-// makeBadAddr makes an address that's longer than the max length.
-// The first byte is 33 (!) plus the provided shift.
-// Each other byte is one more than the previous wrapping back to 0 after 255.
-func makeBadAddr(shift int) sdk.AccAddress {
-	return makeIncAddr(address.MaxAddrLen+1, 33+shift)
-}
-
-// makeLongAddr makes an address that's 32 bytes long.
-// The first byte is 65 (A) plus the provided shift.
-// Each other byte is one more than the previous wrapping back to 0 after 255.
-func makeLongAddr(shift int) sdk.AccAddress {
-	return makeIncAddr(32, 65+shift)
-}
 
 func TestPrefixValues(t *testing.T) {
 	prefixes := []struct {
@@ -64,7 +40,7 @@ func TestCreateOptInKey(t *testing.T) {
 	expectedPrefix := OptInPrefix
 	testAddr0 := makeTestAddr("coik", 0)
 	testAddr1 := makeTestAddr("coik", 1)
-	badAddr := makeBadAddr(0)
+	badAddr := makeBadAddr("coik", 2)
 
 	t.Run("starts with OptInPrefix", func(t *testing.T) {
 		key := CreateOptInKey(testAddr0)
@@ -129,8 +105,7 @@ func TestParseOptInKey(t *testing.T) {
 	testAddr0 := makeTestAddr("poik", 0)
 	testAddr1 := makeTestAddr("poik", 1)
 	testAddr2 := makeTestAddr("poik", 2)
-
-	longAddr := makeLongAddr(0)
+	longAddr := makeLongAddr("poik", 3)
 
 	makeKey := func(pre []byte, addrLen int, addrBz []byte) []byte {
 		rv := make([]byte, 0, len(pre)+1+len(addrBz))
@@ -213,7 +188,7 @@ func TestCreateAutoResponseToAddrPrefix(t *testing.T) {
 	expectedPrefix := AutoResponsePrefix
 	testAddr0 := makeTestAddr("cartap", 0)
 	testAddr1 := makeTestAddr("cartap", 1)
-	badAddr := makeBadAddr(1)
+	badAddr := makeBadAddr("cartap", 2)
 
 	t.Run("starts with AutoResponsePrefix", func(t *testing.T) {
 		key := CreateAutoResponseToAddrPrefix(testAddr0)
@@ -279,8 +254,8 @@ func TestCreateAutoResponseKey(t *testing.T) {
 	expectedPrefix := AutoResponsePrefix
 	testAddr0 := makeTestAddr("cark", 0)
 	testAddr1 := makeTestAddr("cark", 1)
-	badAddr := makeBadAddr(2)
-	longAddr := makeLongAddr(1)
+	badAddr := makeBadAddr("cark", 2)
+	longAddr := makeLongAddr("cark", 3)
 
 	t.Run("starts with AutoResponsePrefix", func(t *testing.T) {
 		key := CreateAutoResponseKey(testAddr0, testAddr1)
@@ -363,7 +338,7 @@ func TestCreateAutoResponseKey(t *testing.T) {
 func TestParseAutoResponseKey(t *testing.T) {
 	testAddr0 := makeTestAddr("park", 0)
 	testAddr1 := makeTestAddr("park", 1)
-	longAddr := makeLongAddr(2)
+	longAddr := makeLongAddr("park", 2)
 
 	makeKey := func(pre []byte, toAddrLen int, toAddrBz []byte, fromAddrLen int, fromAddrBz []byte) []byte {
 		rv := make([]byte, 0, len(pre)+1+len(toAddrBz)+1+len(fromAddrBz))
@@ -440,7 +415,7 @@ func TestCreateRecordToAddrPrefix(t *testing.T) {
 	expectedPrefix := RecordPrefix
 	testAddr0 := makeTestAddr("crtap", 0)
 	testAddr1 := makeTestAddr("crtap", 1)
-	badAddr := makeBadAddr(3)
+	badAddr := makeBadAddr("crtap", 2)
 
 	t.Run("starts with RecordPrefix", func(t *testing.T) {
 		key := CreateRecordToAddrPrefix(testAddr0)
@@ -507,6 +482,7 @@ func TestCreateRecordSuffix(t *testing.T) {
 	testAddr1 := makeTestAddr("crs", 1)
 	testAddr2 := makeTestAddr("crs", 2)
 	testAddrs := []sdk.AccAddress{testAddr0, testAddr1, testAddr2}
+	badAddr := makeBadAddr("crs", 3)
 
 	t.Run("panics if no addrs", func(t *testing.T) {
 		assert.PanicsWithError(t, "at least one fromAddr is required: internal logic error",
@@ -550,7 +526,6 @@ func TestCreateRecordSuffix(t *testing.T) {
 	})
 
 	t.Run("long addr is truncated", func(t *testing.T) {
-		badAddr := makeBadAddr(55)
 		expected := make([]byte, 32)
 		copy(expected, badAddr[:32])
 
@@ -613,8 +588,8 @@ func TestCreateRecordKey(t *testing.T) {
 	testAddr1 := makeTestAddr("crk", 1)
 	testAddr2 := makeTestAddr("crk", 2)
 	testAddr3 := makeTestAddr("crk", 3)
-	badAddr := makeBadAddr(4)
-	longAddr := makeLongAddr(3)
+	badAddr := makeBadAddr("crk", 4)
+	longAddr := makeLongAddr("crk", 5)
 
 	t.Run("starts with RecordPrefix", func(t *testing.T) {
 		key := CreateRecordKey(testAddr0, testAddr1)
@@ -717,7 +692,7 @@ func TestParseRecordKey(t *testing.T) {
 	testAddr0 := makeTestAddr("prk", 0)
 	testAddr1 := makeTestAddr("prk", 1)
 	testAddr2 := makeTestAddr("prk", 2)
-	longAddr := makeLongAddr(4)
+	longAddr := makeLongAddr("prk", 3)
 
 	makeKey := func(pre []byte, toAddrLen int, toAddrBz []byte, fromAddrLen int, fromAddrBz []byte) []byte {
 		rv := make([]byte, 0, len(pre)+1+len(toAddrBz)+1+len(fromAddrBz))
@@ -806,7 +781,7 @@ func TestCreateRecordIndexToAddrPrefix(t *testing.T) {
 	expectedPrefix := RecordIndexPrefix
 	testAddr0 := makeTestAddr("critap", 0)
 	testAddr1 := makeTestAddr("critap", 1)
-	badAddr := makeBadAddr(5)
+	badAddr := makeBadAddr("critap", 2)
 
 	t.Run("starts with RecordIndexPrefix", func(t *testing.T) {
 		key := CreateRecordIndexToAddrPrefix(testAddr0)
@@ -872,8 +847,8 @@ func TestCreateRecordIndexKey(t *testing.T) {
 	expectedPrefix := RecordIndexPrefix
 	testAddr0 := makeTestAddr("crik", 0)
 	testAddr1 := makeTestAddr("crik", 1)
-	badAddr := makeBadAddr(6)
-	longAddr := makeLongAddr(5)
+	badAddr := makeBadAddr("crik", 2)
+	longAddr := makeLongAddr("crik", 3)
 
 	t.Run("starts with RecordIndexPrefix", func(t *testing.T) {
 		key := CreateRecordIndexKey(testAddr0, testAddr1)
@@ -956,7 +931,7 @@ func TestCreateRecordIndexKey(t *testing.T) {
 func TestParseRecordIndexKey(t *testing.T) {
 	testAddr0 := makeTestAddr("prik", 0)
 	testAddr1 := makeTestAddr("prik", 1)
-	longAddr := makeLongAddr(6)
+	longAddr := makeLongAddr("prik", 2)
 
 	makeKey := func(pre []byte, toAddrLen int, toAddrBz []byte, fromAddrLen int, fromAddrBz []byte) []byte {
 		rv := make([]byte, 0, len(pre)+1+len(toAddrBz)+1+len(fromAddrBz))

@@ -5,19 +5,91 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/stretchr/testify/assert"
-	"github.com/tendermint/tendermint/crypto"
 )
 
-// makeTestAddr makes an AccAddress for use in tests.
-// The base and index are turned into a string, then hashed.
-// Then the first byte is changed to the index and the next bytes are the base.
-// This can help identify it in failed test output.
+// makeTestAddr makes an AccAddress that's 20 bytes long.
+// The first byte is the index. The next bytes are the base.
+// The byte after that is 97 (a) + the index.
+// Each other byte is one more than the previous.
+// Panics if the base is too long or index too high.
 func makeTestAddr(base string, index uint8) sdk.AccAddress {
-	toHash := fmt.Sprintf("%s test address %d", base, index)
-	rv := sdk.AccAddress(crypto.AddressHash([]byte(toHash)))
+	return makePrefixedIncAddr(20, 97, base, index)
+}
+
+// makeLongAddr makes an AccAddress that's 32 bytes long.
+// The first byte is the index. The next bytes are the base.
+// The byte after that is 65 (A) + the index.
+// Each other byte is one more than the previous.
+// Panics if the base is too long or index too high.
+func makeLongAddr(base string, index uint8) sdk.AccAddress {
+	return makePrefixedIncAddr(32, 65, base, index)
+}
+
+// makeBadAddr makes an address that's longer than the max length allowed.
+// The first byte is the index. The next bytes are the base.
+// The byte after that is 33 (!) + the index.
+// Each other byte is one more than the previous wrapping back to 0 after 255.
+// Panics if the base is too long or index too high.
+func makeBadAddr(base string, index uint8) sdk.AccAddress {
+	return makePrefixedIncAddr(address.MaxAddrLen+1, 33, base, index)
+}
+
+// makePrefixedIncAddr creates an sdk.AccAddress with the provided length.
+// The first byte will be the index.
+// The next bytes will be the base.
+// The byte after that will be the rootChar+index.
+// Each other byte is one more than the previous, skipping 127, and wrapping back to 33 after 254.
+// Panics if the base is longer than 8 chars. Keep it short. There aren't that many bytes to work with here.
+// Panics if the index is larger than 30. You don't need that many.
+// Panics if rootChar+index is not 33 to 126 or 128 to 254 (inclusive). Keep them printable.
+//
+// You're probably looking for makeTestAddr, makeLongAddr, or makeBadAddr.
+func makePrefixedIncAddr(length uint, rootChar uint8, base string, index uint8) sdk.AccAddress {
+	// panics are used because this is for test setup and should be mostly hard-coded stuff anyway.
+	// 8 is picked because if the length is 20, that would only leave 11 more bytes, which isn't many.
+	if len(base) > 8 {
+		panic(fmt.Sprintf("base too long %q; got: %d, max: 8", base, len(base)))
+	}
+	// 25 is picked so the long and test addresses always start with a letter.
+	if index > 25 {
+		panic(fmt.Sprintf("index too large; got: %d, max: 30", index))
+	}
+	rv := makeIncAddr(length, uint(1+len(base))+1, rootChar+index)
 	rv[0] = index
 	copy(rv[1:], base)
+	return rv
+}
+
+// makeIncAddr creates an sdk.AccAddress with the provided length.
+// The first firstCharLen bytes will be the firstChar.
+// Each other byte is one more than the previous, skipping 127, and wrapping back to 33 after 254.
+// Basically using only bytes that are printable as ascii.
+// If the firstChar is anything other than 33 to 126 or 128 to 254 (inclusive), you're gonna have a bad time.
+//
+// You're probably looking for makeTestAddr, makeLongAddr, or makeBadAddr.
+func makeIncAddr(length, firstCharLen uint, firstChar uint8) sdk.AccAddress {
+	// At one point I used math and mod stuff to wrap the provided first char into the right range,
+	// but this is for tests and should be from mostly hard-coded stuff anyway, so panics are used.
+	if firstChar < 33 || firstChar > 254 || firstChar == 127 {
+		panic(fmt.Sprintf("illegal shift (5-yard penalty, retry down): expected 33-126 or 128-254, got: %d", firstChar))
+	}
+	b := firstChar
+	rv := make(sdk.AccAddress, length)
+	for i := uint(0); i < length; i++ {
+		if i >= firstCharLen {
+			switch {
+			case b == 126:
+				b = 128
+			case b >= 254:
+				b = 33
+			default:
+				b++
+			}
+		}
+		rv[i] = byte(b)
+	}
 	return rv
 }
 
@@ -2325,6 +2397,943 @@ func TestQuarantineRecord_AsQuarantinedFunds(t *testing.T) {
 	}
 }
 
-// TODO[1046]: Test QuarantineRecordSuffixIndex.AddSuffixes
-// TODO[1046]: Test QuarantineRecordSuffixIndex.RemoveSuffixes
-// TODO[1046]: Test QuarantineRecordSuffixIndex.Simplify
+func TestQuarantineRecordSuffixIndex_AddSuffixes(t *testing.T) {
+	suffixShort0 := []byte(makeTestAddr("qrsias", 0))
+	suffixShort1 := []byte(makeTestAddr("qrsias", 1))
+	suffixShort2 := []byte(makeTestAddr("qrsias", 2))
+	suffixShort3 := []byte(makeTestAddr("qrsias", 3))
+	suffixLong4 := []byte(makeLongAddr("qrsias", 4))
+	suffixLong5 := []byte(makeLongAddr("qrsias", 5))
+	suffixLong6 := []byte(makeLongAddr("qrsias", 6))
+	suffixLong7 := []byte(makeLongAddr("qrsias", 7))
+	suffixBad8 := []byte(makeBadAddr("qrsias", 8))
+	suffixEmpty := make([]byte, 0)
+
+	tests := []struct {
+		name  string
+		qrsi  *QuarantineRecordSuffixIndex
+		toAdd [][]byte
+		exp   *QuarantineRecordSuffixIndex
+	}{
+		// nil + ...
+		{
+			name:  "nil + nil",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toAdd: nil,
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:  "nil + empty",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toAdd: [][]byte{},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:  "nil + short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toAdd: [][]byte{suffixShort1},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort1}},
+		},
+		{
+			name:  "nil + long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toAdd: [][]byte{suffixLong5},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong5}},
+		},
+		{
+			name:  "nil + short short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toAdd: [][]byte{suffixShort2, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2, suffixShort3}},
+		},
+		{
+			name:  "nil + short long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toAdd: [][]byte{suffixShort2, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2, suffixLong6}},
+		},
+		{
+			name:  "nil + long short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toAdd: [][]byte{suffixLong7, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong7, suffixShort3}},
+		},
+		{
+			name:  "nil + long long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toAdd: [][]byte{suffixLong7, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong7, suffixLong6}},
+		},
+
+		// empty + ...
+		{
+			name:  "empty + nil",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toAdd: nil,
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+		},
+		{
+			name:  "empty + empty",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toAdd: [][]byte{},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+		},
+		{
+			name:  "empty + short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toAdd: [][]byte{suffixShort1},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort1}},
+		},
+		{
+			name:  "empty + long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toAdd: [][]byte{suffixLong5},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong5}},
+		},
+		{
+			name:  "empty + short short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toAdd: [][]byte{suffixShort2, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2, suffixShort3}},
+		},
+		{
+			name:  "empty + short long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toAdd: [][]byte{suffixShort2, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2, suffixLong6}},
+		},
+		{
+			name:  "empty + long short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toAdd: [][]byte{suffixLong7, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong7, suffixShort3}},
+		},
+		{
+			name:  "empty + long long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toAdd: [][]byte{suffixLong7, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong7, suffixLong6}},
+		},
+
+		// short + ...
+		{
+			name:  "short + nil",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toAdd: nil,
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:  "short + empty",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toAdd: [][]byte{},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:  "short + short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toAdd: [][]byte{suffixShort1},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+		},
+		{
+			name:  "short + long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toAdd: [][]byte{suffixLong5},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong5}},
+		},
+		{
+			name:  "short + short short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toAdd: [][]byte{suffixShort2, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2, suffixShort3}},
+		},
+		{
+			name:  "short + short long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toAdd: [][]byte{suffixShort2, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2, suffixLong6}},
+		},
+		{
+			name:  "short + long short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toAdd: [][]byte{suffixLong7, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong7, suffixShort3}},
+		},
+		{
+			name:  "short + long long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toAdd: [][]byte{suffixLong7, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong7, suffixLong6}},
+		},
+
+		// long + ...
+		{
+			name:  "long + nil",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toAdd: nil,
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+		},
+		{
+			name:  "long + empty",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toAdd: [][]byte{},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+		},
+		{
+			name:  "long + short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toAdd: [][]byte{suffixShort1},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort1}},
+		},
+		{
+			name:  "long + long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toAdd: [][]byte{suffixLong5},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5}},
+		},
+		{
+			name:  "long + short short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toAdd: [][]byte{suffixShort2, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort2, suffixShort3}},
+		},
+		{
+			name:  "long + short long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toAdd: [][]byte{suffixShort2, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort2, suffixLong6}},
+		},
+		{
+			name:  "long + long short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toAdd: [][]byte{suffixLong7, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong7, suffixShort3}},
+		},
+		{
+			name:  "long + long long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toAdd: [][]byte{suffixLong7, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong7, suffixLong6}},
+		},
+
+		// short short + ...
+		{
+			name:  "short short + nil",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+			toAdd: nil,
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+		},
+		{
+			name:  "short short + empty",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+			toAdd: [][]byte{},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+		},
+		{
+			name:  "short short + short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2}},
+			toAdd: [][]byte{suffixShort1},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2, suffixShort1}},
+		},
+		{
+			name:  "short short + long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+			toAdd: [][]byte{suffixLong5},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1, suffixLong5}},
+		},
+		{
+			name:  "short short + short short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2}},
+			toAdd: [][]byte{suffixShort1, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2, suffixShort1, suffixShort3}},
+		},
+		{
+			name:  "short short + short long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2}},
+			toAdd: [][]byte{suffixShort1, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2, suffixShort1, suffixLong6}},
+		},
+		{
+			name:  "short short + long short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+			toAdd: [][]byte{suffixLong7, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1, suffixLong7, suffixShort3}},
+		},
+		{
+			name:  "short short + long long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+			toAdd: [][]byte{suffixLong7, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1, suffixLong7, suffixLong6}},
+		},
+
+		// short long + ...
+		{
+			name:  "short long + nil",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4}},
+			toAdd: nil,
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4}},
+		},
+		{
+			name:  "short long + empty",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4}},
+			toAdd: [][]byte{},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4}},
+		},
+		{
+			name:  "short long + short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4}},
+			toAdd: [][]byte{suffixShort1},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4, suffixShort1}},
+		},
+		{
+			name:  "short long + long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4}},
+			toAdd: [][]byte{suffixLong5},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4, suffixLong5}},
+		},
+		{
+			name:  "short long + short short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4}},
+			toAdd: [][]byte{suffixShort2, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4, suffixShort2, suffixShort3}},
+		},
+		{
+			name:  "short long + short long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4}},
+			toAdd: [][]byte{suffixShort2, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4, suffixShort2, suffixLong6}},
+		},
+		{
+			name:  "short long + long short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4}},
+			toAdd: [][]byte{suffixLong7, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4, suffixLong7, suffixShort3}},
+		},
+		{
+			name:  "short long + long long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4}},
+			toAdd: [][]byte{suffixLong7, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong4, suffixLong7, suffixLong6}},
+		},
+
+		// long short + ...
+		{
+			name:  "long short + nil",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0}},
+			toAdd: nil,
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0}},
+		},
+		{
+			name:  "long short + empty",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0}},
+			toAdd: [][]byte{},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0}},
+		},
+		{
+			name:  "long short + short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0}},
+			toAdd: [][]byte{suffixShort1},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0, suffixShort1}},
+		},
+		{
+			name:  "long short + long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0}},
+			toAdd: [][]byte{suffixLong5},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0, suffixLong5}},
+		},
+		{
+			name:  "long short + short short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0}},
+			toAdd: [][]byte{suffixShort2, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0, suffixShort2, suffixShort3}},
+		},
+		{
+			name:  "long short + short long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0}},
+			toAdd: [][]byte{suffixShort2, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0, suffixShort2, suffixLong6}},
+		},
+		{
+			name:  "long short + long short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0}},
+			toAdd: [][]byte{suffixLong7, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0, suffixLong7, suffixShort3}},
+		},
+		{
+			name:  "long short + long long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0}},
+			toAdd: [][]byte{suffixLong7, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixShort0, suffixLong7, suffixLong6}},
+		},
+
+		// long long + ...
+		{
+			name:  "long long + nil",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5}},
+			toAdd: nil,
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5}},
+		},
+		{
+			name:  "long long + empty",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5}},
+			toAdd: [][]byte{},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5}},
+		},
+		{
+			name:  "long long + short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5}},
+			toAdd: [][]byte{suffixShort1},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5, suffixShort1}},
+		},
+		{
+			name:  "long long + long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong6}},
+			toAdd: [][]byte{suffixLong5},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong6, suffixLong5}},
+		},
+		{
+			name:  "long long + short short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5}},
+			toAdd: [][]byte{suffixShort2, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5, suffixShort2, suffixShort3}},
+		},
+		{
+			name:  "long long + short long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5}},
+			toAdd: [][]byte{suffixShort2, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5, suffixShort2, suffixLong6}},
+		},
+		{
+			name:  "long long + long short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5}},
+			toAdd: [][]byte{suffixLong7, suffixShort3},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5, suffixLong7, suffixShort3}},
+		},
+		{
+			name:  "long long + long long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5}},
+			toAdd: [][]byte{suffixLong7, suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4, suffixLong5, suffixLong7, suffixLong6}},
+		},
+
+		// other ...
+		{
+			name:  "short long + bad",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort1, suffixLong7}},
+			toAdd: [][]byte{suffixBad8},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort1, suffixLong7, suffixBad8}},
+		},
+		{
+			name:  "long short + empty suffix",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong5, suffixShort0}},
+			toAdd: [][]byte{suffixEmpty},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong5, suffixShort0, suffixEmpty}},
+		},
+		{
+			name:  "bad + short short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixBad8}},
+			toAdd: [][]byte{suffixShort3, suffixShort1},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixBad8, suffixShort3, suffixShort1}},
+		},
+		{
+			name:  "empty suffix + long long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixEmpty}},
+			toAdd: [][]byte{suffixLong7, suffixLong4},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixEmpty, suffixLong7, suffixLong4}},
+		},
+		{
+			name:  "short + same short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toAdd: [][]byte{suffixShort0},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort0}},
+		},
+		{
+			name:  "short long + same short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort1, suffixLong4}},
+			toAdd: [][]byte{suffixShort1},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort1, suffixLong4, suffixShort1}},
+		},
+		{
+			name:  "short long + same long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort1, suffixLong4}},
+			toAdd: [][]byte{suffixLong4},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort1, suffixLong4, suffixLong4}},
+		},
+		{
+			name:  "long short + same short",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong6, suffixShort2}},
+			toAdd: [][]byte{suffixShort2},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong6, suffixShort2, suffixShort2}},
+		},
+		{
+			name:  "long short + same long",
+			qrsi:  &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong6, suffixShort2}},
+			toAdd: [][]byte{suffixLong6},
+			exp:   &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong6, suffixShort2, suffixLong6}},
+		},
+		{
+			name: "shmorgishborg",
+			qrsi: &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{
+				suffixShort1, suffixShort3, suffixLong6, suffixBad8, suffixLong7,
+				suffixLong4, suffixShort0, suffixLong5, suffixEmpty, suffixShort2,
+			}},
+			toAdd: [][]byte{
+				suffixShort0, suffixBad8, suffixShort1, suffixShort1, suffixLong5,
+				suffixEmpty, suffixLong4, suffixLong6, suffixShort0, suffixLong7,
+			},
+			exp: &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{
+				suffixShort1, suffixShort3, suffixLong6, suffixBad8, suffixLong7,
+				suffixLong4, suffixShort0, suffixLong5, suffixEmpty, suffixShort2,
+				suffixShort0, suffixBad8, suffixShort1, suffixShort1, suffixLong5,
+				suffixEmpty, suffixLong4, suffixLong6, suffixShort0, suffixLong7,
+			}},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.qrsi.AddSuffixes(tc.toAdd...)
+			assert.Equal(t, tc.exp, tc.qrsi, "QuarantineRecordSuffixIndex after AddSuffixes")
+		})
+	}
+}
+
+func TestQuarantineRecordSuffixIndex_Simplify(t *testing.T) {
+	suffixShort0 := []byte(makeTestAddr("qrsis", 0))
+	suffixShort1 := []byte(makeTestAddr("qrsis", 1))
+	suffixShort2 := []byte(makeTestAddr("qrsis", 2))
+	suffixShort3 := []byte(makeTestAddr("qrsis", 3))
+	suffixLong4 := []byte(makeLongAddr("qrsis", 4))
+	suffixLong5 := []byte(makeLongAddr("qrsis", 5))
+	suffixLong6 := []byte(makeLongAddr("qrsis", 6))
+	suffixLong7 := []byte(makeLongAddr("qrsis", 7))
+	suffixBad8 := []byte(makeBadAddr("qrsis", 8))
+	suffixEmpty := make([]byte, 0)
+
+	tests := []struct {
+		name     string
+		qrsi     *QuarantineRecordSuffixIndex
+		toRemove [][]byte
+		exp      *QuarantineRecordSuffixIndex
+	}{
+		// nil - ...
+		{
+			name:     "nil - nil",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toRemove: nil,
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "nil - empty",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toRemove: [][]byte{},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "nil - short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toRemove: [][]byte{suffixShort1},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "nil - long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toRemove: [][]byte{suffixLong5},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "nil - short short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toRemove: [][]byte{suffixShort2, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "nil - short long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toRemove: [][]byte{suffixShort2, suffixLong6},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "nil - long short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toRemove: [][]byte{suffixLong7, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "nil - long long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+			toRemove: [][]byte{suffixLong7, suffixLong6},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+
+		// empty - ...
+		{
+			name:     "empty - nil",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toRemove: nil,
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "empty - empty",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toRemove: [][]byte{},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "empty - short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toRemove: [][]byte{suffixShort1},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "empty - long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toRemove: [][]byte{suffixLong5},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "empty - short short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toRemove: [][]byte{suffixShort2, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "empty - short long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toRemove: [][]byte{suffixShort2, suffixLong6},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "empty - long short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toRemove: [][]byte{suffixLong7, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "empty - long long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{}},
+			toRemove: [][]byte{suffixLong7, suffixLong6},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+
+		// short - ...
+		{
+			name:     "short - nil",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: nil,
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:     "short - empty",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: [][]byte{},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:     "short - other short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: [][]byte{suffixShort1},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:     "short - same short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: [][]byte{suffixShort0},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "short - long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: [][]byte{suffixLong5},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:     "short - other short other short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: [][]byte{suffixShort2, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:     "short - same short other short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: [][]byte{suffixShort0, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "short - other short same short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: [][]byte{suffixShort2, suffixShort0},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "short - same short same short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: [][]byte{suffixShort0, suffixShort0},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "short - short long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: [][]byte{suffixShort2, suffixLong6},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:     "short - long short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: [][]byte{suffixLong7, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:     "short - long long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+			toRemove: [][]byte{suffixLong7, suffixLong6},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+
+		// long - ...
+		{
+			name:     "long - nil",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: nil,
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+		},
+		{
+			name:     "long - empty",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+		},
+		{
+			name:     "long - short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixShort1},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+		},
+		{
+			name:     "long - other long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixLong5},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+		},
+		{
+			name:     "long - same long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixLong4},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "long - short short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixShort2, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+		},
+		{
+			name:     "long - short other long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixShort2, suffixLong6},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+		},
+		{
+			name:     "long - short same long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixShort2, suffixLong4},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "long - other long short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixLong7, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+		},
+		{
+			name:     "long - same long short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixLong4, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "long - other long other long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixLong7, suffixLong6},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+		},
+		{
+			name:     "long - other long same long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixLong7, suffixLong4},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "long - same long other long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixLong4, suffixLong6},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "long - same long same long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong4}},
+			toRemove: [][]byte{suffixLong4, suffixLong4},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+
+		// short short - ...
+		{
+			name:     "short short - nil",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+			toRemove: nil,
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+		},
+		{
+			name:     "short short - empty",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+			toRemove: [][]byte{},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+		},
+		{
+			name:     "short short - other short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2}},
+			toRemove: [][]byte{suffixShort1},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2}},
+		},
+		{
+			name:     "short short - same first short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2}},
+			toRemove: [][]byte{suffixShort0},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2}},
+		},
+		{
+			name:     "short short - same second short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2}},
+			toRemove: [][]byte{suffixShort2},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:     "short short - long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+			toRemove: [][]byte{suffixLong5},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+		},
+		{
+			name:     "short short - other short other short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2, suffixShort0}},
+			toRemove: [][]byte{suffixShort1, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2}},
+		},
+		{
+			name:     "short short - first short other short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2, suffixShort0}},
+			toRemove: [][]byte{suffixShort2, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:     "short short - second short other short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2, suffixShort0}},
+			toRemove: [][]byte{suffixShort0, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2}},
+		},
+		{
+			name:     "short short - other short first short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2, suffixShort0}},
+			toRemove: [][]byte{suffixShort1, suffixShort2},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0}},
+		},
+		{
+			name:     "short short - other short second short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2, suffixShort0}},
+			toRemove: [][]byte{suffixShort1, suffixShort0},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2}},
+		},
+		{
+			name:     "short short - first short second short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2, suffixShort0}},
+			toRemove: [][]byte{suffixShort2, suffixShort0},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "short short - second short first short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort2, suffixShort0}},
+			toRemove: [][]byte{suffixShort0, suffixShort2},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "short short - short long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2}},
+			toRemove: [][]byte{suffixShort1, suffixLong6},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort2}},
+		},
+		{
+			name:     "short short - long short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+			toRemove: [][]byte{suffixLong7, suffixShort3},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+		},
+		{
+			name:     "short short - long long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+			toRemove: [][]byte{suffixLong7, suffixLong6},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixShort1}},
+		},
+
+		// other ...
+		{
+			name:     "short long - bad",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort1, suffixLong7}},
+			toRemove: [][]byte{suffixBad8},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort1, suffixLong7}},
+		},
+		{
+			name:     "long short - empty suffix",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixLong5, suffixShort0}},
+			toRemove: [][]byte{suffixEmpty},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixShort0, suffixLong5}},
+		},
+		{
+			name:     "bad - short short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixBad8}},
+			toRemove: [][]byte{suffixShort3, suffixShort1},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixBad8}},
+		},
+		{
+			name:     "bad - short bad long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixBad8}},
+			toRemove: [][]byte{suffixShort3, suffixBad8, suffixLong7},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name:     "empty suffix - long long",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixEmpty}},
+			toRemove: [][]byte{suffixLong7, suffixLong4},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixEmpty}},
+		},
+		{
+			name:     "empty suffix - long empty suffix short",
+			qrsi:     &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffixEmpty}},
+			toRemove: [][]byte{suffixLong7, suffixEmpty, suffixShort2},
+			exp:      &QuarantineRecordSuffixIndex{RecordSuffixes: nil},
+		},
+		{
+			name: "shmorgishborg",
+			qrsi: &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{
+				suffixShort1, suffixShort3, suffixLong6, suffixBad8, suffixLong7,
+				suffixLong4, suffixShort0, suffixLong5, suffixEmpty, suffixShort2,
+			}},
+			toRemove: [][]byte{
+				suffixShort0, suffixBad8, suffixShort1, suffixShort1, suffixLong4,
+				suffixEmpty, suffixLong4, suffixLong6, suffixShort0, suffixLong7,
+			},
+			exp: &QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{
+				suffixShort2, suffixShort3, suffixLong5,
+			}},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.toRemove == nil {
+				tc.qrsi.Simplify()
+			} else {
+				tc.qrsi.Simplify(tc.toRemove...)
+			}
+			assert.Equal(t, tc.exp, tc.qrsi, "QuarantineRecordSuffixIndex after Simplify")
+		})
+	}
+}

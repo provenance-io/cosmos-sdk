@@ -223,7 +223,14 @@ func (s *QuarantineRecordSuffixIndex) AddSuffixes(suffixes ...[]byte) {
 
 // Simplify updates the suffixes in this so that they are ordered and there aren't any duplicates.
 func (s *QuarantineRecordSuffixIndex) Simplify(toRemove ...[]byte) {
-	if len(s.RecordSuffixes) > 1 {
+	switch len(s.RecordSuffixes) {
+	case 0:
+		// do nothing for now.
+	case 1:
+		if containsSuffix(toRemove, s.RecordSuffixes[0]) {
+			s.RecordSuffixes = nil
+		}
+	default:
 		// Sort the suffixes first, so that deduplication is simpler.
 		sort.Slice(s.RecordSuffixes, func(i, j int) bool {
 			return bytes.Compare(s.RecordSuffixes[i], s.RecordSuffixes[j]) < 0
@@ -238,8 +245,8 @@ func (s *QuarantineRecordSuffixIndex) Simplify(toRemove ...[]byte) {
 			return !containsSuffix(toRemove, cur) && !bytes.Equal(cur, other)
 		}
 
-		// First, get rid of any non-keepers at the front of the slice.
-		for !isKeeper(s.RecordSuffixes[0], nil) {
+		// First, get rid of any non-keepers at the front of the slice since that can be done in-place.
+		for len(s.RecordSuffixes) > 0 && !isKeeper(s.RecordSuffixes[0], nil) {
 			s.RecordSuffixes = s.RecordSuffixes[1:]
 		}
 
@@ -266,6 +273,7 @@ func (s *QuarantineRecordSuffixIndex) Simplify(toRemove ...[]byte) {
 		}
 	}
 
+	// If there's nothing left, make sure it's nil.
 	if len(s.RecordSuffixes) == 0 {
 		s.RecordSuffixes = nil
 	}
