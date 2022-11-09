@@ -60,21 +60,21 @@ func (k Keeper) SetOptOut(ctx sdk.Context, toAddr sdk.AccAddress) error {
 	return ctx.EventManager().EmitTypedEvent(&quarantine.EventOptOut{ToAddress: toAddr.String()})
 }
 
-// getQuarantinedAccountsPrefixStore returns a kv store prefixed for quarantine opt-in entries.
-func (k Keeper) getQuarantinedAccountsPrefixStore(ctx sdk.Context) sdk.KVStore {
-	return prefix.NewStore(ctx.KVStore(k.storeKey), quarantine.OptInPrefix)
+// getQuarantinedAccountsPrefixStore returns a kv store prefixed for quarantine opt-in entries, and the prefix bytes.
+func (k Keeper) getQuarantinedAccountsPrefixStore(ctx sdk.Context) (sdk.KVStore, []byte) {
+	return prefix.NewStore(ctx.KVStore(k.storeKey), quarantine.OptInPrefix), quarantine.OptInPrefix
 }
 
 // IterateQuarantinedAccounts iterates over all quarantine account addresses.
 // The callback function should accept the to address (that has quarantine enabled).
 // It should return whether to stop iteration early. I.e. false will allow iteration to continue, true will stop iteration.
 func (k Keeper) IterateQuarantinedAccounts(ctx sdk.Context, cb func(toAddr sdk.AccAddress) (stop bool)) {
-	store := k.getQuarantinedAccountsPrefixStore(ctx)
+	store, pre := k.getQuarantinedAccountsPrefixStore(ctx)
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
 
 	for ; iter.Valid(); iter.Next() {
-		addr := quarantine.ParseOptInKey(iter.Key())
+		addr := quarantine.ParseOptInKey(quarantine.MakeKey(pre, iter.Key()))
 		if cb(addr) {
 			break
 		}
@@ -136,14 +136,15 @@ func (k Keeper) SetAutoResponse(ctx sdk.Context, toAddr, fromAddr sdk.AccAddress
 	}
 }
 
-// getAutoResponsesPrefixStore returns a kv store prefixed for quarantine auto-responses to the given address.
+// getAutoResponsesPrefixStore returns a kv store prefixed for quarantine auto-responses and the prefix used.
+// If a toAddr is provided, the store is prefixed for just the given address.
 // If toAddr is empty, it will be prefixed for all quarantine auto-responses.
-func (k Keeper) getAutoResponsesPrefixStore(ctx sdk.Context, toAddr sdk.AccAddress) sdk.KVStore {
+func (k Keeper) getAutoResponsesPrefixStore(ctx sdk.Context, toAddr sdk.AccAddress) (sdk.KVStore, []byte) {
 	pre := quarantine.AutoResponsePrefix
 	if len(toAddr) > 0 {
 		pre = quarantine.CreateAutoResponseToAddrPrefix(toAddr)
 	}
-	return prefix.NewStore(ctx.KVStore(k.storeKey), pre)
+	return prefix.NewStore(ctx.KVStore(k.storeKey), pre), pre
 }
 
 // IterateAutoResponses iterates over the auto-responses for a given recipient address,
@@ -151,12 +152,12 @@ func (k Keeper) getAutoResponsesPrefixStore(ctx sdk.Context, toAddr sdk.AccAddre
 // The callback function should accept a to address, from address, and auto-response setting (in that order).
 // It should return whether to stop iteration early. I.e. false will allow iteration to continue, true will stop iteration.
 func (k Keeper) IterateAutoResponses(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, fromAddr sdk.AccAddress, response quarantine.AutoResponse) (stop bool)) {
-	store := k.getAutoResponsesPrefixStore(ctx, toAddr)
+	store, pre := k.getAutoResponsesPrefixStore(ctx, toAddr)
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
 
 	for ; iter.Valid(); iter.Next() {
-		kToAddr, kFromAddr := quarantine.ParseAutoResponseKey(iter.Key())
+		kToAddr, kFromAddr := quarantine.ParseAutoResponseKey(quarantine.MakeKey(pre, iter.Key()))
 		val := quarantine.ToAutoResponse(iter.Value())
 		if cb(kToAddr, kFromAddr, val) {
 			break
@@ -261,14 +262,15 @@ func (k Keeper) AddQuarantinedCoins(ctx sdk.Context, coins sdk.Coins, toAddr sdk
 	})
 }
 
-// getQuarantineRecordPrefixStore returns a kv store prefixed for quarantine records to the given address.
+// getQuarantineRecordPrefixStore returns a kv store prefixed for quarantine records and the prefix used.
+// If a toAddr is provided, the store is prefixed for just the given address.
 // If toAddr is empty, it will be prefixed for all quarantine records.
-func (k Keeper) getQuarantineRecordPrefixStore(ctx sdk.Context, toAddr sdk.AccAddress) sdk.KVStore {
+func (k Keeper) getQuarantineRecordPrefixStore(ctx sdk.Context, toAddr sdk.AccAddress) (sdk.KVStore, []byte) {
 	pre := quarantine.RecordPrefix
 	if len(toAddr) > 0 {
 		pre = quarantine.CreateRecordToAddrPrefix(toAddr)
 	}
-	return prefix.NewStore(ctx.KVStore(k.storeKey), pre)
+	return prefix.NewStore(ctx.KVStore(k.storeKey), pre), pre
 }
 
 // IterateQuarantineRecords iterates over the quarantined funds for a given recipient address,
@@ -276,12 +278,12 @@ func (k Keeper) getQuarantineRecordPrefixStore(ctx sdk.Context, toAddr sdk.AccAd
 // The callback function should accept a to address, record suffix, and QuarantineRecord (in that order).
 // It should return whether to stop iteration early. I.e. false will allow iteration to continue, true will stop iteration.
 func (k Keeper) IterateQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, recordSuffix sdk.AccAddress, funds *quarantine.QuarantineRecord) (stop bool)) {
-	store := k.getQuarantineRecordPrefixStore(ctx, toAddr)
+	store, pre := k.getQuarantineRecordPrefixStore(ctx, toAddr)
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
 
 	for ; iter.Valid(); iter.Next() {
-		kToAddr, kRecordSuffix := quarantine.ParseRecordKey(iter.Key())
+		kToAddr, kRecordSuffix := quarantine.ParseRecordKey(quarantine.MakeKey(pre, iter.Key()))
 		qf := k.mustBzToQuarantineRecord(iter.Value())
 
 		if cb(kToAddr, kRecordSuffix, qf) {

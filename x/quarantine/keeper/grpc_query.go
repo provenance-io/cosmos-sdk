@@ -70,7 +70,7 @@ func (k Keeper) QuarantinedFunds(goCtx context.Context, req *quarantine.QueryQua
 			resp.QuarantinedFunds = append(resp.QuarantinedFunds, qf)
 		}
 	} else {
-		store := k.getQuarantineRecordPrefixStore(ctx, toAddr)
+		store, pre := k.getQuarantineRecordPrefixStore(ctx, toAddr)
 		resp.Pagination, err = query.FilteredPaginate(
 			store, req.Pagination,
 			func(key, value []byte, accumulate bool) (bool, error) {
@@ -84,7 +84,7 @@ func (k Keeper) QuarantinedFunds(goCtx context.Context, req *quarantine.QueryQua
 					return false, nil
 				}
 				if accumulate {
-					kToAddr, _ := quarantine.ParseRecordKey(key)
+					kToAddr, _ := quarantine.ParseRecordKey(quarantine.MakeKey(pre, key))
 					qf := qr.AsQuarantinedFunds(kToAddr)
 					resp.QuarantinedFunds = append(resp.QuarantinedFunds, qf)
 				}
@@ -129,11 +129,11 @@ func (k Keeper) AutoResponses(goCtx context.Context, req *quarantine.QueryAutoRe
 		r := quarantine.NewAutoResponseEntry(toAddr, fromAddr, qar)
 		resp.AutoResponses = append(resp.AutoResponses, r)
 	} else {
-		store := k.getAutoResponsesPrefixStore(ctx, toAddr)
+		store, pre := k.getAutoResponsesPrefixStore(ctx, toAddr)
 		resp.Pagination, err = query.Paginate(
 			store, req.Pagination,
 			func(key, value []byte) error {
-				kToAddr, kFromAddr := quarantine.ParseAutoResponseKey(key)
+				kToAddr, kFromAddr := quarantine.ParseAutoResponseKey(quarantine.MakeKey(pre, key))
 				qar := quarantine.ToAutoResponse(value)
 				r := quarantine.NewAutoResponseEntry(kToAddr, kFromAddr, qar)
 				resp.AutoResponses = append(resp.AutoResponses, r)
