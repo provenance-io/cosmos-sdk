@@ -172,8 +172,8 @@ func (r QuarantineRecord) IsFullyAccepted() bool {
 }
 
 // AcceptFrom moves the provided addrs from the unaccepted slice to the accepted slice.
-// If none of the provided addresses are in this record's unaccepted slice, this does nothing.
-// Returns true if this record was changed.
+// If none of the provided addrs are in this record's unaccepted slice, this does nothing.
+// Returns true if one or more addresses were moved to accepted.
 func (r *QuarantineRecord) AcceptFrom(addrs []sdk.AccAddress) bool {
 	rv := false
 	leftoverAddrs := make([]sdk.AccAddress, 0, len(r.UnacceptedFromAddresses))
@@ -185,7 +185,11 @@ func (r *QuarantineRecord) AcceptFrom(addrs []sdk.AccAddress) bool {
 			leftoverAddrs = append(leftoverAddrs, existing)
 		}
 	}
-	r.UnacceptedFromAddresses = leftoverAddrs
+	if len(leftoverAddrs) == 0 {
+		r.UnacceptedFromAddresses = nil
+	} else {
+		r.UnacceptedFromAddresses = leftoverAddrs
+	}
 	return rv
 }
 

@@ -9,10 +9,9 @@ import (
 )
 
 func TestNewMsgOptIn(t *testing.T) {
-	testAddrs := []sdk.AccAddress{
-		testAddr("nmoi test addr 0"),
-		testAddr("nmoi test addr 1"),
-	}
+	testAddr0 := makeTestAddr("nmoi", 0)
+	testAddr1 := makeTestAddr("nmoi", 1)
+
 	tests := []struct {
 		name     string
 		toAddr   sdk.AccAddress
@@ -20,13 +19,13 @@ func TestNewMsgOptIn(t *testing.T) {
 	}{
 		{
 			name:     "addr 0",
-			toAddr:   testAddrs[0],
-			expected: &MsgOptIn{ToAddress: testAddrs[0].String()},
+			toAddr:   testAddr0,
+			expected: &MsgOptIn{ToAddress: testAddr0.String()},
 		},
 		{
 			name:     "addr 1",
-			toAddr:   testAddrs[1],
-			expected: &MsgOptIn{ToAddress: testAddrs[1].String()},
+			toAddr:   testAddr1,
+			expected: &MsgOptIn{ToAddress: testAddr1.String()},
 		},
 		{
 			name:     "nil",
@@ -43,8 +42,9 @@ func TestNewMsgOptIn(t *testing.T) {
 	}
 }
 
-func TestMsgOptInValidateBasic(t *testing.T) {
-	addr := testAddr("moivb test addr").String()
+func TestMsgOptIn_ValidateBasic(t *testing.T) {
+	addr := makeTestAddr("moivb", 0).String()
+
 	tests := []struct {
 		name          string
 		addr          string
@@ -78,8 +78,9 @@ func TestMsgOptInValidateBasic(t *testing.T) {
 	}
 }
 
-func TestMsgOptInGetSigners(t *testing.T) {
-	addr := testAddr("moigs test addr")
+func TestMsgOptIn_GetSigners(t *testing.T) {
+	addr := makeTestAddr("moigs", 0)
+
 	tests := []struct {
 		name     string
 		addr     string
@@ -114,10 +115,9 @@ func TestMsgOptInGetSigners(t *testing.T) {
 }
 
 func TestNewMsgOptOut(t *testing.T) {
-	testAddrs := []sdk.AccAddress{
-		testAddr("nmoo test addr 0"),
-		testAddr("nmoo test addr 1"),
-	}
+	testAddr0 := makeTestAddr("nmoo", 0)
+	testAddr1 := makeTestAddr("nmoo", 1)
+
 	tests := []struct {
 		name     string
 		toAddr   sdk.AccAddress
@@ -125,13 +125,13 @@ func TestNewMsgOptOut(t *testing.T) {
 	}{
 		{
 			name:     "addr 0",
-			toAddr:   testAddrs[0],
-			expected: &MsgOptOut{ToAddress: testAddrs[0].String()},
+			toAddr:   testAddr0,
+			expected: &MsgOptOut{ToAddress: testAddr0.String()},
 		},
 		{
 			name:     "addr 1",
-			toAddr:   testAddrs[1],
-			expected: &MsgOptOut{ToAddress: testAddrs[1].String()},
+			toAddr:   testAddr1,
+			expected: &MsgOptOut{ToAddress: testAddr1.String()},
 		},
 		{
 			name:     "nil",
@@ -148,8 +148,9 @@ func TestNewMsgOptOut(t *testing.T) {
 	}
 }
 
-func TestMsgOptOutValidateBasic(t *testing.T) {
-	addr := testAddr("moovb test addr").String()
+func TestMsgOptOut_ValidateBasic(t *testing.T) {
+	addr := makeTestAddr("moovb", 0).String()
+
 	tests := []struct {
 		name          string
 		addr          string
@@ -183,8 +184,9 @@ func TestMsgOptOutValidateBasic(t *testing.T) {
 	}
 }
 
-func TestMsgOptOutGetSigners(t *testing.T) {
-	addr := testAddr("moogs test addr")
+func TestMsgOptOut_GetSigners(t *testing.T) {
+	addr := makeTestAddr("moogs", 0)
+
 	tests := []struct {
 		name     string
 		addr     string
@@ -219,10 +221,9 @@ func TestMsgOptOutGetSigners(t *testing.T) {
 }
 
 func TestNewMsgAccept(t *testing.T) {
-	testAddrs := []sdk.AccAddress{
-		testAddr("nma test addr 0"),
-		testAddr("nma test addr 1"),
-	}
+	testAddr0 := makeTestAddr("nma", 0)
+	testAddr1 := makeTestAddr("nma", 1)
+
 	tests := []struct {
 		name      string
 		toAddr    sdk.AccAddress
@@ -232,67 +233,67 @@ func TestNewMsgAccept(t *testing.T) {
 	}{
 		{
 			name:      "control",
-			toAddr:    testAddrs[0],
-			fromAddrs: []string{testAddrs[1].String()},
+			toAddr:    testAddr0,
+			fromAddrs: []string{testAddr1.String()},
 			permanent: false,
 			expected: &MsgAccept{
-				ToAddress:     testAddrs[0].String(),
-				FromAddresses: []string{testAddrs[1].String()},
+				ToAddress:     testAddr0.String(),
+				FromAddresses: []string{testAddr1.String()},
 				Permanent:     false,
 			},
 		},
 		{
 			name:      "nil toAddr",
 			toAddr:    nil,
-			fromAddrs: []string{testAddrs[1].String()},
+			fromAddrs: []string{testAddr1.String()},
 			permanent: false,
 			expected: &MsgAccept{
 				ToAddress:     "",
-				FromAddresses: []string{testAddrs[1].String()},
+				FromAddresses: []string{testAddr1.String()},
 				Permanent:     false,
 			},
 		},
 		{
 			name:      "nil fromAddrsStrs",
-			toAddr:    testAddrs[1],
+			toAddr:    testAddr1,
 			fromAddrs: nil,
 			permanent: false,
 			expected: &MsgAccept{
-				ToAddress:     testAddrs[1].String(),
+				ToAddress:     testAddr1.String(),
 				FromAddresses: nil,
 				Permanent:     false,
 			},
 		},
 		{
 			name:      "empty fromAddrsStrs",
-			toAddr:    testAddrs[1],
+			toAddr:    testAddr1,
 			fromAddrs: []string{},
 			permanent: false,
 			expected: &MsgAccept{
-				ToAddress:     testAddrs[1].String(),
+				ToAddress:     testAddr1.String(),
 				FromAddresses: []string{},
 				Permanent:     false,
 			},
 		},
 		{
 			name:      "three bad fromAddrsStrs",
-			toAddr:    testAddrs[1],
+			toAddr:    testAddr1,
 			fromAddrs: []string{"one", "two", "three"},
 			permanent: false,
 			expected: &MsgAccept{
-				ToAddress:     testAddrs[1].String(),
+				ToAddress:     testAddr1.String(),
 				FromAddresses: []string{"one", "two", "three"},
 				Permanent:     false,
 			},
 		},
 		{
 			name:      "permanent",
-			toAddr:    testAddrs[1],
-			fromAddrs: []string{testAddrs[0].String()},
+			toAddr:    testAddr1,
+			fromAddrs: []string{testAddr0.String()},
 			permanent: true,
 			expected: &MsgAccept{
-				ToAddress:     testAddrs[1].String(),
-				FromAddresses: []string{testAddrs[0].String()},
+				ToAddress:     testAddr1.String(),
+				FromAddresses: []string{testAddr0.String()},
 				Permanent:     true,
 			},
 		},
@@ -306,12 +307,11 @@ func TestNewMsgAccept(t *testing.T) {
 	}
 }
 
-func TestMsgAcceptValidateBasic(t *testing.T) {
-	testAddrs := []string{
-		testAddr("mavb test addr 0").String(),
-		testAddr("mavb test addr 1").String(),
-		testAddr("mavb test addr 2").String(),
-	}
+func TestMsgAccept_ValidateBasic(t *testing.T) {
+	testAddr0 := makeTestAddr("mavb", 0).String()
+	testAddr1 := makeTestAddr("mavb", 1).String()
+	testAddr2 := makeTestAddr("mavb", 2).String()
+
 	tests := []struct {
 		name          string
 		toAddr        string
@@ -321,21 +321,21 @@ func TestMsgAcceptValidateBasic(t *testing.T) {
 	}{
 		{
 			name:          "control",
-			toAddr:        testAddrs[0],
-			fromAddrs:     []string{testAddrs[1]},
+			toAddr:        testAddr0,
+			fromAddrs:     []string{testAddr1},
 			permanent:     false,
 			expectedInErr: nil,
 		},
 		{
 			name:          "permanent",
-			toAddr:        testAddrs[0],
-			fromAddrs:     []string{testAddrs[1]},
+			toAddr:        testAddr0,
+			fromAddrs:     []string{testAddr1},
 			permanent:     true,
 			expectedInErr: nil,
 		},
 		{
 			name:          "permanent no from addresses",
-			toAddr:        testAddrs[2],
+			toAddr:        testAddr2,
 			fromAddrs:     []string{},
 			permanent:     true,
 			expectedInErr: []string{"at least one from address is required when permanent = true", "invalid value"},
@@ -343,42 +343,42 @@ func TestMsgAcceptValidateBasic(t *testing.T) {
 		{
 			name:          "empty to address",
 			toAddr:        "",
-			fromAddrs:     []string{testAddrs[1]},
+			fromAddrs:     []string{testAddr1},
 			permanent:     false,
 			expectedInErr: []string{"invalid to address"},
 		},
 		{
 			name:          "bad to address",
 			toAddr:        "this address isn't",
-			fromAddrs:     []string{testAddrs[0]},
+			fromAddrs:     []string{testAddr0},
 			permanent:     false,
 			expectedInErr: []string{"invalid to address"},
 		},
 		{
 			name:          "nil from addresses",
-			toAddr:        testAddrs[1],
+			toAddr:        testAddr1,
 			fromAddrs:     nil,
 			permanent:     false,
 			expectedInErr: nil,
 		},
 		{
 			name:          "empty from addresses",
-			toAddr:        testAddrs[1],
+			toAddr:        testAddr1,
 			fromAddrs:     []string{},
 			permanent:     false,
 			expectedInErr: nil,
 		},
 		{
 			name:          "bad from address",
-			toAddr:        testAddrs[0],
+			toAddr:        testAddr0,
 			fromAddrs:     []string{"this one is a tunic"},
 			permanent:     false,
 			expectedInErr: []string{"invalid from address[0]"},
 		},
 		{
 			name:          "bad third from address",
-			toAddr:        testAddrs[0],
-			fromAddrs:     []string{testAddrs[1], testAddrs[2], "Michael Jackson (he's bad)"},
+			toAddr:        testAddr0,
+			fromAddrs:     []string{testAddr1, testAddr2, "Michael Jackson (he's bad)"},
 			permanent:     false,
 			expectedInErr: []string{"invalid from address[2]"},
 		},
@@ -403,12 +403,11 @@ func TestMsgAcceptValidateBasic(t *testing.T) {
 	}
 }
 
-func TestMsgAcceptGetSigners(t *testing.T) {
-	testAddrs := []sdk.AccAddress{
-		testAddr("mags test addr 0"),
-		testAddr("mags test addr 1"),
-		testAddr("mags test addr 2"),
-	}
+func TestMsgAccept_GetSigners(t *testing.T) {
+	testAddr0 := makeTestAddr("mags", 0)
+	testAddr1 := makeTestAddr("mags", 1)
+	testAddr2 := makeTestAddr("mags", 2)
+
 	tests := []struct {
 		name      string
 		toAddr    string
@@ -418,52 +417,52 @@ func TestMsgAcceptGetSigners(t *testing.T) {
 	}{
 		{
 			name:      "control",
-			toAddr:    testAddrs[0].String(),
-			fromAddrs: []string{testAddrs[1].String()},
+			toAddr:    testAddr0.String(),
+			fromAddrs: []string{testAddr1.String()},
 			permanent: false,
-			expected:  []sdk.AccAddress{testAddrs[0]},
+			expected:  []sdk.AccAddress{testAddr0},
 		},
 		{
 			name:      "permanent",
-			toAddr:    testAddrs[0].String(),
-			fromAddrs: []string{testAddrs[1].String()},
+			toAddr:    testAddr0.String(),
+			fromAddrs: []string{testAddr1.String()},
 			permanent: true,
-			expected:  []sdk.AccAddress{testAddrs[0]},
+			expected:  []sdk.AccAddress{testAddr0},
 		},
 		{
 			name:      "empty to address",
 			toAddr:    "",
-			fromAddrs: []string{testAddrs[1].String()},
+			fromAddrs: []string{testAddr1.String()},
 			permanent: false,
 			expected:  []sdk.AccAddress{{}},
 		},
 		{
 			name:      "bad to address",
 			toAddr:    "this address isn't",
-			fromAddrs: []string{testAddrs[0].String()},
+			fromAddrs: []string{testAddr0.String()},
 			permanent: false,
 			expected:  []sdk.AccAddress{nil},
 		},
 		{
 			name:      "empty from addresses",
-			toAddr:    testAddrs[1].String(),
+			toAddr:    testAddr1.String(),
 			fromAddrs: []string{},
 			permanent: false,
-			expected:  []sdk.AccAddress{testAddrs[1]},
+			expected:  []sdk.AccAddress{testAddr1},
 		},
 		{
 			name:      "two from addresses",
-			toAddr:    testAddrs[2].String(),
-			fromAddrs: []string{testAddrs[0].String(), testAddrs[1].String()},
+			toAddr:    testAddr2.String(),
+			fromAddrs: []string{testAddr0.String(), testAddr1.String()},
 			permanent: false,
-			expected:  []sdk.AccAddress{testAddrs[2]},
+			expected:  []sdk.AccAddress{testAddr2},
 		},
 		{
 			name:      "bad from address",
-			toAddr:    testAddrs[0].String(),
+			toAddr:    testAddr0.String(),
 			fromAddrs: []string{"this one is a tunic"},
 			permanent: false,
-			expected:  []sdk.AccAddress{testAddrs[0]},
+			expected:  []sdk.AccAddress{testAddr0},
 		},
 	}
 
@@ -487,11 +486,9 @@ func TestMsgAcceptGetSigners(t *testing.T) {
 }
 
 func TestNewMsgDecline(t *testing.T) {
-	testAddrs := []sdk.AccAddress{
-		testAddr("nmd test addr 0"),
-		testAddr("nmd test addr 1"),
-		testAddr("nmd test addr 2"),
-	}
+	testAddr0 := makeTestAddr("nmd", 0)
+	testAddr1 := makeTestAddr("nmd", 1)
+
 	tests := []struct {
 		name      string
 		toAddr    sdk.AccAddress
@@ -501,67 +498,67 @@ func TestNewMsgDecline(t *testing.T) {
 	}{
 		{
 			name:      "control",
-			toAddr:    testAddrs[0],
-			fromAddrs: []string{testAddrs[1].String()},
+			toAddr:    testAddr0,
+			fromAddrs: []string{testAddr1.String()},
 			permanent: false,
 			expected: &MsgDecline{
-				ToAddress:     testAddrs[0].String(),
-				FromAddresses: []string{testAddrs[1].String()},
+				ToAddress:     testAddr0.String(),
+				FromAddresses: []string{testAddr1.String()},
 				Permanent:     false,
 			},
 		},
 		{
 			name:      "nil toAddr",
 			toAddr:    nil,
-			fromAddrs: []string{testAddrs[1].String()},
+			fromAddrs: []string{testAddr1.String()},
 			permanent: false,
 			expected: &MsgDecline{
 				ToAddress:     "",
-				FromAddresses: []string{testAddrs[1].String()},
+				FromAddresses: []string{testAddr1.String()},
 				Permanent:     false,
 			},
 		},
 		{
 			name:      "nil fromAddrsStrs",
-			toAddr:    testAddrs[1],
+			toAddr:    testAddr1,
 			fromAddrs: nil,
 			permanent: false,
 			expected: &MsgDecline{
-				ToAddress:     testAddrs[1].String(),
+				ToAddress:     testAddr1.String(),
 				FromAddresses: nil,
 				Permanent:     false,
 			},
 		},
 		{
 			name:      "empty fromAddrsStrs",
-			toAddr:    testAddrs[1],
+			toAddr:    testAddr1,
 			fromAddrs: []string{},
 			permanent: false,
 			expected: &MsgDecline{
-				ToAddress:     testAddrs[1].String(),
+				ToAddress:     testAddr1.String(),
 				FromAddresses: []string{},
 				Permanent:     false,
 			},
 		},
 		{
 			name:      "three bad fromAddrsStrs",
-			toAddr:    testAddrs[1],
+			toAddr:    testAddr1,
 			fromAddrs: []string{"one", "two", "three"},
 			permanent: false,
 			expected: &MsgDecline{
-				ToAddress:     testAddrs[1].String(),
+				ToAddress:     testAddr1.String(),
 				FromAddresses: []string{"one", "two", "three"},
 				Permanent:     false,
 			},
 		},
 		{
 			name:      "permanent",
-			toAddr:    testAddrs[1],
-			fromAddrs: []string{testAddrs[0].String()},
+			toAddr:    testAddr1,
+			fromAddrs: []string{testAddr0.String()},
 			permanent: true,
 			expected: &MsgDecline{
-				ToAddress:     testAddrs[1].String(),
-				FromAddresses: []string{testAddrs[0].String()},
+				ToAddress:     testAddr1.String(),
+				FromAddresses: []string{testAddr0.String()},
 				Permanent:     true,
 			},
 		},
@@ -575,12 +572,11 @@ func TestNewMsgDecline(t *testing.T) {
 	}
 }
 
-func TestMsgDeclineValidateBasic(t *testing.T) {
-	testAddrs := []string{
-		testAddr("mdvb test addr 0").String(),
-		testAddr("mdvb test addr 1").String(),
-		testAddr("mdvb test addr 2").String(),
-	}
+func TestMsgDecline_ValidateBasic(t *testing.T) {
+	testAddr0 := makeTestAddr("mdvb", 0).String()
+	testAddr1 := makeTestAddr("mdvb", 1).String()
+	testAddr2 := makeTestAddr("mdvb", 2).String()
+
 	tests := []struct {
 		name          string
 		toAddr        string
@@ -590,21 +586,21 @@ func TestMsgDeclineValidateBasic(t *testing.T) {
 	}{
 		{
 			name:          "control",
-			toAddr:        testAddrs[0],
-			fromAddrs:     []string{testAddrs[1]},
+			toAddr:        testAddr0,
+			fromAddrs:     []string{testAddr1},
 			permanent:     false,
 			expectedInErr: nil,
 		},
 		{
 			name:          "permanent",
-			toAddr:        testAddrs[0],
-			fromAddrs:     []string{testAddrs[1]},
+			toAddr:        testAddr0,
+			fromAddrs:     []string{testAddr1},
 			permanent:     true,
 			expectedInErr: nil,
 		},
 		{
 			name:          "permanent no from addresses",
-			toAddr:        testAddrs[2],
+			toAddr:        testAddr2,
 			fromAddrs:     []string{},
 			permanent:     true,
 			expectedInErr: []string{"at least one from address is required when permanent = true", "invalid value"},
@@ -612,42 +608,42 @@ func TestMsgDeclineValidateBasic(t *testing.T) {
 		{
 			name:          "empty to address",
 			toAddr:        "",
-			fromAddrs:     []string{testAddrs[1]},
+			fromAddrs:     []string{testAddr1},
 			permanent:     false,
 			expectedInErr: []string{"invalid to address"},
 		},
 		{
 			name:          "bad to address",
 			toAddr:        "this address isn't",
-			fromAddrs:     []string{testAddrs[0]},
+			fromAddrs:     []string{testAddr0},
 			permanent:     false,
 			expectedInErr: []string{"invalid to address"},
 		},
 		{
 			name:          "nil from addresses",
-			toAddr:        testAddrs[1],
+			toAddr:        testAddr1,
 			fromAddrs:     nil,
 			permanent:     false,
 			expectedInErr: nil,
 		},
 		{
 			name:          "empty from addresses",
-			toAddr:        testAddrs[1],
+			toAddr:        testAddr1,
 			fromAddrs:     []string{},
 			permanent:     false,
 			expectedInErr: nil,
 		},
 		{
 			name:          "bad from address",
-			toAddr:        testAddrs[0],
+			toAddr:        testAddr0,
 			fromAddrs:     []string{"this one is a tunic"},
 			permanent:     false,
 			expectedInErr: []string{"invalid from address[0]"},
 		},
 		{
 			name:          "bad third from address",
-			toAddr:        testAddrs[0],
-			fromAddrs:     []string{testAddrs[1], testAddrs[2], "Michael Jackson (he's bad)"},
+			toAddr:        testAddr0,
+			fromAddrs:     []string{testAddr1, testAddr2, "Michael Jackson (he's bad)"},
 			permanent:     false,
 			expectedInErr: []string{"invalid from address[2]"},
 		},
@@ -672,12 +668,11 @@ func TestMsgDeclineValidateBasic(t *testing.T) {
 	}
 }
 
-func TestMsgDeclineGetSigners(t *testing.T) {
-	testAddrs := []sdk.AccAddress{
-		testAddr("mdgs test addr 0"),
-		testAddr("mdgs test addr 1"),
-		testAddr("mdgs test addr 2"),
-	}
+func TestMsgDecline_GetSigners(t *testing.T) {
+	testAddr0 := makeTestAddr("mdgs", 0)
+	testAddr1 := makeTestAddr("mdgs", 1)
+	testAddr2 := makeTestAddr("mdgs", 2)
+
 	tests := []struct {
 		name      string
 		toAddr    string
@@ -687,52 +682,52 @@ func TestMsgDeclineGetSigners(t *testing.T) {
 	}{
 		{
 			name:      "control",
-			toAddr:    testAddrs[0].String(),
-			fromAddrs: []string{testAddrs[1].String()},
+			toAddr:    testAddr0.String(),
+			fromAddrs: []string{testAddr1.String()},
 			permanent: false,
-			expected:  []sdk.AccAddress{testAddrs[0]},
+			expected:  []sdk.AccAddress{testAddr0},
 		},
 		{
 			name:      "permanent",
-			toAddr:    testAddrs[0].String(),
-			fromAddrs: []string{testAddrs[1].String()},
+			toAddr:    testAddr0.String(),
+			fromAddrs: []string{testAddr1.String()},
 			permanent: true,
-			expected:  []sdk.AccAddress{testAddrs[0]},
+			expected:  []sdk.AccAddress{testAddr0},
 		},
 		{
 			name:      "empty to address",
 			toAddr:    "",
-			fromAddrs: []string{testAddrs[1].String()},
+			fromAddrs: []string{testAddr1.String()},
 			permanent: false,
 			expected:  []sdk.AccAddress{{}},
 		},
 		{
 			name:      "bad to address",
 			toAddr:    "this address isn't",
-			fromAddrs: []string{testAddrs[0].String()},
+			fromAddrs: []string{testAddr0.String()},
 			permanent: false,
 			expected:  []sdk.AccAddress{nil},
 		},
 		{
 			name:      "empty from addresses",
-			toAddr:    testAddrs[1].String(),
+			toAddr:    testAddr1.String(),
 			fromAddrs: []string{},
 			permanent: false,
-			expected:  []sdk.AccAddress{testAddrs[1]},
+			expected:  []sdk.AccAddress{testAddr1},
 		},
 		{
 			name:      "two from addresses",
-			toAddr:    testAddrs[2].String(),
-			fromAddrs: []string{testAddrs[0].String(), testAddrs[1].String()},
+			toAddr:    testAddr2.String(),
+			fromAddrs: []string{testAddr0.String(), testAddr1.String()},
 			permanent: false,
-			expected:  []sdk.AccAddress{testAddrs[2]},
+			expected:  []sdk.AccAddress{testAddr2},
 		},
 		{
 			name:      "bad from address",
-			toAddr:    testAddrs[0].String(),
+			toAddr:    testAddr0.String(),
 			fromAddrs: []string{"this one is a tunic"},
 			permanent: false,
-			expected:  []sdk.AccAddress{testAddrs[0]},
+			expected:  []sdk.AccAddress{testAddr0},
 		},
 	}
 
@@ -756,14 +751,13 @@ func TestMsgDeclineGetSigners(t *testing.T) {
 }
 
 func TestNewMsgUpdateAutoResponses(t *testing.T) {
-	testAddrs := []sdk.AccAddress{
-		testAddr("nmuar test addr 0"),
-		testAddr("nmuar test addr 1"),
-		testAddr("nmuar test addr 2"),
-		testAddr("nmuar test addr 3"),
-		testAddr("nmuar test addr 4"),
-		testAddr("nmuar test addr 5"),
-	}
+	testAddr0 := makeTestAddr("nmuar", 0)
+	testAddr1 := makeTestAddr("nmuar", 1)
+	testAddr2 := makeTestAddr("nmuar", 2)
+	testAddr3 := makeTestAddr("nmuar", 3)
+	testAddr4 := makeTestAddr("nmuar", 4)
+	testAddr5 := makeTestAddr("nmuar", 5)
+
 	tests := []struct {
 		name     string
 		toAddr   sdk.AccAddress
@@ -772,76 +766,76 @@ func TestNewMsgUpdateAutoResponses(t *testing.T) {
 	}{
 		{
 			name:    "empty updates",
-			toAddr:  testAddrs[0],
+			toAddr:  testAddr0,
 			updates: []*AutoResponseUpdate{},
 			expected: &MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0].String(),
+				ToAddress: testAddr0.String(),
 				Updates:   []*AutoResponseUpdate{},
 			},
 		},
 		{
 			name:    "one update no to addr",
 			toAddr:  nil,
-			updates: []*AutoResponseUpdate{{FromAddress: testAddrs[2].String(), Response: AUTO_RESPONSE_ACCEPT}},
+			updates: []*AutoResponseUpdate{{FromAddress: testAddr2.String(), Response: AUTO_RESPONSE_ACCEPT}},
 			expected: &MsgUpdateAutoResponses{
 				ToAddress: "",
-				Updates:   []*AutoResponseUpdate{{FromAddress: testAddrs[2].String(), Response: AUTO_RESPONSE_ACCEPT}},
+				Updates:   []*AutoResponseUpdate{{FromAddress: testAddr2.String(), Response: AUTO_RESPONSE_ACCEPT}},
 			},
 		},
 		{
 			name:    "one update accept",
-			toAddr:  testAddrs[1],
-			updates: []*AutoResponseUpdate{{FromAddress: testAddrs[2].String(), Response: AUTO_RESPONSE_ACCEPT}},
+			toAddr:  testAddr1,
+			updates: []*AutoResponseUpdate{{FromAddress: testAddr2.String(), Response: AUTO_RESPONSE_ACCEPT}},
 			expected: &MsgUpdateAutoResponses{
-				ToAddress: testAddrs[1].String(),
-				Updates:   []*AutoResponseUpdate{{FromAddress: testAddrs[2].String(), Response: AUTO_RESPONSE_ACCEPT}},
+				ToAddress: testAddr1.String(),
+				Updates:   []*AutoResponseUpdate{{FromAddress: testAddr2.String(), Response: AUTO_RESPONSE_ACCEPT}},
 			},
 		},
 		{
 			name:    "one update decline",
-			toAddr:  testAddrs[2],
-			updates: []*AutoResponseUpdate{{FromAddress: testAddrs[1].String(), Response: AUTO_RESPONSE_DECLINE}},
+			toAddr:  testAddr2,
+			updates: []*AutoResponseUpdate{{FromAddress: testAddr1.String(), Response: AUTO_RESPONSE_DECLINE}},
 			expected: &MsgUpdateAutoResponses{
-				ToAddress: testAddrs[2].String(),
-				Updates:   []*AutoResponseUpdate{{FromAddress: testAddrs[1].String(), Response: AUTO_RESPONSE_DECLINE}},
+				ToAddress: testAddr2.String(),
+				Updates:   []*AutoResponseUpdate{{FromAddress: testAddr1.String(), Response: AUTO_RESPONSE_DECLINE}},
 			},
 		},
 		{
 			name:    "one update unspecified",
-			toAddr:  testAddrs[0],
-			updates: []*AutoResponseUpdate{{FromAddress: testAddrs[2].String(), Response: AUTO_RESPONSE_UNSPECIFIED}},
+			toAddr:  testAddr0,
+			updates: []*AutoResponseUpdate{{FromAddress: testAddr2.String(), Response: AUTO_RESPONSE_UNSPECIFIED}},
 			expected: &MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0].String(),
-				Updates:   []*AutoResponseUpdate{{FromAddress: testAddrs[2].String(), Response: AUTO_RESPONSE_UNSPECIFIED}},
+				ToAddress: testAddr0.String(),
+				Updates:   []*AutoResponseUpdate{{FromAddress: testAddr2.String(), Response: AUTO_RESPONSE_UNSPECIFIED}},
 			},
 		},
 		{
 			name:    "one update unspecified",
-			toAddr:  testAddrs[0],
-			updates: []*AutoResponseUpdate{{FromAddress: testAddrs[2].String(), Response: AUTO_RESPONSE_UNSPECIFIED}},
+			toAddr:  testAddr0,
+			updates: []*AutoResponseUpdate{{FromAddress: testAddr2.String(), Response: AUTO_RESPONSE_UNSPECIFIED}},
 			expected: &MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0].String(),
-				Updates:   []*AutoResponseUpdate{{FromAddress: testAddrs[2].String(), Response: AUTO_RESPONSE_UNSPECIFIED}},
+				ToAddress: testAddr0.String(),
+				Updates:   []*AutoResponseUpdate{{FromAddress: testAddr2.String(), Response: AUTO_RESPONSE_UNSPECIFIED}},
 			},
 		},
 		{
 			name:   "five updates",
-			toAddr: testAddrs[0],
+			toAddr: testAddr0,
 			updates: []*AutoResponseUpdate{
-				{FromAddress: testAddrs[1].String(), Response: AUTO_RESPONSE_ACCEPT},
-				{FromAddress: testAddrs[2].String(), Response: AUTO_RESPONSE_DECLINE},
-				{FromAddress: testAddrs[3].String(), Response: AUTO_RESPONSE_ACCEPT},
-				{FromAddress: testAddrs[4].String(), Response: AUTO_RESPONSE_UNSPECIFIED},
-				{FromAddress: testAddrs[5].String(), Response: AUTO_RESPONSE_ACCEPT},
+				{FromAddress: testAddr1.String(), Response: AUTO_RESPONSE_ACCEPT},
+				{FromAddress: testAddr2.String(), Response: AUTO_RESPONSE_DECLINE},
+				{FromAddress: testAddr3.String(), Response: AUTO_RESPONSE_ACCEPT},
+				{FromAddress: testAddr4.String(), Response: AUTO_RESPONSE_UNSPECIFIED},
+				{FromAddress: testAddr5.String(), Response: AUTO_RESPONSE_ACCEPT},
 			},
 			expected: &MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0].String(),
+				ToAddress: testAddr0.String(),
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[1].String(), Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[2].String(), Response: AUTO_RESPONSE_DECLINE},
-					{FromAddress: testAddrs[3].String(), Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[4].String(), Response: AUTO_RESPONSE_UNSPECIFIED},
-					{FromAddress: testAddrs[5].String(), Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr1.String(), Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr2.String(), Response: AUTO_RESPONSE_DECLINE},
+					{FromAddress: testAddr3.String(), Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr4.String(), Response: AUTO_RESPONSE_UNSPECIFIED},
+					{FromAddress: testAddr5.String(), Response: AUTO_RESPONSE_ACCEPT},
 				},
 			},
 		},
@@ -855,15 +849,14 @@ func TestNewMsgUpdateAutoResponses(t *testing.T) {
 	}
 }
 
-func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
-	testAddrs := []string{
-		testAddr("muarvb test addr 0").String(),
-		testAddr("muarvb test addr 1").String(),
-		testAddr("muarvb test addr 2").String(),
-		testAddr("muarvb test addr 3").String(),
-		testAddr("muarvb test addr 4").String(),
-		testAddr("muarvb test addr 5").String(),
-	}
+func TestMsgUpdateAutoResponses_ValidateBasic(t *testing.T) {
+	testAddr0 := makeTestAddr("muarvb", 0).String()
+	testAddr1 := makeTestAddr("muarvb", 1).String()
+	testAddr2 := makeTestAddr("muarvb", 2).String()
+	testAddr3 := makeTestAddr("muarvb", 3).String()
+	testAddr4 := makeTestAddr("muarvb", 4).String()
+	testAddr5 := makeTestAddr("muarvb", 5).String()
+
 	tests := []struct {
 		name          string
 		orig          MsgUpdateAutoResponses
@@ -872,9 +865,9 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "control accept",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[1], Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr1, Response: AUTO_RESPONSE_ACCEPT},
 				},
 			},
 			expectedInErr: nil,
@@ -882,9 +875,9 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "control decline",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[2], Response: AUTO_RESPONSE_DECLINE},
+					{FromAddress: testAddr2, Response: AUTO_RESPONSE_DECLINE},
 				},
 			},
 			expectedInErr: nil,
@@ -892,9 +885,9 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "control unspecified",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[3], Response: AUTO_RESPONSE_UNSPECIFIED},
+					{FromAddress: testAddr3, Response: AUTO_RESPONSE_UNSPECIFIED},
 				},
 			},
 			expectedInErr: nil,
@@ -904,7 +897,7 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 			orig: MsgUpdateAutoResponses{
 				ToAddress: "not really that bad",
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[1], Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr1, Response: AUTO_RESPONSE_ACCEPT},
 				},
 			},
 			expectedInErr: []string{"invalid to address"},
@@ -914,7 +907,7 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 			orig: MsgUpdateAutoResponses{
 				ToAddress: "",
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[1], Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr1, Response: AUTO_RESPONSE_ACCEPT},
 				},
 			},
 			expectedInErr: []string{"invalid to address"},
@@ -922,7 +915,7 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "nil updates",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates:   nil,
 			},
 			expectedInErr: []string{"invalid value", "no updates"},
@@ -930,7 +923,7 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "empty updates",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates:   []*AutoResponseUpdate{},
 			},
 			expectedInErr: []string{"invalid value", "no updates"},
@@ -938,7 +931,7 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "one update bad from address",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates: []*AutoResponseUpdate{
 					{FromAddress: "Okay, I'm bad again.", Response: AUTO_RESPONSE_ACCEPT},
 				},
@@ -948,7 +941,7 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "one update empty from address",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates: []*AutoResponseUpdate{
 					{FromAddress: "", Response: AUTO_RESPONSE_ACCEPT},
 				},
@@ -958,9 +951,9 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "one update negative resp",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[1], Response: -1},
+					{FromAddress: testAddr1, Response: -1},
 				},
 			},
 			expectedInErr: []string{"invalid update 1", "unknown auto-response value: -1"},
@@ -968,9 +961,9 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "one update resp too large",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[2], Response: 900},
+					{FromAddress: testAddr2, Response: 900},
 				},
 			},
 			expectedInErr: []string{"invalid update 1", "unknown auto-response value: 900"},
@@ -978,13 +971,13 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "five updates third bad from address",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[1], Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[2], Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr1, Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr2, Response: AUTO_RESPONSE_ACCEPT},
 					{FromAddress: "still not good", Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[4], Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[5], Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr4, Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr5, Response: AUTO_RESPONSE_ACCEPT},
 				},
 			},
 			expectedInErr: []string{"invalid update 3", "invalid from address"},
@@ -992,13 +985,13 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "five updates fourth empty from address",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[1], Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[2], Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[3], Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr1, Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr2, Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr3, Response: AUTO_RESPONSE_ACCEPT},
 					{FromAddress: "", Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[5], Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr5, Response: AUTO_RESPONSE_ACCEPT},
 				},
 			},
 			expectedInErr: []string{"invalid update 4", "invalid from address"},
@@ -1006,13 +999,13 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "five updates first negative resp",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[1], Response: -88},
-					{FromAddress: testAddrs[2], Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[3], Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[4], Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[5], Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr1, Response: -88},
+					{FromAddress: testAddr2, Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr3, Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr4, Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr5, Response: AUTO_RESPONSE_ACCEPT},
 				},
 			},
 			expectedInErr: []string{"invalid update 1", "unknown auto-response value: -88"},
@@ -1020,13 +1013,13 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 		{
 			name: "five update last resp too large",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0],
+				ToAddress: testAddr0,
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[1], Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[2], Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[3], Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[4], Response: AUTO_RESPONSE_ACCEPT},
-					{FromAddress: testAddrs[5], Response: 55},
+					{FromAddress: testAddr1, Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr2, Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr3, Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr4, Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr5, Response: 55},
 				},
 			},
 			expectedInErr: []string{"invalid update 5", "unknown auto-response value: 55"},
@@ -1055,12 +1048,11 @@ func TestMsgUpdateAutoResponsesValidateBasic(t *testing.T) {
 	}
 }
 
-func TestMsgUpdateAutoResponsesGetSigners(t *testing.T) {
-	testAddrs := []sdk.AccAddress{
-		testAddr("muargs test addr 0"),
-		testAddr("muargs test addr 1"),
-		testAddr("muargs test addr 2"),
-	}
+func TestMsgUpdateAutoResponses_GetSigners(t *testing.T) {
+	testAddr0 := makeTestAddr("muargs", 0)
+	testAddr1 := makeTestAddr("muargs", 1)
+	testAddr2 := makeTestAddr("muargs", 2)
+
 	tests := []struct {
 		name     string
 		orig     MsgUpdateAutoResponses
@@ -1069,19 +1061,19 @@ func TestMsgUpdateAutoResponsesGetSigners(t *testing.T) {
 		{
 			name: "control",
 			orig: MsgUpdateAutoResponses{
-				ToAddress: testAddrs[0].String(),
+				ToAddress: testAddr0.String(),
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[1].String(), Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr1.String(), Response: AUTO_RESPONSE_ACCEPT},
 				},
 			},
-			expected: []sdk.AccAddress{testAddrs[0]},
+			expected: []sdk.AccAddress{testAddr0},
 		},
 		{
 			name: "bad addr",
 			orig: MsgUpdateAutoResponses{
 				ToAddress: "bad bad bad",
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[2].String(), Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr2.String(), Response: AUTO_RESPONSE_ACCEPT},
 				},
 			},
 			expected: []sdk.AccAddress{nil},
@@ -1091,7 +1083,7 @@ func TestMsgUpdateAutoResponsesGetSigners(t *testing.T) {
 			orig: MsgUpdateAutoResponses{
 				ToAddress: "",
 				Updates: []*AutoResponseUpdate{
-					{FromAddress: testAddrs[1].String(), Response: AUTO_RESPONSE_ACCEPT},
+					{FromAddress: testAddr1.String(), Response: AUTO_RESPONSE_ACCEPT},
 				},
 			},
 			expected: []sdk.AccAddress{{}},
