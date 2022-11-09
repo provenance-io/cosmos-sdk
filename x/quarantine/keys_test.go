@@ -477,111 +477,6 @@ func TestCreateRecordToAddrPrefix(t *testing.T) {
 	}
 }
 
-func TestCreateRecordSuffix(t *testing.T) {
-	testAddr0 := makeTestAddr("crs", 0)
-	testAddr1 := makeTestAddr("crs", 1)
-	testAddr2 := makeTestAddr("crs", 2)
-	testAddrs := []sdk.AccAddress{testAddr0, testAddr1, testAddr2}
-	badAddr := makeBadAddr("crs", 3)
-
-	t.Run("panics if no addrs", func(t *testing.T) {
-		assert.PanicsWithError(t, "at least one fromAddr is required: internal logic error",
-			func() { createRecordSuffix([]sdk.AccAddress{}) },
-			"createRecordSuffix([]sdk.AccAddress{})",
-		)
-	})
-
-	t.Run("panics with nil addrs", func(t *testing.T) {
-		assert.PanicsWithError(t, "at least one fromAddr is required: internal logic error",
-			func() { createRecordSuffix(nil) },
-			"createRecordSuffix(nil)",
-		)
-	})
-
-	createRecordSuffixAndAssertInputUnchanged := func(t *testing.T, input []sdk.AccAddress, msg string, args ...interface{}) []byte {
-		t.Helper()
-		msgAndArgs := []interface{}{msg + " input before and after"}
-		msgAndArgs = append(msgAndArgs, args...)
-		var orig []sdk.AccAddress
-		if input != nil {
-			orig = make([]sdk.AccAddress, len(input))
-			for i, addr := range input {
-				orig[i] = make(sdk.AccAddress, len(addr))
-				copy(orig[i], addr)
-			}
-		}
-		actual := createRecordSuffix(input)
-		assert.Equal(t, orig, input, msgAndArgs...)
-		return actual
-	}
-
-	t.Run("single addrs are unchanged", func(t *testing.T) {
-		for i, addr := range testAddrs {
-			expected := make([]byte, len(addr))
-			copy(expected, addr)
-
-			actual := createRecordSuffixAndAssertInputUnchanged(t, []sdk.AccAddress{addr}, "addr %d", i)
-			assert.Equal(t, expected, actual, "addr %d", i)
-		}
-	})
-
-	t.Run("long addr is truncated", func(t *testing.T) {
-		expected := make([]byte, 32)
-		copy(expected, badAddr[:32])
-
-		actual := createRecordSuffixAndAssertInputUnchanged(t, []sdk.AccAddress{badAddr}, "bad addr")
-		assert.Equal(t, expected, actual, "bad addr as suffix")
-	})
-
-	t.Run("two addrs order does not matter", func(t *testing.T) {
-		input1 := []sdk.AccAddress{testAddr0, testAddr1}
-		input2 := []sdk.AccAddress{testAddr1, testAddr0}
-		expected := createRecordSuffixAndAssertInputUnchanged(t, input1, "addrs 0 then 1")
-		actual := createRecordSuffixAndAssertInputUnchanged(t, input2, "addrs 1 then 0")
-		assert.Equal(t, expected, actual, "addrs 0 then 1, vs 1 then 0")
-	})
-
-	t.Run("three addrs order does not matter", func(t *testing.T) {
-		inputTestAddrsIndexes := [][]int{
-			{0, 1, 2},
-			{0, 2, 1},
-			{1, 0, 2},
-			{1, 2, 0},
-			{2, 0, 1},
-			{2, 1, 0},
-		}
-		inputs := make([][]sdk.AccAddress, len(inputTestAddrsIndexes))
-		outputs := make([][]byte, len(inputTestAddrsIndexes))
-		for i, taIndexes := range inputTestAddrsIndexes {
-			inputs[i] = make([]sdk.AccAddress, len(taIndexes))
-			for j, ind := range taIndexes {
-				inputs[i][j] = testAddrs[ind]
-			}
-			outputs[i] = createRecordSuffixAndAssertInputUnchanged(t, inputs[i], "addrs %v", taIndexes)
-		}
-		for i := 0; i < len(outputs)-1; i++ {
-			for j := i + 1; j < len(outputs); j++ {
-				assert.Equal(t, outputs[i], outputs[j], "test addrs %v vs %v", inputTestAddrsIndexes[i], inputTestAddrsIndexes[j])
-			}
-		}
-	})
-
-	t.Run("two addrs different alone vs together", func(t *testing.T) {
-		input1 := []sdk.AccAddress{testAddr1}
-		input2 := []sdk.AccAddress{testAddr2}
-		inputBoth := []sdk.AccAddress{testAddr1, testAddr2}
-		actual1 := createRecordSuffixAndAssertInputUnchanged(t, input1, "addr 1")
-		actual2 := createRecordSuffixAndAssertInputUnchanged(t, input2, "addr 2")
-		actualBoth := createRecordSuffixAndAssertInputUnchanged(t, inputBoth, "both")
-
-		assert.NotEqual(t, actual1, actual2, "addr 1 vs addr 2")
-		assert.NotEqual(t, actual1, actualBoth, "addr 1 vs both")
-		assert.NotEqual(t, actual2, actualBoth, "addr 2 vs both")
-		assert.NotContains(t, actualBoth, actual1, "both vs addr 1")
-		assert.NotContains(t, actualBoth, actual2, "both vs addr 2")
-	})
-}
-
 func TestCreateRecordKey(t *testing.T) {
 	expectedPrefix := RecordPrefix
 	testAddr0 := makeTestAddr("crk", 0)
@@ -686,6 +581,111 @@ func TestCreateRecordKey(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateRecordSuffix(t *testing.T) {
+	testAddr0 := makeTestAddr("crs", 0)
+	testAddr1 := makeTestAddr("crs", 1)
+	testAddr2 := makeTestAddr("crs", 2)
+	testAddrs := []sdk.AccAddress{testAddr0, testAddr1, testAddr2}
+	badAddr := makeBadAddr("crs", 3)
+
+	t.Run("panics if no addrs", func(t *testing.T) {
+		assert.PanicsWithError(t, "at least one fromAddr is required: internal logic error",
+			func() { createRecordSuffix([]sdk.AccAddress{}) },
+			"createRecordSuffix([]sdk.AccAddress{})",
+		)
+	})
+
+	t.Run("panics with nil addrs", func(t *testing.T) {
+		assert.PanicsWithError(t, "at least one fromAddr is required: internal logic error",
+			func() { createRecordSuffix(nil) },
+			"createRecordSuffix(nil)",
+		)
+	})
+
+	createRecordSuffixAndAssertInputUnchanged := func(t *testing.T, input []sdk.AccAddress, msg string, args ...interface{}) []byte {
+		t.Helper()
+		msgAndArgs := []interface{}{msg + " input before and after"}
+		msgAndArgs = append(msgAndArgs, args...)
+		var orig []sdk.AccAddress
+		if input != nil {
+			orig = make([]sdk.AccAddress, len(input))
+			for i, addr := range input {
+				orig[i] = make(sdk.AccAddress, len(addr))
+				copy(orig[i], addr)
+			}
+		}
+		actual := createRecordSuffix(input)
+		assert.Equal(t, orig, input, msgAndArgs...)
+		return actual
+	}
+
+	t.Run("single addrs are unchanged", func(t *testing.T) {
+		for i, addr := range testAddrs {
+			expected := make([]byte, len(addr))
+			copy(expected, addr)
+
+			actual := createRecordSuffixAndAssertInputUnchanged(t, []sdk.AccAddress{addr}, "addr %d", i)
+			assert.Equal(t, expected, actual, "addr %d", i)
+		}
+	})
+
+	t.Run("long addr is truncated", func(t *testing.T) {
+		expected := make([]byte, 32)
+		copy(expected, badAddr[:32])
+
+		actual := createRecordSuffixAndAssertInputUnchanged(t, []sdk.AccAddress{badAddr}, "bad addr")
+		assert.Equal(t, expected, actual, "bad addr as suffix")
+	})
+
+	t.Run("two addrs order does not matter", func(t *testing.T) {
+		input1 := []sdk.AccAddress{testAddr0, testAddr1}
+		input2 := []sdk.AccAddress{testAddr1, testAddr0}
+		expected := createRecordSuffixAndAssertInputUnchanged(t, input1, "addrs 0 then 1")
+		actual := createRecordSuffixAndAssertInputUnchanged(t, input2, "addrs 1 then 0")
+		assert.Equal(t, expected, actual, "addrs 0 then 1, vs 1 then 0")
+	})
+
+	t.Run("three addrs order does not matter", func(t *testing.T) {
+		inputTestAddrsIndexes := [][]int{
+			{0, 1, 2},
+			{0, 2, 1},
+			{1, 0, 2},
+			{1, 2, 0},
+			{2, 0, 1},
+			{2, 1, 0},
+		}
+		inputs := make([][]sdk.AccAddress, len(inputTestAddrsIndexes))
+		outputs := make([][]byte, len(inputTestAddrsIndexes))
+		for i, taIndexes := range inputTestAddrsIndexes {
+			inputs[i] = make([]sdk.AccAddress, len(taIndexes))
+			for j, ind := range taIndexes {
+				inputs[i][j] = testAddrs[ind]
+			}
+			outputs[i] = createRecordSuffixAndAssertInputUnchanged(t, inputs[i], "addrs %v", taIndexes)
+		}
+		for i := 0; i < len(outputs)-1; i++ {
+			for j := i + 1; j < len(outputs); j++ {
+				assert.Equal(t, outputs[i], outputs[j], "test addrs %v vs %v", inputTestAddrsIndexes[i], inputTestAddrsIndexes[j])
+			}
+		}
+	})
+
+	t.Run("two addrs different alone vs together", func(t *testing.T) {
+		input1 := []sdk.AccAddress{testAddr1}
+		input2 := []sdk.AccAddress{testAddr2}
+		inputBoth := []sdk.AccAddress{testAddr1, testAddr2}
+		actual1 := createRecordSuffixAndAssertInputUnchanged(t, input1, "addr 1")
+		actual2 := createRecordSuffixAndAssertInputUnchanged(t, input2, "addr 2")
+		actualBoth := createRecordSuffixAndAssertInputUnchanged(t, inputBoth, "both")
+
+		assert.NotEqual(t, actual1, actual2, "addr 1 vs addr 2")
+		assert.NotEqual(t, actual1, actualBoth, "addr 1 vs both")
+		assert.NotEqual(t, actual2, actualBoth, "addr 2 vs both")
+		assert.NotContains(t, actualBoth, actual1, "both vs addr 1")
+		assert.NotContains(t, actualBoth, actual2, "both vs addr 2")
+	})
 }
 
 func TestParseRecordKey(t *testing.T) {
