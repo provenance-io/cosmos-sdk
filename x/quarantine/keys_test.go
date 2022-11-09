@@ -36,6 +36,132 @@ func TestPrefixValues(t *testing.T) {
 	}
 }
 
+func TestMakeKey(t *testing.T) {
+	tests := []struct {
+		name  string
+		part1 []byte
+		part2 []byte
+		exp   []byte
+	}{
+		{
+			name:  "nil + nil",
+			part1: nil,
+			part2: nil,
+			exp:   []byte{},
+		},
+		{
+			name:  "nil + empty",
+			part1: nil,
+			part2: []byte{},
+			exp:   []byte{},
+		},
+		{
+			name:  "empty + nil",
+			part1: []byte{},
+			part2: nil,
+			exp:   []byte{},
+		},
+		{
+			name:  "empty + empty",
+			part1: []byte{},
+			part2: []byte{},
+			exp:   []byte{},
+		},
+		{
+			name:  "nil + one",
+			part1: nil,
+			part2: []byte{0x70},
+			exp:   []byte{0x70},
+		},
+		{
+			name:  "empty + one",
+			part1: []byte{},
+			part2: []byte{0x70},
+			exp:   []byte{0x70},
+		},
+		{
+			name:  "one + one",
+			part1: []byte{0x69},
+			part2: []byte{0x70},
+			exp:   []byte{0x69, 0x70},
+		},
+
+		{
+			name:  "nil + five",
+			part1: nil,
+			part2: []byte{0x70, 0x70, 0x70, 0x70, 0x70},
+			exp:   []byte{0x70, 0x70, 0x70, 0x70, 0x70},
+		},
+		{
+			name:  "empty + five",
+			part1: []byte{},
+			part2: []byte{0x70, 0x70, 0x70, 0x70, 0x70},
+			exp:   []byte{0x70, 0x70, 0x70, 0x70, 0x70},
+		},
+		{
+			name:  "one + five",
+			part1: []byte{0x69},
+			part2: []byte{0x70, 0x70, 0x70, 0x70, 0x70},
+			exp:   []byte{0x69, 0x70, 0x70, 0x70, 0x70, 0x70},
+		},
+		{
+			name:  "six + five",
+			part1: []byte{0x68, 0x68, 0x68, 0x68, 0x68, 0x68},
+			part2: []byte{0x70, 0x70, 0x70, 0x70, 0x70},
+			exp:   []byte{0x68, 0x68, 0x68, 0x68, 0x68, 0x68, 0x70, 0x70, 0x70, 0x70, 0x70},
+		},
+		{
+			name:  "six + one",
+			part1: []byte{0x68, 0x68, 0x68, 0x68, 0x68, 0x68},
+			part2: []byte{0x70},
+			exp:   []byte{0x68, 0x68, 0x68, 0x68, 0x68, 0x68, 0x70},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			origPart1 := makeCopyOfByteSlice(tc.part1)
+			origPart2 := makeCopyOfByteSlice(tc.part2)
+			actual := MakeKey(tc.part1, tc.part2)
+			actualCopy := makeCopyOfByteSlice(actual)
+			assert.Equal(t, tc.exp, actual, "MakeKey result")
+			assert.Equal(t, origPart1, tc.part1, "part1 before and after MakeKey")
+			assert.Equal(t, origPart2, tc.part2, "part2 before and after MakeKey")
+			if len(tc.part1) > 0 {
+				// Make sure the result doesn't change if part1 is later changed.
+				for i := range tc.part1 {
+					tc.part1[i]++
+				}
+				assert.Equal(t, actualCopy, actual, "MakeKey result after changing each byte of part1 slice")
+				for i := range tc.part1 {
+					tc.part1[i]--
+				}
+			}
+			if len(tc.part2) > 0 {
+				// Make sure the result doesn't change if part2 is later changed.
+				for i := range tc.part2 {
+					tc.part2[i]++
+				}
+				assert.Equal(t, actualCopy, actual, "MakeKey result after changing each byte of part2 slice")
+				for i := range tc.part2 {
+					tc.part2[i]--
+				}
+			}
+			if len(actual) > 0 {
+				// Make sure the parts don't change if the result is later changed.
+				for i := range actual {
+					actual[i]++
+				}
+				assert.Equal(t, origPart1, tc.part1, "part1 after changing each byte of result slice")
+				assert.Equal(t, origPart2, tc.part2, "part2 after changing each byte of result slice")
+				for i := range actual {
+					actual[i]--
+				}
+			}
+		})
+	}
+}
+
 func TestCreateOptInKey(t *testing.T) {
 	expectedPrefix := OptInPrefix
 	testAddr0 := makeTestAddr("coik", 0)

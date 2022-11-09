@@ -32,13 +32,18 @@ var (
 	RecordIndexPrefix = []byte{0x03}
 )
 
+// MakeKey concatenates the two byte slices into a new byte slice.
+func MakeKey(part1, part2 []byte) []byte {
+	rv := make([]byte, len(part1)+len(part2))
+	copy(rv, part1)
+	copy(rv[len(part1):], part2)
+	return rv
+}
+
 // CreateOptInKey creates the key for a quarantine opt-in record.
 func CreateOptInKey(toAddr sdk.AccAddress) []byte {
 	toAddrBz := address.MustLengthPrefix(toAddr)
-	key := make([]byte, len(OptInPrefix)+len(toAddrBz))
-	copy(key, OptInPrefix)
-	copy(key[len(OptInPrefix):], toAddrBz)
-	return key
+	return MakeKey(OptInPrefix, toAddrBz)
 }
 
 // ParseOptInKey extracts the account address from the provided quarantine opt-in key.
@@ -54,20 +59,14 @@ func ParseOptInKey(key []byte) (toAddr sdk.AccAddress) {
 // CreateAutoResponseToAddrPrefix creates a prefix for the quarantine auto-responses for a receiving address.
 func CreateAutoResponseToAddrPrefix(toAddr sdk.AccAddress) []byte {
 	toAddrBz := address.MustLengthPrefix(toAddr)
-	key := make([]byte, len(AutoResponsePrefix)+len(toAddrBz))
-	copy(key, AutoResponsePrefix)
-	copy(key[len(AutoResponsePrefix):], toAddrBz)
-	return key
+	return MakeKey(AutoResponsePrefix, toAddrBz)
 }
 
 // CreateAutoResponseKey creates the key for a quarantine auto-response.
 func CreateAutoResponseKey(toAddr, fromAddr sdk.AccAddress) []byte {
 	toAddrPreBz := CreateAutoResponseToAddrPrefix(toAddr)
 	fromAddrBz := address.MustLengthPrefix(fromAddr)
-	key := make([]byte, len(toAddrPreBz)+len(fromAddrBz))
-	copy(key, toAddrPreBz)
-	copy(key[len(toAddrPreBz):], fromAddrBz)
-	return key
+	return MakeKey(toAddrPreBz, fromAddrBz)
 }
 
 // ParseAutoResponseKey extracts the to address and from address from the provided quarantine auto-response key.
@@ -87,10 +86,7 @@ func ParseAutoResponseKey(key []byte) (toAddr, fromAddr sdk.AccAddress) {
 // CreateRecordToAddrPrefix creates a prefix for the quarantine funds for a receiving address.
 func CreateRecordToAddrPrefix(toAddr sdk.AccAddress) []byte {
 	toAddrBz := address.MustLengthPrefix(toAddr)
-	key := make([]byte, len(RecordPrefix)+len(toAddrBz))
-	copy(key, RecordPrefix)
-	copy(key[len(RecordPrefix):], toAddrBz)
-	return key
+	return MakeKey(RecordPrefix, toAddrBz)
 }
 
 // CreateRecordKey creates the key for a quarantine record.
@@ -104,10 +100,7 @@ func CreateRecordKey(toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) []byte 
 	// as a single "from address" to create the key with that suffix.
 	toAddrPreBz := CreateRecordToAddrPrefix(toAddr)
 	recordId := address.MustLengthPrefix(createRecordSuffix(fromAddrs))
-	key := make([]byte, len(toAddrPreBz)+len(recordId))
-	copy(key, toAddrPreBz)
-	copy(key[len(toAddrPreBz):], recordId)
-	return key
+	return MakeKey(toAddrPreBz, recordId)
 }
 
 // createRecordSuffix creates a single "address" to use for the provided from addresses.
@@ -163,10 +156,7 @@ func ParseRecordKey(key []byte) (toAddr, recordSuffix sdk.AccAddress) {
 // CreateRecordIndexToAddrPrefix creates a prefix for the quarantine record index entries for a receiving address.
 func CreateRecordIndexToAddrPrefix(toAddr sdk.AccAddress) []byte {
 	toAddrBz := address.MustLengthPrefix(toAddr)
-	key := make([]byte, len(RecordIndexPrefix)+len(toAddrBz))
-	copy(key, RecordIndexPrefix)
-	copy(key[len(RecordIndexPrefix):], toAddrBz)
-	return key
+	return MakeKey(RecordIndexPrefix, toAddrBz)
 }
 
 // CreateRecordIndexKey creates the key for the quarantine record suffix index.
@@ -175,10 +165,7 @@ func CreateRecordIndexKey(toAddr, fromAddr sdk.AccAddress) []byte {
 	// as a single "from address" to create the key with that suffix.
 	toAddrPreBz := CreateRecordIndexToAddrPrefix(toAddr)
 	recordId := address.MustLengthPrefix(fromAddr)
-	key := make([]byte, len(toAddrPreBz)+len(recordId))
-	copy(key, toAddrPreBz)
-	copy(key[len(toAddrPreBz):], recordId)
-	return key
+	return MakeKey(toAddrPreBz, recordId)
 }
 
 // ParseRecordIndexKey extracts the to address and from address from the provided quarantine record index key.
