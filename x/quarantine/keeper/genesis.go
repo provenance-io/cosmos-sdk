@@ -50,3 +50,36 @@ func (k Keeper) ExportGenesis(ctx sdk.Context, _ codec.JSONCodec) *quarantine.Ge
 
 	return quarantine.NewGenesisState(qAddrs, autoResps, qFunds)
 }
+
+// GetAllQuarantinedAccounts gets the bech32 string of every account that have opted into quarantine.
+// This is designed for use with ExportGenesis. See also IterateQuarantinedAccounts.
+func (k Keeper) GetAllQuarantinedAccounts(ctx sdk.Context) []string {
+	var rv []string
+	k.IterateQuarantinedAccounts(ctx, func(toAddr sdk.AccAddress) bool {
+		rv = append(rv, toAddr.String())
+		return false
+	})
+	return rv
+}
+
+// GetAllAutoResponseEntries gets an AutoResponseEntry entry for every quarantine auto-response that has been set.
+// This is designed for use with ExportGenesis. See also IterateAutoResponses.
+func (k Keeper) GetAllAutoResponseEntries(ctx sdk.Context) []*quarantine.AutoResponseEntry {
+	var rv []*quarantine.AutoResponseEntry
+	k.IterateAutoResponses(ctx, nil, func(toAddr, fromAddr sdk.AccAddress, resp quarantine.AutoResponse) bool {
+		rv = append(rv, quarantine.NewAutoResponseEntry(toAddr, fromAddr, resp))
+		return false
+	})
+	return rv
+}
+
+// GetAllQuarantinedFunds gets a QuarantinedFunds entry for each QuarantineRecord.
+// This is designed for use with ExportGenesis. See also IterateQuarantineRecords.
+func (k Keeper) GetAllQuarantinedFunds(ctx sdk.Context) []*quarantine.QuarantinedFunds {
+	var rv []*quarantine.QuarantinedFunds
+	k.IterateQuarantineRecords(ctx, nil, func(toAddr, _ sdk.AccAddress, funds *quarantine.QuarantineRecord) bool {
+		rv = append(rv, funds.AsQuarantinedFunds(toAddr))
+		return false
+	})
+	return rv
+}

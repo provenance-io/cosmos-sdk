@@ -392,19 +392,19 @@ func (s *TestSuite) TestAutoResponsesItateAndGetAll() {
 	})
 }
 
+// TODO[1046]: SetQuarantineRecord
+// TODO[1046]: bzToQuarantineRecord
 // TODO[1046]: GetQuarantineRecord
 // TODO[1046]: GetQuarantineRecords
-// TODO[1046]: SetQuarantineRecord
 // TODO[1046]: AddQuarantinedCoins
-// TODO[1046]: IterateQuarantineRecords
-// TODO[1046]: GetAllQuarantinedFunds
 // TODO[1046]: AcceptQuarantinedFunds
 // TODO[1046]: DeclineQuarantinedFunds
-// TODO[1046]: bzToQuarantineRecord
+// TODO[1046]: IterateQuarantineRecords
+// TODO[1046]: GetAllQuarantinedFunds
 
-// TODO[1046]: getQuarantineRecordSuffixIndex
 // TODO[1046]: setQuarantineRecordSuffixIndex
+// TODO[1046]: bzToQuarantineRecordSuffixIndex
+// TODO[1046]: getQuarantineRecordSuffixIndex
+// TODO[1046]: getQuarantineRecordSuffixes
 // TODO[1046]: addQuarantineRecordSuffixIndexes
 // TODO[1046]: deleteQuarantineRecordSuffixIndexes
-// TODO[1046]: getQuarantineRecordSuffixes
-// TODO[1046]: bzToQuarantineRecordSuffixIndex
