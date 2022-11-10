@@ -63,10 +63,6 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (s *TestSuite) TestGetFundsHolder() {
-	// make sure it's back to normal after this test.
-	orig := s.keeper.GetFundsHolder()
-	defer s.keeper.SetFundsHolder(orig)
-
 	s.Run("initial value", func() {
 		expected := authtypes.NewModuleAddress(quarantine.ModuleName)
 
@@ -75,16 +71,16 @@ func (s *TestSuite) TestGetFundsHolder() {
 	})
 
 	s.Run("set to nil", func() {
-		s.keeper.SetFundsHolder(nil)
+		k := s.keeper.WithFundsHolder(nil)
 
-		actual := s.keeper.GetFundsHolder()
+		actual := k.GetFundsHolder()
 		s.Assert().Nil(actual, "funds holder")
 	})
 
 	s.Run("set to something else", func() {
-		s.keeper.SetFundsHolder(s.addr1)
+		k := s.keeper.WithFundsHolder(s.addr1)
 
-		actual := s.keeper.GetFundsHolder()
+		actual := k.GetFundsHolder()
 		s.Assert().Equal(s.addr1, actual, "funds holder")
 	})
 }
