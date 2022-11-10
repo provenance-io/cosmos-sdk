@@ -67,7 +67,7 @@ func TestUpdateDenomMetadata(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				metadata, _ := app.BankKeeper.GetDenomMetaData(ctx, "diamondback")
-				require.Equal(t, testCase.req.Metadata, metadata)
+				require.Equal(t, testCase.req.Metadata.String(), metadata.String())
 			}
 		})
 	}
