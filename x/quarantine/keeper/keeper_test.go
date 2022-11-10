@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -195,12 +196,201 @@ func (s *TestSuite) TestQuarantinedAccountsIterateAndGetAll() {
 	})
 }
 
-// TODO[1046]: GetAutoResponse
-// TODO[1046]: IsAutoAccept
-// TODO[1046]: IsAutoDecline
-// TODO[1046]: SetAutoResponse
-// TODO[1046]: IterateAutoResponses
-// TODO[1046]: GetAllAutoResponseEntries
+func (s *TestSuite) TestAutoResponseGettersSetter() {
+	addrs := []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5}
+	allResps := []quarantine.AutoResponse{
+		quarantine.AUTO_RESPONSE_ACCEPT,
+		quarantine.AUTO_RESPONSE_DECLINE,
+		quarantine.AUTO_RESPONSE_UNSPECIFIED,
+	}
+
+	s.Run("GetAutoResponse on unset addrs", func() {
+		expected := quarantine.AUTO_RESPONSE_UNSPECIFIED
+		for i, addrI := range addrs {
+			for j, addrJ := range addrs {
+				if i == j {
+					continue
+				}
+				actual := s.keeper.GetAutoResponse(s.sdkCtx, addrI, addrJ)
+				s.Assert().Equal(expected, actual, "GetAutoResponse addr%d addr%d", i+1, j+1)
+			}
+		}
+	})
+
+	s.Run("GetAutoResponse on same addr", func() {
+		expected := quarantine.AUTO_RESPONSE_ACCEPT
+		for i, addr := range addrs {
+			actual := s.keeper.GetAutoResponse(s.sdkCtx, addr, addr)
+			s.Assert().Equal(expected, actual, "GetAutoResponse addr%d addr%d", i+1, i+1)
+		}
+	})
+
+	for _, expected := range allResps {
+		s.Run(fmt.Sprintf("set %s", expected), func() {
+			testFunc := func() {
+				s.keeper.SetAutoResponse(s.sdkCtx, s.addr3, s.addr1, expected)
+			}
+			s.Require().NotPanics(testFunc, "SetAutoResponse addr3 addr1 %s", expected)
+			actual := s.keeper.GetAutoResponse(s.sdkCtx, s.addr3, s.addr1)
+			s.Assert().Equal(expected, actual, "GetAutoResponse after set %s", expected)
+		})
+	}
+
+	s.Run("IsAutoAccept", func() {
+		testFunc := func() {
+			s.keeper.SetAutoResponse(s.sdkCtx, s.addr4, s.addr2, quarantine.AUTO_RESPONSE_ACCEPT)
+		}
+		s.Require().NotPanics(testFunc, "SetAutoResponse")
+
+		actual42 := s.keeper.IsAutoAccept(s.sdkCtx, s.addr4, s.addr2)
+		s.Assert().True(actual42, "IsAutoAccept addr4 addr2")
+		actual43 := s.keeper.IsAutoAccept(s.sdkCtx, s.addr4, s.addr3)
+		s.Assert().False(actual43, "IsAutoAccept addr4 addr3")
+		actual44 := s.keeper.IsAutoAccept(s.sdkCtx, s.addr4, s.addr4)
+		s.Assert().True(actual44, "IsAutoAccept self")
+	})
+
+	s.Run("IsAutoDecline", func() {
+		testFunc := func() {
+			s.keeper.SetAutoResponse(s.sdkCtx, s.addr5, s.addr2, quarantine.AUTO_RESPONSE_DECLINE)
+		}
+		s.Require().NotPanics(testFunc, "SetAutoResponse")
+
+		actual52 := s.keeper.IsAutoDecline(s.sdkCtx, s.addr5, s.addr2)
+		s.Assert().True(actual52, "IsAutoDecline addr5 addr2")
+		actual53 := s.keeper.IsAutoDecline(s.sdkCtx, s.addr5, s.addr3)
+		s.Assert().False(actual53, "IsAutoDecline addr5 addr3")
+		actual55 := s.keeper.IsAutoDecline(s.sdkCtx, s.addr5, s.addr5)
+		s.Assert().False(actual55, "IsAutoDecline self")
+	})
+}
+
+func (s *TestSuite) TestAutoResponsesItateAndGetAll() {
+	setAutoTestFunc := func(addrA, addrB sdk.AccAddress, response quarantine.AutoResponse) func() {
+		return func() {
+			s.keeper.SetAutoResponse(s.sdkCtx, addrA, addrB, response)
+		}
+	}
+	// Shorten up the names a bit.
+	arAccept := quarantine.AUTO_RESPONSE_ACCEPT
+	arDecline := quarantine.AUTO_RESPONSE_DECLINE
+	arUnspecified := quarantine.AUTO_RESPONSE_UNSPECIFIED
+
+	// Set up some auto-responses.
+	// This is purposely done in a random order.
+
+	// Set account 1 to auto-accept from all.
+	// Set account 2 to auto-accept from all.
+	// Set 3 to auto-decline from all
+	// Set 4 to auto-accept from 2 and 3 and auto-decline from 5
+	s.Require().NotPanics(setAutoTestFunc(s.addr4, s.addr3, arAccept), "4 <- 3 accept")
+	s.Require().NotPanics(setAutoTestFunc(s.addr3, s.addr2, arDecline), "3 <- 2 decline")
+	s.Require().NotPanics(setAutoTestFunc(s.addr2, s.addr5, arAccept), "2 <- 5 accept")
+	s.Require().NotPanics(setAutoTestFunc(s.addr3, s.addr5, arDecline), "3 <- 5 decline")
+	s.Require().NotPanics(setAutoTestFunc(s.addr2, s.addr4, arAccept), "2 <- 4 accept")
+	s.Require().NotPanics(setAutoTestFunc(s.addr2, s.addr1, arAccept), "2 <- 1 accept")
+	s.Require().NotPanics(setAutoTestFunc(s.addr4, s.addr5, arDecline), "4 <- 5 decline")
+	s.Require().NotPanics(setAutoTestFunc(s.addr3, s.addr4, arDecline), "3 <- 4 decline")
+	s.Require().NotPanics(setAutoTestFunc(s.addr3, s.addr1, arDecline), "3 <- 1 decline")
+	s.Require().NotPanics(setAutoTestFunc(s.addr1, s.addr5, arAccept), "1 <- 5 accept")
+	s.Require().NotPanics(setAutoTestFunc(s.addr1, s.addr2, arAccept), "1 <- 2 accept")
+	s.Require().NotPanics(setAutoTestFunc(s.addr1, s.addr4, arAccept), "1 <- 4 accept")
+	s.Require().NotPanics(setAutoTestFunc(s.addr2, s.addr3, arAccept), "2 <- 3 accept")
+	s.Require().NotPanics(setAutoTestFunc(s.addr4, s.addr2, arAccept), "4 <- 2 accept")
+	s.Require().NotPanics(setAutoTestFunc(s.addr1, s.addr3, arAccept), "1 <- 3 accept")
+
+	// Now undo/change a few of those.
+	// Set 2 to unspecified from 3 and 4
+	// Set 3 to unspecified from 5
+	// Set 4 to auto-decline from 3 and auto-accept from 5
+	s.Require().NotPanics(setAutoTestFunc(s.addr4, s.addr5, arAccept), "4 <- 5 accept")
+	s.Require().NotPanics(setAutoTestFunc(s.addr2, s.addr3, arUnspecified), "2 <- 3 unspecified")
+	s.Require().NotPanics(setAutoTestFunc(s.addr3, s.addr5, arUnspecified), "3 <- 5 unspecified")
+	s.Require().NotPanics(setAutoTestFunc(s.addr4, s.addr3, arDecline), "4 <- 3 decline")
+	s.Require().NotPanics(setAutoTestFunc(s.addr2, s.addr4, arUnspecified), "2 <- 4 unspecified")
+
+	// Setup result:
+	// 1 <- 2 = accept   3 <- 1 = decline
+	// 1 <- 3 = accept   3 <- 2 = decline
+	// 1 <- 4 = accept   3 <- 4 = decline
+	// 1 <- 5 = accept   4 <- 2 = accept
+	// 2 <- 1 = accept   4 <- 3 = decline
+	// 2 <- 5 = accept   4 <- 5 = accept
+
+	// Let's hope the addresses are actually incremental or else this gets a lot tougher to define.
+	type callbackArgs struct {
+		toAddr   sdk.AccAddress
+		fromAddr sdk.AccAddress
+		response quarantine.AutoResponse
+	}
+
+	expectedAllArgs := []callbackArgs{
+		{toAddr: s.addr1, fromAddr: s.addr2, response: arAccept},
+		{toAddr: s.addr1, fromAddr: s.addr3, response: arAccept},
+		{toAddr: s.addr1, fromAddr: s.addr4, response: arAccept},
+		{toAddr: s.addr1, fromAddr: s.addr5, response: arAccept},
+		{toAddr: s.addr2, fromAddr: s.addr1, response: arAccept},
+		{toAddr: s.addr2, fromAddr: s.addr5, response: arAccept},
+		{toAddr: s.addr3, fromAddr: s.addr1, response: arDecline},
+		{toAddr: s.addr3, fromAddr: s.addr2, response: arDecline},
+		{toAddr: s.addr3, fromAddr: s.addr4, response: arDecline},
+		{toAddr: s.addr4, fromAddr: s.addr2, response: arAccept},
+		{toAddr: s.addr4, fromAddr: s.addr3, response: arDecline},
+		{toAddr: s.addr4, fromAddr: s.addr5, response: arAccept},
+	}
+
+	s.Run("IterateAutoResponses all", func() {
+		actualAllArgs := make([]callbackArgs, 0, len(expectedAllArgs))
+		callback := func(toAddr, fromAddr sdk.AccAddress, response quarantine.AutoResponse) bool {
+			actualAllArgs = append(actualAllArgs, callbackArgs{toAddr: toAddr, fromAddr: fromAddr, response: response})
+			return false
+		}
+		testFunc := func() {
+			s.keeper.IterateAutoResponses(s.sdkCtx, nil, callback)
+		}
+		s.Require().NotPanics(testFunc, "IterateAutoResponses")
+		s.Assert().Equal(expectedAllArgs, actualAllArgs, "iterated args")
+	})
+
+	for i, addr := range []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5} {
+		s.Run(fmt.Sprintf("IterateAutoResponses addr%d", i+1), func() {
+			var expected []callbackArgs
+			for _, args := range expectedAllArgs {
+				if addr.Equals(args.toAddr) {
+					expected = append(expected, args)
+				}
+			}
+			var actual []callbackArgs
+			callback := func(toAddr, fromAddr sdk.AccAddress, response quarantine.AutoResponse) bool {
+				actual = append(actual, callbackArgs{toAddr: toAddr, fromAddr: fromAddr, response: response})
+				return false
+			}
+			testFunc := func() {
+				s.keeper.IterateAutoResponses(s.sdkCtx, addr, callback)
+			}
+			s.Require().NotPanics(testFunc, "IterateAutoResponses")
+			s.Assert().Equal(expected, actual, "iterated args")
+		})
+	}
+
+	s.Run("GetAllAutoResponseEntries", func() {
+		expected := make([]*quarantine.AutoResponseEntry, len(expectedAllArgs))
+		for i, args := range expectedAllArgs {
+			expected[i] = &quarantine.AutoResponseEntry{
+				ToAddress:   args.toAddr.String(),
+				FromAddress: args.fromAddr.String(),
+				Response:    args.response,
+			}
+		}
+
+		var actual []*quarantine.AutoResponseEntry
+		testFunc := func() {
+			actual = s.keeper.GetAllAutoResponseEntries(s.sdkCtx)
+		}
+		s.Require().NotPanics(testFunc, "GetAllAutoResponseEntries")
+		s.Assert().Equal(expected, actual, "GetAllAutoResponseEntries results")
+	})
+}
 
 // TODO[1046]: GetQuarantineRecord
 // TODO[1046]: GetQuarantineRecords
