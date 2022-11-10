@@ -1,57 +1,16 @@
 package quarantine
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
 
-func makeCopyOfGenesisState(orig *GenesisState) *GenesisState {
-	if orig == nil {
-		return nil
-	}
-	return &GenesisState{
-		QuarantinedAddresses: makeCopyOfStringSlice(orig.QuarantinedAddresses),
-		AutoResponses:        makeCopyOfAutoResponseEntries(orig.AutoResponses),
-		QuarantinedFunds:     makeCopyOfQuarantinedFundsSlice(orig.QuarantinedFunds),
-	}
-}
-
-func makeCopyOfAutoResponseEntries(orig []*AutoResponseEntry) []*AutoResponseEntry {
-	if orig == nil {
-		return nil
-	}
-	rv := make([]*AutoResponseEntry, len(orig))
-	for i, entry := range orig {
-		rv[i] = makeCopyOfAutoResponseEntry(entry)
-	}
-	return rv
-}
-
-func makeCopyOfAutoResponseEntry(orig *AutoResponseEntry) *AutoResponseEntry {
-	if orig == nil {
-		return nil
-	}
-	return &AutoResponseEntry{
-		ToAddress:   orig.ToAddress,
-		FromAddress: orig.FromAddress,
-		Response:    orig.Response,
-	}
-}
-
-func makeCopyOfQuarantinedFundsSlice(orig []*QuarantinedFunds) []*QuarantinedFunds {
-	if orig == nil {
-		return orig
-	}
-	rv := make([]*QuarantinedFunds, len(orig))
-	for i, qf := range orig {
-		rv[i] = makeCopyOfQuarantinedFunds(qf)
-	}
-	return rv
-}
-
 func TestGenesisState_Validate(t *testing.T) {
-	testAddr0 := makeTestAddr("gsv", 0).String()
-	testAddr1 := makeTestAddr("gsv", 1).String()
+	testAddr0 := MakeTestAddr("gsv", 0).String()
+	testAddr1 := MakeTestAddr("gsv", 1).String()
 	badAddr := "this1addressisnaughty"
 
 	goodAutoResponse := &AutoResponseEntry{
@@ -155,21 +114,21 @@ func TestGenesisState_Validate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			orig := makeCopyOfGenesisState(tc.gs)
+			orig := MakeCopyOfGenesisState(tc.gs)
 			var err error
 			testFunc := func() {
 				err = tc.gs.Validate()
 			}
 			assert.NotPanics(t, testFunc, "GenesisState.Validate()")
-			assertErrorContents(t, err, tc.expErrs, "Validate")
+			AssertErrorContents(t, err, tc.expErrs, "Validate")
 			assert.Equal(t, orig, tc.gs, "GenesisState before and after Validate")
 		})
 	}
 }
 
 func TestNewGenesisState(t *testing.T) {
-	testAddr0 := makeTestAddr("ngs", 0).String()
-	testAddr1 := makeTestAddr("ngs", 1).String()
+	testAddr0 := MakeTestAddr("ngs", 0).String()
+	testAddr1 := MakeTestAddr("ngs", 1).String()
 
 	autoResponse := &AutoResponseEntry{
 		ToAddress:   testAddr0,

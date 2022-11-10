@@ -5,93 +5,10 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
-
-// makeTestAddr makes an AccAddress that's 20 bytes long.
-// The first byte is the index. The next bytes are the base.
-// The byte after that is 97 (a) + the index.
-// Each other byte is one more than the previous.
-// Panics if the base is too long or index too high.
-func makeTestAddr(base string, index uint8) sdk.AccAddress {
-	return makePrefixedIncAddr(20, 97, base, index)
-}
-
-// makeLongAddr makes an AccAddress that's 32 bytes long.
-// The first byte is the index. The next bytes are the base.
-// The byte after that is 65 (A) + the index.
-// Each other byte is one more than the previous.
-// Panics if the base is too long or index too high.
-func makeLongAddr(base string, index uint8) sdk.AccAddress {
-	return makePrefixedIncAddr(32, 65, base, index)
-}
-
-// makeBadAddr makes an address that's longer than the max length allowed.
-// The first byte is the index. The next bytes are the base.
-// The byte after that is 33 (!) + the index.
-// Each other byte is one more than the previous wrapping back to 0 after 255.
-// Panics if the base is too long or index too high.
-func makeBadAddr(base string, index uint8) sdk.AccAddress {
-	return makePrefixedIncAddr(address.MaxAddrLen+1, 33, base, index)
-}
-
-// makePrefixedIncAddr creates an sdk.AccAddress with the provided length.
-// The first byte will be the index.
-// The next bytes will be the base.
-// The byte after that will be the rootChar+index.
-// Each other byte is one more than the previous, skipping 127, and wrapping back to 33 after 254.
-// Panics if the base is longer than 8 chars. Keep it short. There aren't that many bytes to work with here.
-// Panics if the index is larger than 30. You don't need that many.
-// Panics if rootChar+index is not 33 to 126 or 128 to 254 (inclusive). Keep them printable.
-//
-// You're probably looking for makeTestAddr, makeLongAddr, or makeBadAddr.
-func makePrefixedIncAddr(length uint, rootChar uint8, base string, index uint8) sdk.AccAddress {
-	// panics are used because this is for test setup and should be mostly hard-coded stuff anyway.
-	// 8 is picked because if the length is 20, that would only leave 11 more bytes, which isn't many.
-	if len(base) > 8 {
-		panic(fmt.Sprintf("base too long %q; got: %d, max: 8", base, len(base)))
-	}
-	// 25 is picked so the long and test addresses always start with a letter.
-	if index > 25 {
-		panic(fmt.Sprintf("index too large; got: %d, max: 30", index))
-	}
-	rv := makeIncAddr(length, uint(1+len(base))+1, rootChar+index)
-	rv[0] = index
-	copy(rv[1:], base)
-	return rv
-}
-
-// makeIncAddr creates an sdk.AccAddress with the provided length.
-// The first firstCharLen bytes will be the firstChar.
-// Each other byte is one more than the previous, skipping 127, and wrapping back to 33 after 254.
-// Basically using only bytes that are printable as ascii.
-// If the firstChar is anything other than 33 to 126 or 128 to 254 (inclusive), you're gonna have a bad time.
-//
-// You're probably looking for makeTestAddr, makeLongAddr, or makeBadAddr.
-func makeIncAddr(length, firstCharLen uint, firstChar uint8) sdk.AccAddress {
-	// At one point I used math and mod stuff to wrap the provided first char into the right range,
-	// but this is for tests and should be from mostly hard-coded stuff anyway, so panics are used.
-	if firstChar < 33 || firstChar > 254 || firstChar == 127 {
-		panic(fmt.Sprintf("illegal shift (5-yard penalty, retry down): expected 33-126 or 128-254, got: %d", firstChar))
-	}
-	b := firstChar
-	rv := make(sdk.AccAddress, length)
-	for i := uint(0); i < length; i++ {
-		if i >= firstCharLen {
-			switch {
-			case b == 126:
-				b = 128
-			case b >= 254:
-				b = 33
-			default:
-				b++
-			}
-		}
-		rv[i] = byte(b)
-	}
-	return rv
-}
 
 type coinMaker func() sdk.Coins
 
@@ -105,121 +22,17 @@ var (
 	coinMakerBad   coinMaker = func() sdk.Coins { return sdk.Coins{sdk.Coin{Denom: "badcoin", Amount: sdk.NewInt(-1)}} }
 )
 
-// assertErrorContents asserts that, if contains is empty, there's no error.
-// Otherwise, asserts that there is an error, and that it contains each of the provided strings.
-func assertErrorContents(t *testing.T, theError error, contains []string, msgAndArgs ...interface{}) bool {
-	t.Helper()
-	if len(contains) == 0 {
-		return assert.NoError(t, theError, msgAndArgs)
-	}
-	rv := assert.Error(t, theError, msgAndArgs...)
-	if rv {
-		for _, expInErr := range contains {
-			rv = assert.ErrorContains(t, theError, expInErr, msgAndArgs...) && rv
-		}
-	}
-	return rv
-}
-
-// makeCopyOfCoins creates a copy of the provided Coins and returns it.
-func makeCopyOfCoins(orig sdk.Coins) sdk.Coins {
-	if orig == nil {
-		return nil
-	}
-	rv := make(sdk.Coins, len(orig))
-	for i, coin := range orig {
-		rv[i] = sdk.Coin{
-			Denom:  coin.Denom,
-			Amount: coin.Amount.AddRaw(0),
-		}
-	}
-	return rv
-}
-
-// makeCopyOfQuarantinedFunds creates a copy of the provided QuarantinedFunds and returns it.
-func makeCopyOfQuarantinedFunds(orig *QuarantinedFunds) *QuarantinedFunds {
-	return &QuarantinedFunds{
-		ToAddress:               orig.ToAddress,
-		UnacceptedFromAddresses: makeCopyOfStringSlice(orig.UnacceptedFromAddresses),
-		Coins:                   makeCopyOfCoins(orig.Coins),
-		Declined:                orig.Declined,
-	}
-}
-
-// makeCopyOfStringSlice makes a copy of the provided string slice.
-func makeCopyOfStringSlice(orig []string) []string {
-	if orig == nil {
-		return nil
-	}
-	rv := make([]string, len(orig))
-	copy(rv, orig)
-	return rv
-}
-
-// makeCopyOfQuarantineRecord creates a copy of the provided QuarantineRecord and returns it.
-func makeCopyOfQuarantineRecord(orig *QuarantineRecord) *QuarantineRecord {
-	return &QuarantineRecord{
-		UnacceptedFromAddresses: makeCopyOfAccAddresses(orig.UnacceptedFromAddresses),
-		AcceptedFromAddresses:   makeCopyOfAccAddresses(orig.AcceptedFromAddresses),
-		Coins:                   makeCopyOfCoins(orig.Coins),
-		Declined:                orig.Declined,
-	}
-}
-
-func makeCopyOfAccAddress(orig sdk.AccAddress) sdk.AccAddress {
-	if orig == nil {
-		return orig
-	}
-	rv := make(sdk.AccAddress, len(orig))
-	copy(rv, orig)
-	return rv
-}
-
-// makeCopyOfAccAddresses makes a copy of the provided slice of acc addresses, copying each address too.
-func makeCopyOfAccAddresses(orig []sdk.AccAddress) []sdk.AccAddress {
-	if orig == nil {
-		return nil
-	}
-	rv := make([]sdk.AccAddress, len(orig))
-	for i, addr := range orig {
-		rv[i] = makeCopyOfAccAddress(addr)
-	}
-	return rv
-}
-
-// makeCopyOfByteSlice makes a copy of the provided byte slice.
-func makeCopyOfByteSlice(orig []byte) []byte {
-	if orig == nil {
-		return nil
-	}
-	rv := make([]byte, len(orig))
-	copy(rv, orig)
-	return rv
-}
-
-// makeCopyOfByteSliceSlice makes a copy of the provided slice of byte slices.
-func makeCopyOfByteSliceSlice(orig [][]byte) [][]byte {
-	if orig == nil {
-		return nil
-	}
-	rv := make([][]byte, len(orig))
-	for i, bz := range orig {
-		rv[i] = makeCopyOfByteSlice(bz)
-	}
-	return rv
-}
-
 func TestContainsAddress(t *testing.T) {
 	// Technically, if containsAddress breaks, a lot of other tests should also break,
 	// but I figure it's better safe than sorry.
-	addrShort0 := makeTestAddr("cs", 0)
-	addrShort1 := makeTestAddr("cs", 1)
-	addrLong2 := makeLongAddr("cs", 2)
-	addrLong3 := makeLongAddr("cs", 3)
+	addrShort0 := MakeTestAddr("cs", 0)
+	addrShort1 := MakeTestAddr("cs", 1)
+	addrLong2 := MakeLongAddr("cs", 2)
+	addrLong3 := MakeLongAddr("cs", 3)
 	addrEmpty := make(sdk.AccAddress, 0)
-	addrShort0Almost := makeCopyOfAccAddress(addrShort0)
+	addrShort0Almost := MakeCopyOfAccAddress(addrShort0)
 	addrShort0Almost[len(addrShort0Almost)-1]++
-	addr2Almost := makeCopyOfAccAddress(addrLong2)
+	addr2Almost := MakeCopyOfAccAddress(addrLong2)
 	addr2Almost[len(addr2Almost)-1]++
 
 	tests := []struct {
@@ -454,8 +267,8 @@ func TestContainsAddress(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			origSuffixes := makeCopyOfAccAddresses(tc.addrs)
-			origSuffixToFind := makeCopyOfAccAddress(tc.addrToFind)
+			origSuffixes := MakeCopyOfAccAddresses(tc.addrs)
+			origSuffixToFind := MakeCopyOfAccAddress(tc.addrToFind)
 
 			actual := containsAddress(tc.addrs, tc.addrToFind)
 			assert.Equal(t, tc.expected, actual, "containsSuffix result")
@@ -468,14 +281,14 @@ func TestContainsAddress(t *testing.T) {
 func TestContainsSuffix(t *testing.T) {
 	// Technically, if containsSuffix breaks, a lot of other tests should also break,
 	// but I figure it's better safe than sorry.
-	suffixShort0 := []byte(makeTestAddr("cs", 0))
-	suffixShort1 := []byte(makeTestAddr("cs", 1))
-	suffixLong2 := []byte(makeLongAddr("cs", 2))
-	suffixLong3 := []byte(makeLongAddr("cs", 3))
+	suffixShort0 := []byte(MakeTestAddr("cs", 0))
+	suffixShort1 := []byte(MakeTestAddr("cs", 1))
+	suffixLong2 := []byte(MakeLongAddr("cs", 2))
+	suffixLong3 := []byte(MakeLongAddr("cs", 3))
 	suffixEmpty := make([]byte, 0)
-	suffixShort0Almost := makeCopyOfByteSlice(suffixShort0)
+	suffixShort0Almost := MakeCopyOfByteSlice(suffixShort0)
 	suffixShort0Almost[len(suffixShort0Almost)-1]++
-	suffixLong2Almost := makeCopyOfByteSlice(suffixLong2)
+	suffixLong2Almost := MakeCopyOfByteSlice(suffixLong2)
 	suffixLong2Almost[len(suffixLong2Almost)-1]++
 
 	tests := []struct {
@@ -710,8 +523,8 @@ func TestContainsSuffix(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			origSuffixes := makeCopyOfByteSliceSlice(tc.suffixes)
-			origSuffixToFind := makeCopyOfByteSlice(tc.suffixToFind)
+			origSuffixes := MakeCopyOfByteSliceSlice(tc.suffixes)
+			origSuffixToFind := MakeCopyOfByteSlice(tc.suffixToFind)
 
 			actual := containsSuffix(tc.suffixes, tc.suffixToFind)
 			assert.Equal(t, tc.expected, actual, "containsSuffix result")
@@ -722,8 +535,8 @@ func TestContainsSuffix(t *testing.T) {
 }
 
 func TestNewQuarantinedFunds(t *testing.T) {
-	testAddr0 := makeTestAddr("nqf", 0)
-	testAddr1 := makeTestAddr("nqf", 1)
+	testAddr0 := MakeTestAddr("nqf", 0)
+	testAddr1 := MakeTestAddr("nqf", 1)
 
 	tests := []struct {
 		name      string
@@ -848,9 +661,9 @@ func TestNewQuarantinedFunds(t *testing.T) {
 }
 
 func TestQuarantinedFunds_Validate(t *testing.T) {
-	testAddr0 := makeTestAddr("qfv", 0).String()
-	testAddr1 := makeTestAddr("qfv", 1).String()
-	testAddr2 := makeTestAddr("qfv", 2).String()
+	testAddr0 := MakeTestAddr("qfv", 0).String()
+	testAddr1 := MakeTestAddr("qfv", 1).String()
+	testAddr2 := MakeTestAddr("qfv", 2).String()
 
 	tests := []struct {
 		name          string
@@ -1021,17 +834,17 @@ func TestQuarantinedFunds_Validate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			qfOrig := makeCopyOfQuarantinedFunds(tc.qf)
+			qfOrig := MakeCopyOfQuarantinedFunds(tc.qf)
 			err := tc.qf.Validate()
-			assertErrorContents(t, err, tc.expectedInErr, "Validate")
+			AssertErrorContents(t, err, tc.expectedInErr, "Validate")
 			assert.Equal(t, qfOrig, tc.qf, "QuarantinedFunds before and after")
 		})
 	}
 }
 
 func TestNewAutoResponseEntry(t *testing.T) {
-	testAddr0 := makeTestAddr("nare", 0)
-	testAddr1 := makeTestAddr("nare", 1)
+	testAddr0 := MakeTestAddr("nare", 0)
+	testAddr1 := MakeTestAddr("nare", 1)
 
 	tests := []struct {
 		name     string
@@ -1117,8 +930,8 @@ func TestNewAutoResponseEntry(t *testing.T) {
 }
 
 func TestAutoResponseEntry_Validate(t *testing.T) {
-	testAddr0 := makeTestAddr("arev", 0).String()
-	testAddr1 := makeTestAddr("arev", 1).String()
+	testAddr0 := MakeTestAddr("arev", 0).String()
+	testAddr1 := MakeTestAddr("arev", 1).String()
 
 	tests := []struct {
 		name          string
@@ -1206,15 +1019,15 @@ func TestAutoResponseEntry_Validate(t *testing.T) {
 				Response:    tc.resp,
 			}
 			err := entry.Validate()
-			assertErrorContents(t, err, tc.expectedInErr, "Validate")
+			AssertErrorContents(t, err, tc.expectedInErr, "Validate")
 			assert.Equal(t, entryOrig, entry, "AutoResponseEntry before and after")
 		})
 	}
 }
 
 func TestAutoResponseUpdate_Validate(t *testing.T) {
-	testAddr0 := makeTestAddr("arev", 0).String()
-	testAddr1 := makeTestAddr("arev", 1).String()
+	testAddr0 := MakeTestAddr("arev", 0).String()
+	testAddr1 := MakeTestAddr("arev", 1).String()
 
 	tests := []struct {
 		name          string
@@ -1278,7 +1091,7 @@ func TestAutoResponseUpdate_Validate(t *testing.T) {
 				Response:    tc.resp,
 			}
 			err := update.Validate()
-			assertErrorContents(t, err, tc.expectedInErr, "Validate")
+			AssertErrorContents(t, err, tc.expectedInErr, "Validate")
 			assert.Equal(t, updateOrig, update, "AutoResponseUpdate before and after")
 		})
 	}
@@ -1515,8 +1328,8 @@ func TestAutoResponse_IsDecline(t *testing.T) {
 }
 
 func TestNewQuarantineRecord(t *testing.T) {
-	testAddr0 := makeTestAddr("nqr", 0)
-	testAddr1 := makeTestAddr("nqr", 1)
+	testAddr0 := MakeTestAddr("nqr", 0)
+	testAddr1 := MakeTestAddr("nqr", 1)
 
 	tests := []struct {
 		name        string
@@ -1675,9 +1488,9 @@ func TestNewQuarantineRecord(t *testing.T) {
 }
 
 func TestQuarantineRecord_Validate(t *testing.T) {
-	testAddr0 := makeTestAddr("qrv", 0)
-	testAddr1 := makeTestAddr("qrv", 1)
-	testAddr2 := makeTestAddr("qrv", 2)
+	testAddr0 := MakeTestAddr("qrv", 0)
+	testAddr1 := MakeTestAddr("qrv", 1)
+	testAddr2 := MakeTestAddr("qrv", 2)
 
 	tests := []struct {
 		name          string
@@ -1808,16 +1621,16 @@ func TestQuarantineRecord_Validate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			qrOrig := makeCopyOfQuarantineRecord(tc.qr)
+			qrOrig := MakeCopyOfQuarantineRecord(tc.qr)
 			err := tc.qr.Validate()
-			assertErrorContents(t, err, tc.expectedInErr, "Validate")
+			AssertErrorContents(t, err, tc.expectedInErr, "Validate")
 			assert.Equal(t, qrOrig, tc.qr, "QuarantineRecord before and after")
 		})
 	}
 }
 
 func TestQuarantineRecord_IsZero(t *testing.T) {
-	testAddr0 := makeTestAddr("qriz", 0)
+	testAddr0 := MakeTestAddr("qriz", 0)
 
 	tests := []struct {
 		name     string
@@ -1882,7 +1695,7 @@ func TestQuarantineRecord_IsZero(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			qrOrig := makeCopyOfQuarantineRecord(tc.qr)
+			qrOrig := MakeCopyOfQuarantineRecord(tc.qr)
 			actual := tc.qr.IsZero()
 			assert.Equal(t, tc.expected, actual, "IsZero()")
 			assert.Equal(t, qrOrig, tc.qr, "QuarantineRecord before and after")
@@ -1891,10 +1704,10 @@ func TestQuarantineRecord_IsZero(t *testing.T) {
 }
 
 func TestQuarantineRecord_AddCoins(t *testing.T) {
-	testAddr0 := makeTestAddr("qrac", 0)
-	testAddr1 := makeTestAddr("qrac", 1)
-	testAddr2 := makeTestAddr("qrac", 2)
-	testAddr3 := makeTestAddr("qrac", 3)
+	testAddr0 := MakeTestAddr("qrac", 0)
+	testAddr1 := MakeTestAddr("qrac", 1)
+	testAddr2 := MakeTestAddr("qrac", 2)
+	testAddr3 := MakeTestAddr("qrac", 3)
 
 	keyEmpty := "empty"
 	keyNil := "nil"
@@ -2167,8 +1980,8 @@ func TestQuarantineRecord_AddCoins(t *testing.T) {
 				name := fmt.Sprintf("%s+%s=%q %t %s", tc.qrCoinKey, tc.addCoinKey, tc.expected.String(), declined, ac.name)
 				t.Run(name, func(t *testing.T) {
 					expected := QuarantineRecord{
-						UnacceptedFromAddresses: makeCopyOfAccAddresses(ac.unaccepted),
-						AcceptedFromAddresses:   makeCopyOfAccAddresses(ac.accepted),
+						UnacceptedFromAddresses: MakeCopyOfAccAddresses(ac.unaccepted),
+						AcceptedFromAddresses:   MakeCopyOfAccAddresses(ac.accepted),
 						Coins:                   tc.expected,
 						Declined:                declined,
 					}
@@ -2190,8 +2003,8 @@ func TestQuarantineRecord_AddCoins(t *testing.T) {
 }
 
 func TestQuarantineRecord_IsFullyAccepted(t *testing.T) {
-	testAddr0 := makeTestAddr("qrifa", 0)
-	testAddr1 := makeTestAddr("qrifa", 1)
+	testAddr0 := MakeTestAddr("qrifa", 0)
+	testAddr1 := MakeTestAddr("qrifa", 1)
 
 	tests := []struct {
 		name     string
@@ -2282,7 +2095,7 @@ func TestQuarantineRecord_IsFullyAccepted(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			orig := makeCopyOfQuarantineRecord(tc.qr)
+			orig := MakeCopyOfQuarantineRecord(tc.qr)
 			actual := tc.qr.IsFullyAccepted()
 			assert.Equal(t, tc.expected, actual, "IsFullyAccepted: %v", tc.qr)
 			assert.Equal(t, orig, tc.qr, "QuarantineRecord before and after")
@@ -2291,11 +2104,11 @@ func TestQuarantineRecord_IsFullyAccepted(t *testing.T) {
 }
 
 func TestQuarantineRecord_AcceptFrom(t *testing.T) {
-	testAddr0 := makeTestAddr("qraf", 0)
-	testAddr1 := makeTestAddr("qraf", 1)
-	testAddr2 := makeTestAddr("qraf", 2)
-	testAddr3 := makeTestAddr("qraf", 3)
-	testAddr4 := makeTestAddr("qraf", 4)
+	testAddr0 := MakeTestAddr("qraf", 0)
+	testAddr1 := MakeTestAddr("qraf", 1)
+	testAddr2 := MakeTestAddr("qraf", 2)
+	testAddr3 := MakeTestAddr("qraf", 3)
+	testAddr4 := MakeTestAddr("qraf", 4)
 
 	tests := []struct {
 		name  string
@@ -2597,7 +2410,7 @@ func TestQuarantineRecord_AcceptFrom(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			origInput := makeCopyOfAccAddresses(tc.addrs)
+			origInput := MakeCopyOfAccAddresses(tc.addrs)
 			actual := tc.qr.AcceptFrom(tc.addrs)
 			assert.Equal(t, tc.exp, actual, "AcceptFrom return value")
 			assert.Equal(t, tc.expQr, tc.qr, "QuarantineRecord after AcceptFrom")
@@ -2607,11 +2420,11 @@ func TestQuarantineRecord_AcceptFrom(t *testing.T) {
 }
 
 func TestQuarantineRecord_GetAllFromAddrs(t *testing.T) {
-	testAddr0 := makeTestAddr("qrgafa", 0)
-	testAddr1 := makeTestAddr("qrgafa", 1)
-	testAddr2 := makeTestAddr("qrgafa", 2)
-	testAddr3 := makeTestAddr("qrgafa", 3)
-	testAddr4 := makeTestAddr("qrgafa", 4)
+	testAddr0 := MakeTestAddr("qrgafa", 0)
+	testAddr1 := MakeTestAddr("qrgafa", 1)
+	testAddr2 := MakeTestAddr("qrgafa", 2)
+	testAddr3 := MakeTestAddr("qrgafa", 3)
+	testAddr4 := MakeTestAddr("qrgafa", 4)
 
 	tests := []struct {
 		name string
@@ -2788,7 +2601,7 @@ func TestQuarantineRecord_GetAllFromAddrs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			orig := makeCopyOfQuarantineRecord(tc.qr)
+			orig := MakeCopyOfQuarantineRecord(tc.qr)
 			actual := tc.qr.GetAllFromAddrs()
 			assert.Equal(t, tc.exp, actual, "GetAllFromAddrs result")
 			assert.Equal(t, orig, tc.qr, "QuarantineRecord before and after")
@@ -2797,9 +2610,9 @@ func TestQuarantineRecord_GetAllFromAddrs(t *testing.T) {
 }
 
 func TestQuarantineRecord_AsQuarantinedFunds(t *testing.T) {
-	testAddr0 := makeTestAddr("qrasqf", 0)
-	testAddr1 := makeTestAddr("qrasqf", 1)
-	testAddr2 := makeTestAddr("qrasqf", 2)
+	testAddr0 := MakeTestAddr("qrasqf", 0)
+	testAddr1 := MakeTestAddr("qrasqf", 1)
+	testAddr2 := MakeTestAddr("qrasqf", 2)
 
 	tests := []struct {
 		name     string
@@ -2931,7 +2744,7 @@ func TestQuarantineRecord_AsQuarantinedFunds(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			qrOrig := makeCopyOfQuarantineRecord(tc.qr)
+			qrOrig := MakeCopyOfQuarantineRecord(tc.qr)
 			actual := tc.qr.AsQuarantinedFunds(tc.toAddr)
 			assert.Equal(t, tc.expected, actual, "resulting QuarantinedFunds")
 			assert.Equal(t, qrOrig, tc.qr, "QuarantineRecord before and after")
@@ -2940,15 +2753,15 @@ func TestQuarantineRecord_AsQuarantinedFunds(t *testing.T) {
 }
 
 func TestQuarantineRecordSuffixIndex_AddSuffixes(t *testing.T) {
-	suffixShort0 := []byte(makeTestAddr("qrsias", 0))
-	suffixShort1 := []byte(makeTestAddr("qrsias", 1))
-	suffixShort2 := []byte(makeTestAddr("qrsias", 2))
-	suffixShort3 := []byte(makeTestAddr("qrsias", 3))
-	suffixLong4 := []byte(makeLongAddr("qrsias", 4))
-	suffixLong5 := []byte(makeLongAddr("qrsias", 5))
-	suffixLong6 := []byte(makeLongAddr("qrsias", 6))
-	suffixLong7 := []byte(makeLongAddr("qrsias", 7))
-	suffixBad8 := []byte(makeBadAddr("qrsias", 8))
+	suffixShort0 := []byte(MakeTestAddr("qrsias", 0))
+	suffixShort1 := []byte(MakeTestAddr("qrsias", 1))
+	suffixShort2 := []byte(MakeTestAddr("qrsias", 2))
+	suffixShort3 := []byte(MakeTestAddr("qrsias", 3))
+	suffixLong4 := []byte(MakeLongAddr("qrsias", 4))
+	suffixLong5 := []byte(MakeLongAddr("qrsias", 5))
+	suffixLong6 := []byte(MakeLongAddr("qrsias", 6))
+	suffixLong7 := []byte(MakeLongAddr("qrsias", 7))
+	suffixBad8 := []byte(MakeBadAddr("qrsias", 8))
 	suffixEmpty := make([]byte, 0)
 
 	tests := []struct {
@@ -3440,15 +3253,15 @@ func TestQuarantineRecordSuffixIndex_AddSuffixes(t *testing.T) {
 }
 
 func TestQuarantineRecordSuffixIndex_Simplify(t *testing.T) {
-	suffixShort0 := []byte(makeTestAddr("qrsis", 0))
-	suffixShort1 := []byte(makeTestAddr("qrsis", 1))
-	suffixShort2 := []byte(makeTestAddr("qrsis", 2))
-	suffixShort3 := []byte(makeTestAddr("qrsis", 3))
-	suffixLong4 := []byte(makeLongAddr("qrsis", 4))
-	suffixLong5 := []byte(makeLongAddr("qrsis", 5))
-	suffixLong6 := []byte(makeLongAddr("qrsis", 6))
-	suffixLong7 := []byte(makeLongAddr("qrsis", 7))
-	suffixBad8 := []byte(makeBadAddr("qrsis", 8))
+	suffixShort0 := []byte(MakeTestAddr("qrsis", 0))
+	suffixShort1 := []byte(MakeTestAddr("qrsis", 1))
+	suffixShort2 := []byte(MakeTestAddr("qrsis", 2))
+	suffixShort3 := []byte(MakeTestAddr("qrsis", 3))
+	suffixLong4 := []byte(MakeLongAddr("qrsis", 4))
+	suffixLong5 := []byte(MakeLongAddr("qrsis", 5))
+	suffixLong6 := []byte(MakeLongAddr("qrsis", 6))
+	suffixLong7 := []byte(MakeLongAddr("qrsis", 7))
+	suffixBad8 := []byte(MakeBadAddr("qrsis", 8))
 	suffixEmpty := make([]byte, 0)
 
 	tests := []struct {

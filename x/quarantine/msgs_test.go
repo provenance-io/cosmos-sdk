@@ -6,11 +6,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
 
 func TestNewMsgOptIn(t *testing.T) {
-	testAddr0 := makeTestAddr("nmoi", 0)
-	testAddr1 := makeTestAddr("nmoi", 1)
+	testAddr0 := MakeTestAddr("nmoi", 0)
+	testAddr1 := MakeTestAddr("nmoi", 1)
 
 	tests := []struct {
 		name     string
@@ -43,7 +45,7 @@ func TestNewMsgOptIn(t *testing.T) {
 }
 
 func TestMsgOptIn_ValidateBasic(t *testing.T) {
-	addr := makeTestAddr("moivb", 0).String()
+	addr := MakeTestAddr("moivb", 0).String()
 
 	tests := []struct {
 		name          string
@@ -72,14 +74,14 @@ func TestMsgOptIn_ValidateBasic(t *testing.T) {
 			msgOrig := MsgOptIn{ToAddress: tc.addr}
 			msg := MsgOptIn{ToAddress: tc.addr}
 			err := msg.ValidateBasic()
-			assertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
+			AssertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
 			assert.Equal(t, msgOrig, msg, "MsgOptIn before and after")
 		})
 	}
 }
 
 func TestMsgOptIn_GetSigners(t *testing.T) {
-	addr := makeTestAddr("moigs", 0)
+	addr := MakeTestAddr("moigs", 0)
 
 	tests := []struct {
 		name     string
@@ -115,8 +117,8 @@ func TestMsgOptIn_GetSigners(t *testing.T) {
 }
 
 func TestNewMsgOptOut(t *testing.T) {
-	testAddr0 := makeTestAddr("nmoo", 0)
-	testAddr1 := makeTestAddr("nmoo", 1)
+	testAddr0 := MakeTestAddr("nmoo", 0)
+	testAddr1 := MakeTestAddr("nmoo", 1)
 
 	tests := []struct {
 		name     string
@@ -149,7 +151,7 @@ func TestNewMsgOptOut(t *testing.T) {
 }
 
 func TestMsgOptOut_ValidateBasic(t *testing.T) {
-	addr := makeTestAddr("moovb", 0).String()
+	addr := MakeTestAddr("moovb", 0).String()
 
 	tests := []struct {
 		name          string
@@ -178,14 +180,14 @@ func TestMsgOptOut_ValidateBasic(t *testing.T) {
 			msgOrig := MsgOptOut{ToAddress: tc.addr}
 			msg := MsgOptOut{ToAddress: tc.addr}
 			err := msg.ValidateBasic()
-			assertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
+			AssertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
 			assert.Equal(t, msgOrig, msg, "MsgOptOut before and after")
 		})
 	}
 }
 
 func TestMsgOptOut_GetSigners(t *testing.T) {
-	addr := makeTestAddr("moogs", 0)
+	addr := MakeTestAddr("moogs", 0)
 
 	tests := []struct {
 		name     string
@@ -221,8 +223,8 @@ func TestMsgOptOut_GetSigners(t *testing.T) {
 }
 
 func TestNewMsgAccept(t *testing.T) {
-	testAddr0 := makeTestAddr("nma", 0)
-	testAddr1 := makeTestAddr("nma", 1)
+	testAddr0 := MakeTestAddr("nma", 0)
+	testAddr1 := MakeTestAddr("nma", 1)
 
 	tests := []struct {
 		name      string
@@ -308,9 +310,9 @@ func TestNewMsgAccept(t *testing.T) {
 }
 
 func TestMsgAccept_ValidateBasic(t *testing.T) {
-	testAddr0 := makeTestAddr("mavb", 0).String()
-	testAddr1 := makeTestAddr("mavb", 1).String()
-	testAddr2 := makeTestAddr("mavb", 2).String()
+	testAddr0 := MakeTestAddr("mavb", 0).String()
+	testAddr1 := MakeTestAddr("mavb", 1).String()
+	testAddr2 := MakeTestAddr("mavb", 2).String()
 
 	tests := []struct {
 		name          string
@@ -388,7 +390,7 @@ func TestMsgAccept_ValidateBasic(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msgOrig := MsgAccept{
 				ToAddress:     tc.toAddr,
-				FromAddresses: makeCopyOfStringSlice(tc.fromAddrs),
+				FromAddresses: MakeCopyOfStringSlice(tc.fromAddrs),
 				Permanent:     tc.permanent,
 			}
 			msg := MsgAccept{
@@ -397,16 +399,16 @@ func TestMsgAccept_ValidateBasic(t *testing.T) {
 				Permanent:     tc.permanent,
 			}
 			err := msg.ValidateBasic()
-			assertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
+			AssertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
 			assert.Equal(t, msgOrig, msg, "MsgAccept before and after")
 		})
 	}
 }
 
 func TestMsgAccept_GetSigners(t *testing.T) {
-	testAddr0 := makeTestAddr("mags", 0)
-	testAddr1 := makeTestAddr("mags", 1)
-	testAddr2 := makeTestAddr("mags", 2)
+	testAddr0 := MakeTestAddr("mags", 0)
+	testAddr1 := MakeTestAddr("mags", 1)
+	testAddr2 := MakeTestAddr("mags", 2)
 
 	tests := []struct {
 		name      string
@@ -470,7 +472,7 @@ func TestMsgAccept_GetSigners(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msgOrig := MsgAccept{
 				ToAddress:     tc.toAddr,
-				FromAddresses: makeCopyOfStringSlice(tc.fromAddrs),
+				FromAddresses: MakeCopyOfStringSlice(tc.fromAddrs),
 				Permanent:     tc.permanent,
 			}
 			msg := MsgAccept{
@@ -486,8 +488,8 @@ func TestMsgAccept_GetSigners(t *testing.T) {
 }
 
 func TestNewMsgDecline(t *testing.T) {
-	testAddr0 := makeTestAddr("nmd", 0)
-	testAddr1 := makeTestAddr("nmd", 1)
+	testAddr0 := MakeTestAddr("nmd", 0)
+	testAddr1 := MakeTestAddr("nmd", 1)
 
 	tests := []struct {
 		name      string
@@ -573,9 +575,9 @@ func TestNewMsgDecline(t *testing.T) {
 }
 
 func TestMsgDecline_ValidateBasic(t *testing.T) {
-	testAddr0 := makeTestAddr("mdvb", 0).String()
-	testAddr1 := makeTestAddr("mdvb", 1).String()
-	testAddr2 := makeTestAddr("mdvb", 2).String()
+	testAddr0 := MakeTestAddr("mdvb", 0).String()
+	testAddr1 := MakeTestAddr("mdvb", 1).String()
+	testAddr2 := MakeTestAddr("mdvb", 2).String()
 
 	tests := []struct {
 		name          string
@@ -653,7 +655,7 @@ func TestMsgDecline_ValidateBasic(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msgOrig := MsgDecline{
 				ToAddress:     tc.toAddr,
-				FromAddresses: makeCopyOfStringSlice(tc.fromAddrs),
+				FromAddresses: MakeCopyOfStringSlice(tc.fromAddrs),
 				Permanent:     tc.permanent,
 			}
 			msg := MsgDecline{
@@ -662,16 +664,16 @@ func TestMsgDecline_ValidateBasic(t *testing.T) {
 				Permanent:     tc.permanent,
 			}
 			err := msg.ValidateBasic()
-			assertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
+			AssertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
 			assert.Equal(t, msgOrig, msg, "MsgDecline before and after")
 		})
 	}
 }
 
 func TestMsgDecline_GetSigners(t *testing.T) {
-	testAddr0 := makeTestAddr("mdgs", 0)
-	testAddr1 := makeTestAddr("mdgs", 1)
-	testAddr2 := makeTestAddr("mdgs", 2)
+	testAddr0 := MakeTestAddr("mdgs", 0)
+	testAddr1 := MakeTestAddr("mdgs", 1)
+	testAddr2 := MakeTestAddr("mdgs", 2)
 
 	tests := []struct {
 		name      string
@@ -735,7 +737,7 @@ func TestMsgDecline_GetSigners(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msgOrig := MsgDecline{
 				ToAddress:     tc.toAddr,
-				FromAddresses: makeCopyOfStringSlice(tc.fromAddrs),
+				FromAddresses: MakeCopyOfStringSlice(tc.fromAddrs),
 				Permanent:     tc.permanent,
 			}
 			msg := MsgDecline{
@@ -751,12 +753,12 @@ func TestMsgDecline_GetSigners(t *testing.T) {
 }
 
 func TestNewMsgUpdateAutoResponses(t *testing.T) {
-	testAddr0 := makeTestAddr("nmuar", 0)
-	testAddr1 := makeTestAddr("nmuar", 1)
-	testAddr2 := makeTestAddr("nmuar", 2)
-	testAddr3 := makeTestAddr("nmuar", 3)
-	testAddr4 := makeTestAddr("nmuar", 4)
-	testAddr5 := makeTestAddr("nmuar", 5)
+	testAddr0 := MakeTestAddr("nmuar", 0)
+	testAddr1 := MakeTestAddr("nmuar", 1)
+	testAddr2 := MakeTestAddr("nmuar", 2)
+	testAddr3 := MakeTestAddr("nmuar", 3)
+	testAddr4 := MakeTestAddr("nmuar", 4)
+	testAddr5 := MakeTestAddr("nmuar", 5)
 
 	tests := []struct {
 		name     string
@@ -850,12 +852,12 @@ func TestNewMsgUpdateAutoResponses(t *testing.T) {
 }
 
 func TestMsgUpdateAutoResponses_ValidateBasic(t *testing.T) {
-	testAddr0 := makeTestAddr("muarvb", 0).String()
-	testAddr1 := makeTestAddr("muarvb", 1).String()
-	testAddr2 := makeTestAddr("muarvb", 2).String()
-	testAddr3 := makeTestAddr("muarvb", 3).String()
-	testAddr4 := makeTestAddr("muarvb", 4).String()
-	testAddr5 := makeTestAddr("muarvb", 5).String()
+	testAddr0 := MakeTestAddr("muarvb", 0).String()
+	testAddr1 := MakeTestAddr("muarvb", 1).String()
+	testAddr2 := MakeTestAddr("muarvb", 2).String()
+	testAddr3 := MakeTestAddr("muarvb", 3).String()
+	testAddr4 := MakeTestAddr("muarvb", 4).String()
+	testAddr5 := MakeTestAddr("muarvb", 5).String()
 
 	tests := []struct {
 		name          string
@@ -1042,16 +1044,16 @@ func TestMsgUpdateAutoResponses_ValidateBasic(t *testing.T) {
 				}
 			}
 			err := msg.ValidateBasic()
-			assertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
+			AssertErrorContents(t, err, tc.expectedInErr, "ValidateBasic")
 			assert.Equal(t, tc.orig, msg, "MsgUpdateAutoResponses before and after")
 		})
 	}
 }
 
 func TestMsgUpdateAutoResponses_GetSigners(t *testing.T) {
-	testAddr0 := makeTestAddr("muargs", 0)
-	testAddr1 := makeTestAddr("muargs", 1)
-	testAddr2 := makeTestAddr("muargs", 2)
+	testAddr0 := MakeTestAddr("muargs", 0)
+	testAddr1 := MakeTestAddr("muargs", 1)
+	testAddr2 := MakeTestAddr("muargs", 2)
 
 	tests := []struct {
 		name     string
