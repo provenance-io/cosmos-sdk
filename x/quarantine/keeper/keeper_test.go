@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/simapp"
@@ -1242,215 +1241,512 @@ func (s *TestSuite) TestGetQuarantineRecords() {
 }
 
 func (s *TestSuite) TestAddQuarantinedCoins() {
-	makeEvents := func(toAddr sdk.AccAddress, coins sdk.Coins) (sdk.Events, error) {
-		events, err := sdk.TypedEventToEvent(&quarantine.EventFundsQuarantined{
-			ToAddress: toAddr.String(),
-			Coins:     coins,
+	// Getting a little tricky here because I want different addresses for each test.
+	// The addrBase is used to generated addrCount addresses.
+	// Then, the autoAccept, autoDecline, toAddr and fromAddrs are address indexes to use (starting at 0).
+	// The tricky part is that both either the existing and expected Quarantine Records will have their
+	// AccAddresses updated before doing anything. Any AccAddress in them that's 1 byte long, and that byte
+	// is less than addrCount, it's used as an index and the entry is updated to be that address.
+	tests := []struct {
+		name        string
+		addrBase    string
+		addrCount   uint8
+		existing    *quarantine.QuarantineRecord
+		autoAccept  []int
+		autoDecline []int
+		coins       sdk.Coins
+		toAddr      int
+		fromAddrs   []int
+		expected    *quarantine.QuarantineRecord
+	}{
+		{
+			name:      "new record is created",
+			addrBase:  "nr",
+			addrCount: 2,
+			coins:     sdk.NewCoins(sdk.NewInt64Coin("bananas", 99)),
+			toAddr:    0,
+			fromAddrs: []int{1},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("bananas", 99)),
+			},
+		},
+		{
+			name:      "new record 2 froms is created",
+			addrBase:  "nr2f",
+			addrCount: 3,
+			coins:     sdk.NewCoins(sdk.NewInt64Coin("crazy", 88)),
+			toAddr:    0,
+			fromAddrs: []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("crazy", 88)),
+			},
+		},
+		{
+			name:      "existing record same denom is updated",
+			addrBase:  "ersd",
+			addrCount: 2,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pants", 11)),
+			},
+			coins:     sdk.NewCoins(sdk.NewInt64Coin("pants", 200)),
+			toAddr:    0,
+			fromAddrs: []int{1},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pants", 211)),
+			},
+		},
+		{
+			name:      "existing record new denom is updated",
+			addrBase:  "ernd",
+			addrCount: 2,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("tower", 102)),
+			},
+			coins:     sdk.NewCoins(sdk.NewInt64Coin("pit", 5)),
+			toAddr:    0,
+			fromAddrs: []int{1},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("tower", 102), sdk.NewInt64Coin("pit", 5)),
+			},
+		},
+		{
+			name:      "existing record 2 froms is updated",
+			addrBase:  "er2f",
+			addrCount: 3,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				AcceptedFromAddresses:   []sdk.AccAddress{{2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pcoin", 53)),
+			},
+			coins:     sdk.NewCoins(sdk.NewInt64Coin("pcoin", 9000)),
+			toAddr:    0,
+			fromAddrs: []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				AcceptedFromAddresses:   []sdk.AccAddress{{2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pcoin", 9053)),
+			},
+		},
+		{
+			name:      "existing record 2 froms other order is updated",
+			addrBase:  "er2foo",
+			addrCount: 3,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				AcceptedFromAddresses:   []sdk.AccAddress{{2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pcoin", 35)),
+			},
+			coins:     sdk.NewCoins(sdk.NewInt64Coin("pcoin", 800)),
+			toAddr:    0,
+			fromAddrs: []int{2, 1},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				AcceptedFromAddresses:   []sdk.AccAddress{{2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pcoin", 835)),
+			},
+		},
+		{
+			name:      "existing record unaccepted now auto-accept is still unaccepted",
+			addrBase:  "eruna",
+			addrCount: 2,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("interstellar", 543)),
+			},
+			autoAccept: []int{1},
+			coins:      sdk.NewCoins(sdk.NewInt64Coin("interstellar", 5012)),
+			toAddr:     0,
+			fromAddrs:  []int{1},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("interstellar", 5555)), // One more time!
+			},
+		},
+		{
+			name:       "new record from is auto-accept nothing stored",
+			addrBase:   "nrfa",
+			addrCount:  2,
+			autoAccept: []int{1},
+			coins:      sdk.NewCoins(sdk.NewInt64Coin("trombones", 76)),
+			toAddr:     0,
+			fromAddrs:  []int{1},
+			expected:   nil,
+		},
+		{
+			name:       "new record two froms first is auto-accept is marked as such",
+			addrBase:   "nr2fa",
+			addrCount:  3,
+			autoAccept: []int{1},
+			coins:      sdk.NewCoins(sdk.NewInt64Coin("pinata", 52)),
+			toAddr:     0,
+			fromAddrs:  []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+				AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pinata", 52)),
+			},
+		},
+		{
+			name:       "new record two froms second is auto-accept is marked as such",
+			addrBase:   "nr2sa",
+			addrCount:  3,
+			autoAccept: []int{2},
+			coins:      sdk.NewCoins(sdk.NewInt64Coin("fiddy", 3)), // Loch Ness Monster, is that you?
+			toAddr:     0,
+			fromAddrs:  []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				AcceptedFromAddresses:   []sdk.AccAddress{{2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("fiddy", 3)),
+			},
+		},
+		{
+			name:       "new record two froms both auto-accept nothing stored",
+			addrBase:   "nr2ba",
+			addrCount:  3,
+			autoAccept: []int{1, 2},
+			coins:      sdk.NewCoins(sdk.NewInt64Coin("moo", 4)),
+			toAddr:     0,
+			fromAddrs:  []int{1, 2},
+			expected:   nil,
+		},
+		{
+			name:      "existing record not declined not auto-decline result is not declined",
+			addrBase:  "erndna",
+			addrCount: 2,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("nodeca", 8)),
+				Declined:                false,
+			},
+			coins:     sdk.NewCoins(sdk.NewInt64Coin("nodeca", 50)),
+			toAddr:    0,
+			fromAddrs: []int{1},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("nodeca", 58)),
+				Declined:                false,
+			},
+		},
+		{
+			name:      "existing record not declined is auto-decline result is declined",
+			addrBase:  "erndad",
+			addrCount: 2,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("deca", 22)),
+				Declined:                false,
+			},
+			autoDecline: []int{1},
+			coins:       sdk.NewCoins(sdk.NewInt64Coin("deca", 404)),
+			toAddr:      0,
+			fromAddrs:   []int{1},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("deca", 426)),
+				Declined:                true,
+			},
+		},
+		{
+			name:      "existing record declined is auto-declined result is declined",
+			addrBase:  "erdad",
+			addrCount: 2,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("yarp", 3000)),
+				Declined:                true,
+			},
+			autoDecline: []int{1},
+			coins:       sdk.NewCoins(sdk.NewInt64Coin("yarp", 3)),
+			toAddr:      0,
+			fromAddrs:   []int{1},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("yarp", 3003)),
+				Declined:                true,
+			},
+		},
+		{
+			name:      "existing record declined not auto-declined result is not declined",
+			addrBase:  "erdna",
+			addrCount: 2,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("dalmatian", 14)),
+				Declined:                true,
+			},
+			autoDecline: nil,
+			coins:       sdk.NewCoins(sdk.NewInt64Coin("dalmatian", 87)),
+			toAddr:      0,
+			fromAddrs:   []int{1},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("dalmatian", 101)),
+				Declined:                false,
+			},
+		},
+		{
+			name:      "existing record not declined 2 froms neither are auto-decline result is not declined",
+			addrBase:  "ernd2fna",
+			addrCount: 3,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("bill", 3)),
+				Declined:                false,
+			},
+			autoDecline: nil,
+			coins:       sdk.NewCoins(sdk.NewInt64Coin("bill", 4)),
+			toAddr:      0,
+			fromAddrs:   []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("bill", 7)),
+				Declined:                false,
+			},
+		},
+		{
+			name:      "existing record not declined 2 froms first is auto-decline result is declined",
+			addrBase:  "ernd2ffa",
+			addrCount: 3,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("zela", 20_123)),
+				Declined:                false,
+			},
+			autoDecline: []int{1},
+			coins:       sdk.NewCoins(sdk.NewInt64Coin("zela", 5_000_000_000)),
+			toAddr:      0,
+			fromAddrs:   []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("zela", 5_000_020_123)),
+				Declined:                true,
+			},
+		},
+		{
+			name:      "existing record not declined 2 froms second is auto-decline result is declined",
+			addrBase:  "ernd2fsd",
+			addrCount: 3,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("vids", 456_789)),
+				Declined:                false,
+			},
+			autoDecline: []int{2},
+			coins:       sdk.NewCoins(sdk.NewInt64Coin("vids", 123_000_000)),
+			toAddr:      0,
+			fromAddrs:   []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("vids", 123_456_789)),
+				Declined:                true,
+			},
+		},
+		{
+			name:      "existing record not declined 2 froms both are auto-decline result is declined",
+			addrBase:  "ernd2fba",
+			addrCount: 3,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("green", 5)),
+				Declined:                false,
+			},
+			autoDecline: []int{1, 2},
+			coins:       sdk.NewCoins(sdk.NewInt64Coin("green", 333_333_333_333_333)),
+			toAddr:      0,
+			fromAddrs:   []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("green", 333_333_333_333_338)),
+				Declined:                true,
+			},
+		},
+		{
+			name:      "existing record declined 2 froms neither are auto-decline result is not declined",
+			addrBase:  "erd2fna",
+			addrCount: 3,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("bill", 3)),
+				Declined:                true,
+			},
+			autoDecline: nil,
+			coins:       sdk.NewCoins(sdk.NewInt64Coin("bill", 4)),
+			toAddr:      0,
+			fromAddrs:   []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("bill", 7)),
+				Declined:                false,
+			},
+		},
+		{
+			name:      "existing record declined 2 froms first is auto-decline result is declined",
+			addrBase:  "erd2ffa",
+			addrCount: 3,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("zela", 20_123)),
+				Declined:                true,
+			},
+			autoDecline: []int{1},
+			coins:       sdk.NewCoins(sdk.NewInt64Coin("zela", 5_000_000_000)),
+			toAddr:      0,
+			fromAddrs:   []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("zela", 5_000_020_123)),
+				Declined:                true,
+			},
+		},
+		{
+			name:      "existing record declined 2 froms second is auto-decline result is declined",
+			addrBase:  "erd2fsd",
+			addrCount: 3,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("vids", 456_789)),
+				Declined:                true,
+			},
+			autoDecline: []int{2},
+			coins:       sdk.NewCoins(sdk.NewInt64Coin("vids", 123_000_000)),
+			toAddr:      0,
+			fromAddrs:   []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("vids", 123_456_789)),
+				Declined:                true,
+			},
+		},
+		{
+			name:      "existing record declined 2 froms both are auto-decline result is declined",
+			addrBase:  "erd2fba",
+			addrCount: 3,
+			existing: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("green", 5)),
+				Declined:                true,
+			},
+			autoDecline: []int{1, 2},
+			coins:       sdk.NewCoins(sdk.NewInt64Coin("green", 333_333_333_333_333)),
+			toAddr:      0,
+			fromAddrs:   []int{1, 2},
+			expected: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+				Coins:                   sdk.NewCoins(sdk.NewInt64Coin("green", 333_333_333_333_338)),
+				Declined:                true,
+			},
+		},
+	}
+
+	seenAddrBases := map[string]bool{}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			// Make sure the address base isn't used by an earlier test.
+			s.Require().False(seenAddrBases[tc.addrBase], "an earlier test already used the address base %q", tc.addrBase)
+			seenAddrBases[tc.addrBase] = true
+
+			// Set up all the address stuff.
+			addrs := make([]sdk.AccAddress, tc.addrCount)
+			for i := range addrs {
+				addrs[i] = MakeTestAddr(tc.addrBase, uint8(i))
+			}
+			toAddr := addrs[tc.toAddr]
+			fromAddrs := make([]sdk.AccAddress, len(tc.fromAddrs))
+			for i, fi := range tc.fromAddrs {
+				fromAddrs[i] = addrs[fi]
+			}
+			autoAccept := make([]sdk.AccAddress, len(tc.autoAccept))
+			for i, ai := range tc.autoAccept {
+				autoAccept[i] = addrs[ai]
+			}
+			autoDecline := make([]sdk.AccAddress, len(tc.autoDecline))
+			for i, ai := range tc.autoDecline {
+				autoDecline[i] = addrs[ai]
+			}
+			if tc.existing != nil {
+				for i, addr := range tc.existing.UnacceptedFromAddresses {
+					if len(addr) == 1 && addr[0] < tc.addrCount {
+						tc.existing.UnacceptedFromAddresses[i] = addrs[addr[0]]
+					}
+				}
+				for i, addr := range tc.existing.AcceptedFromAddresses {
+					if len(addr) == 1 && addr[0] < tc.addrCount {
+						tc.existing.AcceptedFromAddresses[i] = addrs[addr[0]]
+					}
+				}
+			}
+			if tc.expected != nil {
+				for i, addr := range tc.expected.UnacceptedFromAddresses {
+					if len(addr) == 1 && addr[0] < tc.addrCount {
+						tc.expected.UnacceptedFromAddresses[i] = addrs[addr[0]]
+					}
+				}
+				for i, addr := range tc.expected.AcceptedFromAddresses {
+					if len(addr) == 1 && addr[0] < tc.addrCount {
+						tc.expected.AcceptedFromAddresses[i] = addrs[addr[0]]
+					}
+				}
+			}
+
+			// Set the existing value
+			if tc.existing != nil {
+				testFuncSet := func() {
+					s.keeper.SetQuarantineRecord(s.sdkCtx, toAddr, tc.existing)
+				}
+				s.Require().NotPanics(testFuncSet, "SetQuarantineRecord")
+			}
+
+			// Set up auto-accept and auto-decline
+			testFuncAuto := func(fromAddr sdk.AccAddress, response quarantine.AutoResponse) func() {
+				return func() {
+					s.keeper.SetAutoResponse(s.sdkCtx, toAddr, fromAddr, response)
+				}
+			}
+			for i, fromAddr := range autoAccept {
+				s.Require().NotPanics(testFuncAuto(fromAddr, quarantine.AUTO_RESPONSE_ACCEPT), "SetAutoResponse %d accept", i+1)
+			}
+			for i, fromAddr := range autoDecline {
+				s.Require().NotPanics(testFuncAuto(fromAddr, quarantine.AUTO_RESPONSE_DECLINE), "SetAutoResponse %d decline", i+1)
+			}
+
+			// Create events expected to be emitted by AddQuarantinedCoins.
+			event, err := sdk.TypedEventToEvent(&quarantine.EventFundsQuarantined{
+				ToAddress: toAddr.String(),
+				Coins:     tc.coins,
+			})
+			s.Require().NoError(err, "TypedEventToEvent EventFundsQuarantined")
+			expectedEvents := sdk.Events{event}
+
+			// Get a context with a fresh event manager and call AddQuarantinedCoins.
+			// Make sure it doesn't panic and make sure it doesn't return an error.
+			// Note: As of writing, the only error it could return is from emitting the events,
+			// and who knows how to actually trigger/test that.
+			ctx := s.sdkCtx.WithEventManager(sdk.NewEventManager())
+			testFuncAdd := func() {
+				err = s.keeper.AddQuarantinedCoins(ctx, tc.coins, toAddr, fromAddrs...)
+			}
+			s.Require().NotPanics(testFuncAdd, "AddQuarantinedCoins")
+			s.Require().NoError(err, "AddQuarantinedCoins")
+			actualEvents := ctx.EventManager().Events()
+			s.Assert().Equal(expectedEvents, actualEvents)
+
+			// Now look up the record and make sure it's as expected.
+			var actual *quarantine.QuarantineRecord
+			testFuncGet := func() {
+				actual = s.keeper.GetQuarantineRecord(s.sdkCtx, toAddr, fromAddrs...)
+			}
+			s.Require().NotPanics(testFuncGet, "GetQuarantineRecord")
+			s.Assert().Equal(tc.expected, actual, "resulting quarantine record")
 		})
-		return sdk.Events{events}, err
 	}
-
-	addAndCheck := func(t *testing.T, amt string, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) bool {
-		t.Helper()
-		coins, err := sdk.ParseCoinsNormalized(amt)
-		if !assert.NoError(t, err, "ParseCoinsNormalized(%s)", amt) {
-			return false
-		}
-		var expEvents sdk.Events
-		expEvents, err = makeEvents(toAddr, coins)
-		if !assert.NoError(t, err, "creating expected events") {
-			return false
-		}
-		ctx := s.sdkCtx.WithEventManager(sdk.NewEventManager())
-		testFuncAdd := func() {
-			err = s.keeper.AddQuarantinedCoins(ctx, coins, toAddr, fromAddrs...)
-		}
-		if !assert.NotPanics(t, testFuncAdd, "AddQuarantinedCoins") {
-			return false
-		}
-		if !assert.NoError(t, err, "AddQuarantinedCoins") {
-			return false
-		}
-		actEvents := ctx.EventManager().Events()
-		return assert.Equal(t, expEvents, actEvents)
-	}
-
-	s.Run("no record yet new record created", func() {
-		toAddr := MakeTestAddr("nrynrc", 0)
-		fromAddr := MakeTestAddr("nrynrc", 1)
-		expected := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{fromAddr},
-			Coins:                   sdk.NewCoins(sdk.NewInt64Coin("bananas", 99)),
-			Declined:                false,
-		}
-
-		addAndCheck(s.T(), "99bananas", toAddr, fromAddr)
-
-		var actual *quarantine.QuarantineRecord
-		testFunc := func() {
-			actual = s.keeper.GetQuarantineRecord(s.sdkCtx, toAddr, fromAddr)
-		}
-		s.Require().NotPanics(testFunc, "GetQuarantineRecord")
-		s.Assert().Equal(expected, actual, "resulting quarantine record")
-	})
-
-	s.Run("no record yet multiple froms new record created", func() {
-		toAddr := MakeTestAddr("nrymfnrc", 0)
-		fromAddr1 := MakeTestAddr("nrymfnrc", 1)
-		fromAddr2 := MakeTestAddr("nrymfnrc", 2)
-		expected := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{fromAddr1, fromAddr2},
-			Coins:                   sdk.NewCoins(sdk.NewInt64Coin("bananas", 99)),
-			Declined:                false,
-		}
-
-		addAndCheck(s.T(), "99bananas", toAddr, fromAddr1, fromAddr2)
-
-		var actual *quarantine.QuarantineRecord
-		testFunc := func() {
-			actual = s.keeper.GetQuarantineRecord(s.sdkCtx, toAddr, fromAddr1, fromAddr2)
-		}
-		s.Require().NotPanics(testFunc, "GetQuarantineRecord")
-		s.Assert().Equal(expected, actual, "resulting quarantine record")
-	})
-
-	s.Run("record exists is updated same denom", func() {
-		toAddr := MakeTestAddr("reiusd", 0)
-		fromAddr := MakeTestAddr("reiusd", 1)
-		orig := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{fromAddr},
-			Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pants", 11)),
-			Declined:                false,
-		}
-		testFuncSet := func() {
-			s.keeper.SetQuarantineRecord(s.sdkCtx, toAddr, orig)
-		}
-		s.Require().NotPanics(testFuncSet, "SetQuarantineRecord")
-
-		expected := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{fromAddr},
-			Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pants", 211)),
-			Declined:                false,
-		}
-
-		addAndCheck(s.T(), "200pants", toAddr, fromAddr)
-
-		var actual *quarantine.QuarantineRecord
-		testFunc := func() {
-			actual = s.keeper.GetQuarantineRecord(s.sdkCtx, toAddr, fromAddr)
-		}
-		s.Require().NotPanics(testFunc, "GetQuarantineRecord")
-		s.Assert().Equal(expected, actual, "resulting quarantine record")
-	})
-
-	s.Run("record exists is updated different denom", func() {
-		toAddr := MakeTestAddr("reiudd", 0)
-		fromAddr := MakeTestAddr("reiudd", 1)
-		orig := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{fromAddr},
-			Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pants", 11)),
-			Declined:                false,
-		}
-		testFuncSet := func() {
-			s.keeper.SetQuarantineRecord(s.sdkCtx, toAddr, orig)
-		}
-		s.Require().NotPanics(testFuncSet, "SetQuarantineRecord")
-
-		expected := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{fromAddr},
-			Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pants", 11), sdk.NewInt64Coin("hatcoins", 250)),
-			Declined:                false,
-		}
-
-		addAndCheck(s.T(), "250hatcoins", toAddr, fromAddr)
-
-		var actual *quarantine.QuarantineRecord
-		testFunc := func() {
-			actual = s.keeper.GetQuarantineRecord(s.sdkCtx, toAddr, fromAddr)
-		}
-		s.Require().NotPanics(testFunc, "GetQuarantineRecord")
-		s.Assert().Equal(expected, actual, "resulting quarantine record")
-	})
-
-	s.Run("record exists is updated multiple froms", func() {
-		toAddr := MakeTestAddr("reiumf", 0)
-		uFromAddr := MakeTestAddr("reiumf", 1)
-		aFromAddr := MakeTestAddr("reiumf", 2)
-		orig := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{uFromAddr},
-			AcceptedFromAddresses:   []sdk.AccAddress{aFromAddr},
-			Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pcoin", 53)),
-			Declined:                false,
-		}
-		testFuncSet := func() {
-			s.keeper.SetQuarantineRecord(s.sdkCtx, toAddr, orig)
-		}
-		s.Require().NotPanics(testFuncSet, "SetQuarantineRecord")
-
-		expected := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{uFromAddr},
-			AcceptedFromAddresses:   []sdk.AccAddress{aFromAddr},
-			Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pcoin", 9053)),
-			Declined:                false,
-		}
-
-		addAndCheck(s.T(), "9000pcoin", toAddr, uFromAddr, aFromAddr)
-
-		var actual *quarantine.QuarantineRecord
-		testFunc := func() {
-			actual = s.keeper.GetQuarantineRecord(s.sdkCtx, toAddr, uFromAddr, aFromAddr)
-		}
-		s.Require().NotPanics(testFunc, "GetQuarantineRecord")
-		s.Assert().Equal(expected, actual, "resulting quarantine record")
-	})
-
-	s.Run("record exists is updated multiple froms other order", func() {
-		toAddr := MakeTestAddr("reiumfo", 0)
-		uFromAddr := MakeTestAddr("reiumfo", 1)
-		aFromAddr := MakeTestAddr("reiumfo", 2)
-		orig := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{uFromAddr},
-			AcceptedFromAddresses:   []sdk.AccAddress{aFromAddr},
-			Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pcoin", 35)),
-			Declined:                false,
-		}
-		testFuncSet := func() {
-			s.keeper.SetQuarantineRecord(s.sdkCtx, toAddr, orig)
-		}
-		s.Require().NotPanics(testFuncSet, "SetQuarantineRecord")
-
-		expected := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{uFromAddr},
-			AcceptedFromAddresses:   []sdk.AccAddress{aFromAddr},
-			Coins:                   sdk.NewCoins(sdk.NewInt64Coin("pcoin", 935)),
-			Declined:                false,
-		}
-
-		addAndCheck(s.T(), "900pcoin", toAddr, aFromAddr, uFromAddr)
-
-		var actual *quarantine.QuarantineRecord
-		testFunc := func() {
-			actual = s.keeper.GetQuarantineRecord(s.sdkCtx, toAddr, uFromAddr, aFromAddr)
-		}
-		s.Require().NotPanics(testFunc, "GetQuarantineRecord")
-		s.Assert().Equal(expected, actual, "resulting quarantine record")
-	})
-
-	// one from, is auto-accept, nothing stored.
-	// two froms, one is auto-accept, is marked as such.
-	// two froms, both auto-accept, nothing stored.
-	// existing record not declined, from not auto-decline, result is not declined.
-	// existing record not declined, from is auto-decline, result is declined.
-	// existing record declined, from is auto-declined, result is declined.
-	// existing record declined, form is not auto-declined, result is not declined.
-	// existing record not declined, 2 froms, neither are auto-decline, result is not declined.
-	// existing record not declined, 2 froms, first is auto-decline, result is declined.
-	// existing record not declined, 2 froms, second is auto-decline, result is declined.
-	// existing record not declined, 2 froms, both are auto-decline, result is declined.
-	// existing record declined, 2 froms, neither are auto-decline, result is not declined
-	// existing record declined, 2 froms, first is auto-decline, result is declined.
-	// existing record declined, 2 froms, second is auto-decline, result is declined.
-	// existing record declined, 2 froms, both are auto-decline, result is declined.
 }
 
 // TODO[1046]: AcceptQuarantinedFunds
