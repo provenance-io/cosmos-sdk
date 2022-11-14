@@ -9,9 +9,15 @@ import (
 // This file is available only to unit tests and houses functions for doing
 // things with private keeper package stuff.
 
-// WithFundsHolder creates a copy of this setting the funds holder to the provided addr.
+// WithFundsHolder creates a copy of this, setting the funds holder to the provided addr.
 func (k Keeper) WithFundsHolder(addr sdk.AccAddress) Keeper {
 	k.fundsHolder = addr
+	return k
+}
+
+// WithBankKeeper creates a copy of this, setting the bank keeper to the provided one.
+func (k Keeper) WithBankKeeper(bankKeeper quarantine.BankKeeper) Keeper {
+	k.bankKeeper = bankKeeper
 	return k
 }
 

@@ -2,12 +2,13 @@ package testutil
 
 import (
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/types/address"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 )
 
@@ -27,7 +28,7 @@ func AssertErrorContents(t *testing.T, theError error, contains []string, msgAnd
 	return rv
 }
 
-// makeTestAddr makes an AccAddress that's 20 bytes long.
+// MakeTestAddr makes an AccAddress that's 20 bytes long.
 // The first byte is the index. The next bytes are the base.
 // The byte after that is 97 (a) + the index.
 // Each other byte is one more than the previous.
@@ -36,7 +37,7 @@ func MakeTestAddr(base string, index uint8) sdk.AccAddress {
 	return makePrefixedIncAddr(20, 97, base, index)
 }
 
-// makeLongAddr makes an AccAddress that's 32 bytes long.
+// MakeLongAddr makes an AccAddress that's 32 bytes long.
 // The first byte is the index. The next bytes are the base.
 // The byte after that is 65 (A) + the index.
 // Each other byte is one more than the previous.
@@ -45,7 +46,7 @@ func MakeLongAddr(base string, index uint8) sdk.AccAddress {
 	return makePrefixedIncAddr(32, 65, base, index)
 }
 
-// makeBadAddr makes an address that's longer than the max length allowed.
+// MakeBadAddr makes an address that's longer than the max length allowed.
 // The first byte is the index. The next bytes are the base.
 // The byte after that is 33 (!) + the index.
 // Each other byte is one more than the previous wrapping back to 0 after 255.
@@ -106,7 +107,7 @@ func makeIncAddr(length, firstCharLen uint, firstChar uint8) sdk.AccAddress {
 				b++
 			}
 		}
-		rv[i] = byte(b)
+		rv[i] = b
 	}
 	return rv
 }
@@ -246,4 +247,51 @@ func MakeCopyOfAutoResponseEntry(orig *quarantine.AutoResponseEntry) *quarantine
 		FromAddress: orig.FromAddress,
 		Response:    orig.Response,
 	}
+}
+
+// SentCoins are the arguments provided to SendCoinsBypassQuarantine.
+type SentCoins struct {
+	FromAddr sdk.AccAddress
+	ToAddr   sdk.AccAddress
+	Amt      sdk.Coins
+}
+
+var _ quarantine.BankKeeper = &MockBankKeeper{}
+
+type MockBankKeeper struct {
+	SentCoins             []*SentCoins
+	AllBalances           map[string]sdk.Coins
+	QueuedSendCoinsErrors []error
+}
+
+func NewMockBankKeeper() *MockBankKeeper {
+	return &MockBankKeeper{
+		SentCoins:             nil,
+		AllBalances:           make(map[string]sdk.Coins),
+		QueuedSendCoinsErrors: nil,
+	}
+}
+
+func (k *MockBankKeeper) SetQuarantineKeeper(_ banktypes.QuarantineKeeper) {
+	// do nothing.
+}
+
+func (k *MockBankKeeper) GetAllBalances(_ sdk.Context, addr sdk.AccAddress) sdk.Coins {
+	return k.AllBalances[string(addr)]
+}
+
+func (k *MockBankKeeper) SendCoinsBypassQuarantine(_ sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+	if len(k.QueuedSendCoinsErrors) > 0 {
+		err := k.QueuedSendCoinsErrors[0]
+		k.QueuedSendCoinsErrors = k.QueuedSendCoinsErrors[1:]
+		if err != nil {
+			return err
+		}
+	}
+	k.SentCoins = append(k.SentCoins, &SentCoins{
+		FromAddr: fromAddr,
+		ToAddr:   toAddr,
+		Amt:      amt,
+	})
+	return nil
 }

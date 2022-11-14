@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/simapp"
@@ -1242,10 +1243,10 @@ func (s *TestSuite) TestGetQuarantineRecords() {
 
 func (s *TestSuite) TestAddQuarantinedCoins() {
 	// Getting a little tricky here because I want different addresses for each test.
-	// The addrBase is used to generated addrCount addresses.
-	// Then, the autoAccept, autoDecline, toAddr and fromAddrs are address indexes to use (starting at 0).
-	// The tricky part is that both either the existing and expected Quarantine Records will have their
-	// AccAddresses updated before doing anything. Any AccAddress in them that's 1 byte long, and that byte
+	// The addrBase is used to generate addrCount addresses.
+	// Then, the autoAccept, autoDecline, toAddr and fromAddrs are address indexes to use.
+	// The tricky part is that both the existing and expected Quarantine Records will have their
+	// AccAddress slices updated before doing anything. For any AccAddress in them that's 1 byte long, and that byte
 	// is less than addrCount, it's used as an index and the entry is updated to be that address.
 	tests := []struct {
 		name        string
@@ -1650,8 +1651,10 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
 			// Make sure the address base isn't used by an earlier test.
+			s.Require().NotEqual(tc.addrBase, "no AddrBase defined")
 			s.Require().False(seenAddrBases[tc.addrBase], "an earlier test already used the address base %q", tc.addrBase)
 			seenAddrBases[tc.addrBase] = true
+			s.Require().GreaterOrEqual(int(tc.addrCount), 1, "addrCount")
 
 			// Set up all the address stuff.
 			addrs := make([]sdk.AccAddress, tc.addrCount)
@@ -1749,7 +1752,765 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 	}
 }
 
-// TODO[1046]: AcceptQuarantinedFunds
+func (s *TestSuite) TestAcceptQuarantinedFunds() {
+	// cz is a short function name to convert the provided strings into the Coins needed so often in here.
+	// Basically, I got tired of sdk.NewCoins(sdk.NewInt64Coin("foo", 5)), so now it's just cz("5foo")
+	cz := func(coins string) sdk.Coins {
+		rv, err := sdk.ParseCoinsNormalized(coins)
+		s.Require().NoError(err, "ParseCoinsNormalized(%q)", coins)
+		return rv
+	}
+
+	// makeEvent creates a funds-released event.
+	makeEvent := func(t *testing.T, addr sdk.AccAddress, amt sdk.Coins) sdk.Event {
+		event, err := sdk.TypedEventToEvent(&quarantine.EventFundsReleased{
+			ToAddress: addr.String(),
+			Coins:     amt,
+		})
+		require.NoError(t, err, "TypedEventToEvent EventFundsReleased")
+		return event
+	}
+
+	// An event maker knows the coins, and takes in the address to output an
+	// event with the (presently unknown) ToAddress and the (known) coins.
+	type eventMaker func(t *testing.T, addr sdk.AccAddress) sdk.Event
+
+	// makes the event maker functions, one for each string provided.
+	makeEventMakers := func(coins ...string) []eventMaker {
+		rv := make([]eventMaker, len(coins))
+		for i, amtStr := range coins {
+			// doing this now so that an invalid coin string fails the test before it gets started.
+			// Really, I didn't want to have to update cz to also take in a *testing.T.
+			amt := cz(amtStr)
+			rv[i] = func(t *testing.T, addr sdk.AccAddress) sdk.Event {
+				return makeEvent(t, addr, amt)
+			}
+		}
+		return rv
+	}
+
+	// Getting a little tricky here because I want different addresses for each test.
+	// The addrBase is used to generate addrCount addresses.
+	// Then, addrs[0] becomes the toAddr. The fromAddrs are indexes of the addrs to use.
+	// The tricky part is that the existing and expected Quarantine Records will have their
+	// AccAddresses updated before doing anything. For any AccAddress in them that's 1 byte long, and that byte
+	// is less than addrCount, it's used as an index and the entry is updated to be that address.
+	// Also, the provided []eventMaker is used to create all expected events receiving the toAddr.
+	tests := []struct {
+		name            string
+		addrBase        string
+		addrCount       uint8
+		records         []*quarantine.QuarantineRecord
+		autoDecline     []int
+		fromAddrs       []int
+		expectedRecords []*quarantine.QuarantineRecord
+		expectedSent    []sdk.Coins
+		expectedEvents  []eventMaker
+	}{
+		{
+			name:            "one from zero records",
+			addrBase:        "ofzr",
+			addrCount:       2,
+			fromAddrs:       []int{1},
+			expectedRecords: nil,
+			expectedSent:    nil,
+			expectedEvents:  nil,
+		},
+		{
+			name:      "one from one record fully",
+			addrBase:  "oforf",
+			addrCount: 2,
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					Coins:                   cz("17lemon"),
+				},
+			},
+			fromAddrs:       []int{1},
+			expectedRecords: nil,
+			expectedSent:    []sdk.Coins{cz("17lemon")},
+			expectedEvents:  makeEventMakers("17lemon"),
+		},
+		{
+			name:      "one from one record finally fully",
+			addrBase:  "foforf",
+			addrCount: 4,
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{2}, {3}},
+					Coins:                   cz("8878pillow"),
+				},
+			},
+			fromAddrs:       []int{1},
+			expectedRecords: nil,
+			expectedSent:    []sdk.Coins{cz("8878pillow")},
+			expectedEvents:  makeEventMakers("8878pillow"),
+		},
+		{
+			name:      "one from one record fully previously declined",
+			addrBase:  "oforfpd",
+			addrCount: 2,
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					Coins:                   cz("5rings,4birds,3hens"),
+					Declined:                true,
+				},
+			},
+			fromAddrs:       []int{1},
+			expectedRecords: nil,
+			expectedSent:    []sdk.Coins{cz("5rings,4birds,3hens")},
+			expectedEvents:  makeEventMakers("5rings,4birds,3hens"),
+		},
+		{
+			name:      "one from one record not fully",
+			addrBase:  "ofornf",
+			addrCount: 3,
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("1snow"),
+					Declined:                false,
+				},
+			},
+			fromAddrs: []int{1},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("1snow"),
+					Declined:                false,
+				},
+			},
+			expectedSent:   nil,
+			expectedEvents: nil,
+		},
+		{
+			name:      "one from one record not fully previously declined",
+			addrBase:  "ofornfpd",
+			addrCount: 3,
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("55orchid"),
+					Declined:                true,
+				},
+			},
+			fromAddrs: []int{1},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("55orchid"),
+					Declined:                false,
+				},
+			},
+			expectedSent:   nil,
+			expectedEvents: nil,
+		},
+		{
+			name:      "one from one record remaining unaccepted is auto-decline",
+			addrBase:  "oforruad",
+			addrCount: 3,
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("99redballoons"),
+					Declined:                true,
+				},
+			},
+			autoDecline: []int{2},
+			fromAddrs:   []int{1},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("99redballoons"),
+					Declined:                true,
+				},
+			},
+			expectedSent:   nil,
+			expectedEvents: nil,
+		},
+		{
+			name:      "one from one record accepted was auto-decline",
+			addrBase:  "oforawad",
+			addrCount: 3,
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("7777frog"),
+					Declined:                true,
+				},
+			},
+			autoDecline: []int{1},
+			fromAddrs:   []int{1},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("7777frog"),
+					Declined:                false,
+				},
+			},
+			expectedSent:   nil,
+			expectedEvents: nil,
+		},
+		{
+			name:      "one from two records neither fully",
+			addrBase:  "oftrnf",
+			addrCount: 4,
+			// Note: This assumes AcceptQuarantinedFunds loops through the records ordered by key.
+			//       The ordering defined here should match that to make test maintenance easier.
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("20533lamp"),
+					Declined:                true,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
+					Coins:                   cz("45sun"),
+					Declined:                true,
+				},
+			},
+			fromAddrs: []int{1},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("20533lamp"),
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("45sun"),
+				},
+			},
+			expectedSent:   nil,
+			expectedEvents: nil,
+		},
+		{
+			name:      "one from two records first fully",
+			addrBase:  "oftrff",
+			addrCount: 4,
+			// Note: This assumes AcceptQuarantinedFunds loops through the records ordered by key.
+			//       The ordering defined here should match that to make test maintenance easier.
+			records: []*quarantine.QuarantineRecord{
+				// key suffix = 0264500F71512C3B111D2D2EAA7322F018DA16B13CBB5D516BD4B51C4F1A94EC
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{2}},
+					Coins:                   cz("43bulb"),
+				},
+				// key suffix = 47F604CA662719863E40CF215D4DE088C22B7FF217236D887A99AF63A8F124E9
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
+					Coins:                   cz("5005shade"),
+				},
+			},
+			fromAddrs: []int{1},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("5005shade"),
+				},
+			},
+			expectedSent:   []sdk.Coins{cz("43bulb")},
+			expectedEvents: makeEventMakers("43bulb"),
+		},
+		{
+			name:      "one from two records second fully",
+			addrBase:  "ofttrsf",
+			addrCount: 4,
+			// Note: This assumes AcceptQuarantinedFunds loops through the records ordered by key.
+			//       The ordering defined here should match that to make test maintenance easier.
+			records: []*quarantine.QuarantineRecord{
+				// key suffix = EFC545E02C1785EEAAE9004385C6106E75AC42E8096556376097037A0C122E41
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
+					Coins:                   cz("346awning"),
+				},
+				// key suffix = F898B0EAF64B4D67BC2C285E541D381FA422D85B05C69D697C099B1968003955
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{2}},
+					Coins:                   cz("9444sprout"),
+				},
+			},
+			fromAddrs: []int{1},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("346awning"),
+				},
+			},
+			expectedSent:   []sdk.Coins{cz("9444sprout")},
+			expectedEvents: makeEventMakers("9444sprout"),
+		},
+		{
+			name:      "one from two records both fully",
+			addrBase:  "oftrbf",
+			addrCount: 4,
+			// Note: This assumes AcceptQuarantinedFunds loops through the records ordered by key.
+			//       The ordering defined here should match that to make test maintenance easier.
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					Coins:                   cz("4312stand"),
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{2}, {3}},
+					Coins:                   cz("9867sit"),
+				},
+			},
+			fromAddrs:       []int{1},
+			expectedRecords: nil,
+			expectedSent:    []sdk.Coins{cz("4312stand"), cz("9867sit")},
+			expectedEvents:  makeEventMakers("4312stand", "9867sit"),
+		},
+		{
+			name:            "two froms zero records",
+			addrBase:        "tfzr",
+			addrCount:       3,
+			fromAddrs:       []int{1, 2},
+			expectedRecords: nil,
+			expectedSent:    nil,
+			expectedEvents:  nil,
+		},
+		{
+			name:      "two froms one record fully",
+			addrBase:  "tforf",
+			addrCount: 3,
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("838hibiscus"),
+				},
+			},
+			fromAddrs:       []int{1, 2},
+			expectedRecords: nil,
+			expectedSent:    []sdk.Coins{cz("838hibiscus")},
+			expectedEvents:  makeEventMakers("838hibiscus"),
+		},
+		{
+			name:      "two froms other order one record fully",
+			addrBase:  "tfooorf",
+			addrCount: 3,
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("10downing"),
+				},
+			},
+			fromAddrs:       []int{2, 1},
+			expectedRecords: nil,
+			expectedSent:    []sdk.Coins{cz("10downing")},
+			expectedEvents:  makeEventMakers("10downing"),
+		},
+		{
+			name:      "two froms one record not fully",
+			addrBase:  "tfornf",
+			addrCount: 4,
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}, {3}},
+					Coins:                   cz("1060waddison"),
+				},
+			},
+			fromAddrs: []int{1, 2},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("1060waddison"),
+				},
+			},
+			expectedSent:   nil,
+			expectedEvents: nil,
+		},
+		{
+			name:      "two froms other order one record not fully",
+			addrBase:  "tfooornf",
+			addrCount: 4,
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}, {3}},
+					Coins:                   cz("1060waddison"),
+				},
+			},
+			fromAddrs: []int{2, 1},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("1060waddison"),
+				},
+			},
+			expectedSent:   nil,
+			expectedEvents: nil,
+		},
+		{
+			name:      "two froms two records neither fully",
+			addrBase:  "tftrnf",
+			addrCount: 5,
+			// Note: This assumes AcceptQuarantinedFunds loops through the records ordered by key.
+			//       The ordering defined here should match that to make test maintenance easier.
+			records: []*quarantine.QuarantineRecord{
+				// key suffix = 70705D4547681D550CF0D2A5B0996B6C2B42E181FF3F84A71CF6DAD8527C8C9C
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}, {4}},
+					Coins:                   cz("12drummers"),
+				},
+				// key suffix = 83A580037E196C7BB4B36FDB5531BA715DF24F86681A61FE7D72D77BE2ABA4E8
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}, {3}},
+					Coins:                   cz("11pipers"),
+				},
+			},
+			fromAddrs: []int{1, 2},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{4}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("12drummers"),
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("11pipers"),
+				},
+			},
+			expectedSent:   nil,
+			expectedEvents: nil,
+		},
+		{
+			name:      "two froms two records first fully",
+			addrBase:  "tftrff",
+			addrCount: 4,
+			// Note: This assumes AcceptQuarantinedFunds loops through the records ordered by key.
+			//       The ordering defined here should match that to make test maintenance easier.
+			records: []*quarantine.QuarantineRecord{
+				// key suffix = 72536EA1F5EB0C1FF2897309892EF28553E7A6C2508AB1751D363B8C3A31A56F
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
+					Coins:                   cz("8maids,7swans"),
+				},
+				// key suffix = BDA18A04E7AC80DDA290C262CBEF7C2928B95F9DBFE8F392BA82EC0186DBA0CC
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("10lords,9ladies"),
+				},
+			},
+			fromAddrs: []int{1, 3},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("10lords,9ladies"),
+				},
+			},
+			expectedSent:   []sdk.Coins{cz("8maids,7swans")},
+			expectedEvents: makeEventMakers("8maids,7swans"),
+		},
+		{
+			name:      "two froms two records second fully",
+			addrBase:  "tftrsf",
+			addrCount: 4,
+			// Note: This assumes AcceptQuarantinedFunds loops through the records ordered by key.
+			//       The ordering defined here should match that to make test maintenance easier.
+			records: []*quarantine.QuarantineRecord{
+				// key suffix = 00E641E0BF6DF9F97E61B94BBBA58B78F74198BB72681C9A24C12D2BF1DDC371
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("6geese"),
+				},
+				// key suffix = D052411A78E6208D482F600692C7382C814C35FB75B49430E5CF895B4FE5EEFF
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
+					Coins:                   cz("2doves,1peartree"),
+				},
+			},
+			fromAddrs: []int{1, 3},
+			expectedRecords: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("6geese"),
+				},
+			},
+			expectedSent:   []sdk.Coins{cz("2doves,1peartree")},
+			expectedEvents: makeEventMakers("2doves,1peartree"),
+		},
+		{
+			name:      "two froms two records both fully",
+			addrBase:  "tftrbf",
+			addrCount: 3,
+			// Note: This assumes AcceptQuarantinedFunds loops through the records ordered by key.
+			//       The ordering defined here should match that to make test maintenance easier.
+			records: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					Coins:                   cz("3amigos"),
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					Coins:                   cz("8amigos"),
+				},
+			},
+			fromAddrs:       []int{1, 2},
+			expectedRecords: nil,
+			expectedSent:    []sdk.Coins{cz("3amigos"), cz("8amigos")},
+			expectedEvents:  makeEventMakers("3amigos", "8amigos"),
+		},
+	}
+
+	seenAddrBases := map[string]bool{}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			// Make sure the address base isn't used by an earlier test.
+			s.Require().NotEqual(tc.addrBase, "", "no AddrBase defined")
+			s.Require().False(seenAddrBases[tc.addrBase], "an earlier test already used the address base %q", tc.addrBase)
+			seenAddrBases[tc.addrBase] = true
+			s.Require().GreaterOrEqual(int(tc.addrCount), 1, "addrCount")
+
+			// Set up all the address stuff.
+			addrs := make([]sdk.AccAddress, tc.addrCount)
+			for i := range addrs {
+				addrs[i] = MakeTestAddr(tc.addrBase, uint8(i))
+			}
+
+			toAddr := addrs[0]
+			fromAddrs := make([]sdk.AccAddress, len(tc.fromAddrs))
+			for i, fi := range tc.fromAddrs {
+				fromAddrs[i] = addrs[fi]
+			}
+
+			autoDecline := make([]sdk.AccAddress, len(tc.autoDecline))
+			for i, addr := range tc.autoDecline {
+				autoDecline[i] = addrs[addr]
+			}
+
+			for _, record := range tc.records {
+				for i, addr := range record.UnacceptedFromAddresses {
+					if len(addr) == 1 && addr[0] < tc.addrCount {
+						record.UnacceptedFromAddresses[i] = addrs[addr[0]]
+					}
+				}
+				for i, addr := range record.AcceptedFromAddresses {
+					if len(addr) == 1 && addr[0] < tc.addrCount {
+						record.AcceptedFromAddresses[i] = addrs[addr[0]]
+					}
+				}
+			}
+
+			for _, record := range tc.expectedRecords {
+				for i, addr := range record.UnacceptedFromAddresses {
+					if len(addr) == 1 && addr[0] < tc.addrCount {
+						record.UnacceptedFromAddresses[i] = addrs[addr[0]]
+					}
+				}
+				for i, addr := range record.AcceptedFromAddresses {
+					if len(addr) == 1 && addr[0] < tc.addrCount {
+						record.AcceptedFromAddresses[i] = addrs[addr[0]]
+					}
+				}
+			}
+
+			var expectedSends []*SentCoins
+			if len(tc.expectedSent) > 0 {
+				expectedSends = make([]*SentCoins, len(tc.expectedSent))
+				for i, sent := range tc.expectedSent {
+					expectedSends[i] = &SentCoins{
+						FromAddr: s.keeper.GetFundsHolder(),
+						ToAddr:   toAddr,
+						Amt:      sent,
+					}
+				}
+			}
+
+			expectedEvents := make(sdk.Events, len(tc.expectedEvents))
+			for i, ev := range tc.expectedEvents {
+				expectedEvents[i] = ev(s.T(), toAddr)
+			}
+
+			// Now that we have all the expected stuff defined, let's get things set up.
+
+			// mock the bank keeper and use that, so we don't have to fund stuff,
+			// and we get a record of the sends made.
+			bKeeper := NewMockBankKeeper() // bzzzzzzzzzz
+			qKeeper := s.keeper.WithBankKeeper(bKeeper)
+
+			// Set the existing records
+			for i, existing := range tc.records {
+				if existing != nil {
+					testFuncSet := func() {
+						qKeeper.SetQuarantineRecord(s.sdkCtx, toAddr, existing)
+					}
+					s.Require().NotPanics(testFuncSet, "SetQuarantineRecord[%d]", i)
+					recordKey := quarantine.CreateRecordKey(toAddr, existing.GetAllFromAddrs()...)
+					_, suffix := quarantine.ParseRecordIndexKey(recordKey)
+					s.T().Logf("existing[%d] suffix: %v", i, suffix)
+				}
+			}
+
+			// Set existing auto-declines
+			for i, addr := range autoDecline {
+				testFuncAuto := func() {
+					qKeeper.SetAutoResponse(s.sdkCtx, toAddr, addr, quarantine.AUTO_RESPONSE_DECLINE)
+				}
+				s.Require().NotPanics(testFuncAuto, "SetAutoResponse[%d]", i)
+			}
+
+			// Setup done. Let's do this.
+			var err error
+			ctx := s.sdkCtx.WithEventManager(sdk.NewEventManager())
+			testFuncAccept := func() {
+				err = qKeeper.AcceptQuarantinedFunds(ctx, toAddr, fromAddrs...)
+			}
+			s.Require().NotPanics(testFuncAccept, "AcceptQuarantinedFunds")
+			s.Require().NoError(err, "AcceptQuarantinedFunds")
+
+			// And check the expected.
+			var actualRecords []*quarantine.QuarantineRecord
+			testFuncGet := func() {
+				actualRecords = qKeeper.GetQuarantineRecords(s.sdkCtx, toAddr, fromAddrs...)
+			}
+			if s.Assert().NotPanics(testFuncGet, "GetQuarantineRecords") {
+				s.Assert().Equal(tc.expectedRecords, actualRecords, "resulting QuarantineRecords")
+			}
+
+			actualSends := bKeeper.SentCoins
+			s.Assert().Equal(expectedSends, actualSends, "sends made")
+
+			actualEvents := ctx.EventManager().Events()
+			s.Assert().Equal(expectedEvents, actualEvents, "events emitted during accept")
+		})
+	}
+
+	s.Run("send returns an error", func() {
+		// Setup: There will be 4 records to send, the 3rd will return an error.
+		// Check that:
+		// 1. The error is returned by AcceptQuarantinedFunds
+		// 2. The 1st and 2nd records are removed but the 3rd and 4th remain.
+		// 3. SendCoins was called for the 1st and 2nd records.
+		// 4. Events were emitted for the 1st and 2nd records.
+
+		// Setup address stuff.
+		addrBase := "sre"
+		s.Require().False(seenAddrBases[addrBase], "an earlier test already used the address base %q", addrBase)
+		seenAddrBases[addrBase] = true
+
+		toAddr := MakeTestAddr(addrBase, 0)
+		fromAddr1 := MakeTestAddr(addrBase, 1)
+		fromAddr2 := MakeTestAddr(addrBase, 2)
+		fromAddr3 := MakeTestAddr(addrBase, 3)
+		fromAddr4 := MakeTestAddr(addrBase, 4)
+		fromAddrs := []sdk.AccAddress{fromAddr1, fromAddr2, fromAddr3, fromAddr4}
+
+		// Define the existing records and expected stuff.
+		existingRecords := []*quarantine.QuarantineRecord{
+			{
+				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr1},
+				Coins:                   cz("1addra"),
+			},
+			{
+				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr2},
+				Coins:                   cz("2addrb"),
+			},
+			{
+				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr3},
+				Coins:                   cz("3addrc"),
+			},
+			{
+				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr4},
+				Coins:                   cz("4addrd"),
+			},
+		}
+
+		expectedErr := "this is a test error"
+
+		expectedRecords := []*quarantine.QuarantineRecord{
+			{
+				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr3},
+				Coins:                   cz("3addrc"),
+			},
+			{
+				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr4},
+				Coins:                   cz("4addrd"),
+			},
+		}
+
+		expectedSends := []*SentCoins{
+			{
+				FromAddr: s.keeper.GetFundsHolder(),
+				ToAddr:   toAddr,
+				Amt:      cz("1addra"),
+			},
+			{
+				FromAddr: s.keeper.GetFundsHolder(),
+				ToAddr:   toAddr,
+				Amt:      cz("2addrb"),
+			},
+		}
+
+		expectedEvents := sdk.Events{
+			makeEvent(s.T(), toAddr, cz("1addra")),
+			makeEvent(s.T(), toAddr, cz("2addrb")),
+		}
+
+		// mock the bank keeper and set it to return an error on the 3rd send.
+		bKeeper := NewMockBankKeeper() // bzzzzzzzzzz
+		bKeeper.QueuedSendCoinsErrors = []error{
+			nil,
+			nil,
+			fmt.Errorf(expectedErr),
+		}
+		qKeeper := s.keeper.WithBankKeeper(bKeeper)
+
+		// Store the existing records.
+		for i, record := range existingRecords {
+			testFuncSet := func() {
+				qKeeper.SetQuarantineRecord(s.sdkCtx, toAddr, record)
+			}
+			s.Require().NotPanics(testFuncSet, "SetQuarantineRecord[%d]", i)
+		}
+
+		// Do the thing.
+		var actualErr error
+		ctx := s.sdkCtx.WithEventManager(sdk.NewEventManager())
+		testFuncAccept := func() {
+			actualErr = qKeeper.AcceptQuarantinedFunds(ctx, toAddr, fromAddrs...)
+		}
+		s.Require().NotPanics(testFuncAccept, "AcceptQuarantinedFunds")
+
+		// Check that: 1. The error is returned by AcceptQuarantinedFunds
+		s.Assert().EqualError(actualErr, expectedErr, "AcceptQuarantinedFunds error")
+
+		// Check that: 2. The 1st and 2nd records are removed but the 3rd and 4th remain.
+		var actualRecords []*quarantine.QuarantineRecord
+		testFuncGet := func() {
+			actualRecords = qKeeper.GetQuarantineRecords(ctx, toAddr, fromAddrs...)
+		}
+		if s.Assert().NotPanics(testFuncGet, "GetQuarantineRecords") {
+			s.Assert().Equal(expectedRecords, actualRecords)
+		}
+
+		// Check that: 3. SendCoins was called for the 1st and 2nd records.
+		actualSends := bKeeper.SentCoins
+		s.Assert().Equal(expectedSends, actualSends, "sends made")
+
+		// Check that: 4. Events were emitted for the 1st and 2nd records.
+		actualEvents := ctx.EventManager().Events()
+		s.Assert().Equal(expectedEvents, actualEvents, "events emitted")
+	})
+}
+
 // TODO[1046]: DeclineQuarantinedFunds
 // TODO[1046]: IterateQuarantineRecords
 // TODO[1046]: GetAllQuarantinedFunds
