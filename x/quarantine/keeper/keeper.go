@@ -270,7 +270,6 @@ func (k Keeper) AddQuarantinedCoins(ctx sdk.Context, coins sdk.Coins, toAddr sdk
 func (k Keeper) AcceptQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) error {
 	for _, record := range k.GetQuarantineRecords(ctx, toAddr, fromAddrs...) {
 		if record.AcceptFrom(fromAddrs) {
-			k.SetQuarantineRecord(ctx, toAddr, record)
 			if record.IsFullyAccepted() {
 				err := k.bankKeeper.SendCoinsBypassQuarantine(ctx, k.fundsHolder, toAddr, record.Coins)
 				if err != nil {
@@ -284,7 +283,10 @@ func (k Keeper) AcceptQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, f
 				if err != nil {
 					return err
 				}
+			} else {
+				record.Declined = k.IsAutoDecline(ctx, toAddr, record.UnacceptedFromAddresses...)
 			}
+			k.SetQuarantineRecord(ctx, toAddr, record)
 		}
 	}
 
