@@ -2590,6 +2590,374 @@ func TestQuarantineRecord_AcceptFrom(t *testing.T) {
 	}
 }
 
+func TestQuarantineRecord_DeclineFrom(t *testing.T) {
+	testAddr0 := MakeTestAddr("qrdf", 0)
+	testAddr1 := MakeTestAddr("qrdf", 1)
+	testAddr2 := MakeTestAddr("qrdf", 2)
+	testAddr3 := MakeTestAddr("qrdf", 3)
+	testAddr4 := MakeTestAddr("qrdf", 4)
+
+	tests := []struct {
+		name  string
+		qr    *QuarantineRecord
+		addrs []sdk.AccAddress
+		exp   bool
+		expQr *QuarantineRecord
+	}{
+		{
+			name: "control",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: nil,
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr0},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   nil,
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "nil addrs",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: nil,
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "nil addrs already declined",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+			addrs: nil,
+			exp:   false,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "empty addrs",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "one addrs only in unaccepted already",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr0},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "one addrs only in unaccepted already and already declined",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+			addrs: []sdk.AccAddress{testAddr0},
+			exp:   false,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "record has nil addresses",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: nil,
+				AcceptedFromAddresses:   nil,
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr0},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: nil,
+				AcceptedFromAddresses:   nil,
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "one address in both",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr0},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0, testAddr0},
+				AcceptedFromAddresses:   nil,
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "two accepted two other provided",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: nil,
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr2, testAddr3},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: nil,
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "two accepted both provided",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr0, testAddr1},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2, testAddr0, testAddr1},
+				AcceptedFromAddresses:   nil,
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "two accepted both provided previously declined",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+			addrs: []sdk.AccAddress{testAddr0, testAddr1},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2, testAddr0, testAddr1},
+				AcceptedFromAddresses:   nil,
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "two accepted both provided opposite order",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr1, testAddr0},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2, testAddr0, testAddr1},
+				AcceptedFromAddresses:   nil,
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "two accepted first provided first with 2 others",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr0, testAddr3, testAddr4},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2, testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "two accepted first provided second with 2 others",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr3, testAddr0, testAddr4},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2, testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "two accepted first provided third with 2 others",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+			addrs: []sdk.AccAddress{testAddr4, testAddr3, testAddr0},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2, testAddr0},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "two same accepted provided once",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr0},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr0},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2, testAddr0, testAddr0},
+				AcceptedFromAddresses:   nil,
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "two accepted second provided first with 2 others",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr1, testAddr3, testAddr4},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2, testAddr1},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "two accepted second provided second with 2 others",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr3, testAddr1, testAddr4},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2, testAddr1},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "two accepted second provided third with 2 others",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0, testAddr1},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr4, testAddr3, testAddr1},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr2, testAddr1},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0},
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+		{
+			name: "one accepted provided thrice",
+			qr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr4},
+				AcceptedFromAddresses:   []sdk.AccAddress{testAddr0},
+				Coins:                   coinMakerOK(),
+				Declined:                false,
+			},
+			addrs: []sdk.AccAddress{testAddr0, testAddr0, testAddr0},
+			exp:   true,
+			expQr: &QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{testAddr4, testAddr0},
+				AcceptedFromAddresses:   nil,
+				Coins:                   coinMakerOK(),
+				Declined:                true,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			origInput := MakeCopyOfAccAddresses(tc.addrs)
+			actual := tc.qr.DeclineFrom(tc.addrs)
+			assert.Equal(t, tc.exp, actual, "DeclineFrom return value")
+			assert.Equal(t, tc.expQr, tc.qr, "QuarantineRecord after DeclineFrom")
+			assert.Equal(t, origInput, tc.addrs, "input address slice before and after DeclineFrom")
+		})
+	}
+
+}
+
 func TestQuarantineRecord_GetAllFromAddrs(t *testing.T) {
 	testAddr0 := MakeTestAddr("qrgafa", 0)
 	testAddr1 := MakeTestAddr("qrgafa", 1)
