@@ -1,4 +1,4 @@
-package testutil
+package quarantine
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/quarantine"
 )
 
 // AssertErrorContents asserts that, if contains is empty, there's no error.
@@ -128,8 +127,8 @@ func MakeCopyOfCoins(orig sdk.Coins) sdk.Coins {
 }
 
 // MakeCopyOfQuarantinedFunds makes a deep copy of a QuarantinedFunds.
-func MakeCopyOfQuarantinedFunds(orig *quarantine.QuarantinedFunds) *quarantine.QuarantinedFunds {
-	return &quarantine.QuarantinedFunds{
+func MakeCopyOfQuarantinedFunds(orig *QuarantinedFunds) *QuarantinedFunds {
+	return &QuarantinedFunds{
 		ToAddress:               orig.ToAddress,
 		UnacceptedFromAddresses: MakeCopyOfStringSlice(orig.UnacceptedFromAddresses),
 		Coins:                   MakeCopyOfCoins(orig.Coins),
@@ -138,11 +137,11 @@ func MakeCopyOfQuarantinedFunds(orig *quarantine.QuarantinedFunds) *quarantine.Q
 }
 
 // MakeCopyOfQuarantinedFundsSlice makes a deep copy of a slice of QuarantinedFunds.
-func MakeCopyOfQuarantinedFundsSlice(orig []*quarantine.QuarantinedFunds) []*quarantine.QuarantinedFunds {
+func MakeCopyOfQuarantinedFundsSlice(orig []*QuarantinedFunds) []*QuarantinedFunds {
 	if orig == nil {
 		return orig
 	}
-	rv := make([]*quarantine.QuarantinedFunds, len(orig))
+	rv := make([]*QuarantinedFunds, len(orig))
 	for i, qf := range orig {
 		rv[i] = MakeCopyOfQuarantinedFunds(qf)
 	}
@@ -160,8 +159,8 @@ func MakeCopyOfStringSlice(orig []string) []string {
 }
 
 // MakeCopyOfQuarantineRecord makes a deep copy of a QuarantineRecord.
-func MakeCopyOfQuarantineRecord(orig *quarantine.QuarantineRecord) *quarantine.QuarantineRecord {
-	return &quarantine.QuarantineRecord{
+func MakeCopyOfQuarantineRecord(orig *QuarantineRecord) *QuarantineRecord {
+	return &QuarantineRecord{
 		UnacceptedFromAddresses: MakeCopyOfAccAddresses(orig.UnacceptedFromAddresses),
 		AcceptedFromAddresses:   MakeCopyOfAccAddresses(orig.AcceptedFromAddresses),
 		Coins:                   MakeCopyOfCoins(orig.Coins),
@@ -214,11 +213,11 @@ func MakeCopyOfByteSliceSlice(orig [][]byte) [][]byte {
 }
 
 // MakeCopyOfGenesisState makes a deep copy of a GenesisState.
-func MakeCopyOfGenesisState(orig *quarantine.GenesisState) *quarantine.GenesisState {
+func MakeCopyOfGenesisState(orig *GenesisState) *GenesisState {
 	if orig == nil {
 		return nil
 	}
-	return &quarantine.GenesisState{
+	return &GenesisState{
 		QuarantinedAddresses: MakeCopyOfStringSlice(orig.QuarantinedAddresses),
 		AutoResponses:        MakeCopyOfAutoResponseEntries(orig.AutoResponses),
 		QuarantinedFunds:     MakeCopyOfQuarantinedFundsSlice(orig.QuarantinedFunds),
@@ -226,11 +225,11 @@ func MakeCopyOfGenesisState(orig *quarantine.GenesisState) *quarantine.GenesisSt
 }
 
 // MakeCopyOfAutoResponseEntries makes a deep copy of a slice of AutoResponseEntries.
-func MakeCopyOfAutoResponseEntries(orig []*quarantine.AutoResponseEntry) []*quarantine.AutoResponseEntry {
+func MakeCopyOfAutoResponseEntries(orig []*AutoResponseEntry) []*AutoResponseEntry {
 	if orig == nil {
 		return nil
 	}
-	rv := make([]*quarantine.AutoResponseEntry, len(orig))
+	rv := make([]*AutoResponseEntry, len(orig))
 	for i, entry := range orig {
 		rv[i] = MakeCopyOfAutoResponseEntry(entry)
 	}
@@ -238,11 +237,11 @@ func MakeCopyOfAutoResponseEntries(orig []*quarantine.AutoResponseEntry) []*quar
 }
 
 // MakeCopyOfAutoResponseEntry makes a deep copy of an AutoResponseEntry.
-func MakeCopyOfAutoResponseEntry(orig *quarantine.AutoResponseEntry) *quarantine.AutoResponseEntry {
+func MakeCopyOfAutoResponseEntry(orig *AutoResponseEntry) *AutoResponseEntry {
 	if orig == nil {
 		return nil
 	}
-	return &quarantine.AutoResponseEntry{
+	return &AutoResponseEntry{
 		ToAddress:   orig.ToAddress,
 		FromAddress: orig.FromAddress,
 		Response:    orig.Response,
@@ -256,7 +255,7 @@ type SentCoins struct {
 	Amt      sdk.Coins
 }
 
-var _ quarantine.BankKeeper = &MockBankKeeper{}
+var _ BankKeeper = &MockBankKeeper{}
 
 type MockBankKeeper struct {
 	SentCoins             []*SentCoins

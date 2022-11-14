@@ -6,8 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
-
-	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
 
 type coinMaker func() sdk.Coins
@@ -274,6 +272,176 @@ func TestContainsAddress(t *testing.T) {
 			assert.Equal(t, tc.expected, actual, "containsSuffix result")
 			assert.Equal(t, origSuffixes, tc.addrs, "addrs before and after containsSuffix")
 			assert.Equal(t, origSuffixToFind, tc.addrToFind, "addrToFind before and after containsSuffix")
+		})
+	}
+}
+
+func TestFindAddresses(t *testing.T) {
+	addr0 := MakeTestAddr("fa", 0)
+	addr1 := MakeTestAddr("fa", 1)
+	addr2 := MakeTestAddr("fa", 2)
+	addr3 := MakeTestAddr("fa", 3)
+	addr4 := MakeTestAddr("fa", 4)
+	addr5 := MakeTestAddr("fa", 5)
+
+	tests := []struct {
+		name        string
+		allAddrs    []sdk.AccAddress
+		addrsToFind []sdk.AccAddress
+		found       []sdk.AccAddress
+		leftover    []sdk.AccAddress
+	}{
+		{
+			name:        "nil nil",
+			allAddrs:    nil,
+			addrsToFind: nil,
+			found:       nil,
+			leftover:    nil,
+		},
+		{
+			name:        "nil empty",
+			allAddrs:    nil,
+			addrsToFind: []sdk.AccAddress{},
+			found:       nil,
+			leftover:    nil,
+		},
+		{
+			name:        "empty nil",
+			allAddrs:    []sdk.AccAddress{},
+			addrsToFind: nil,
+			found:       nil,
+			leftover:    nil,
+		},
+		{
+			name:        "empty empty",
+			allAddrs:    []sdk.AccAddress{},
+			addrsToFind: []sdk.AccAddress{},
+			found:       nil,
+			leftover:    nil,
+		},
+		{
+			name:        "two nil",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: nil,
+			found:       nil,
+			leftover:    []sdk.AccAddress{addr0, addr1},
+		},
+		{
+			name:        "two empty",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{},
+			found:       nil,
+			leftover:    []sdk.AccAddress{addr0, addr1},
+		},
+		{
+			name:        "two first",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr0},
+			found:       []sdk.AccAddress{addr0},
+			leftover:    []sdk.AccAddress{addr1},
+		},
+		{
+			name:        "two second",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr1},
+			found:       []sdk.AccAddress{addr1},
+			leftover:    []sdk.AccAddress{addr0},
+		},
+		{
+			name:        "two other",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr2},
+			found:       nil,
+			leftover:    []sdk.AccAddress{addr0, addr1},
+		},
+		{
+			name:        "two first second",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr0, addr1},
+			found:       []sdk.AccAddress{addr0, addr1},
+			leftover:    nil,
+		},
+		{
+			name:        "two second first",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr1, addr0},
+			found:       []sdk.AccAddress{addr0, addr1},
+			leftover:    nil,
+		},
+		{
+			name:        "two first second first",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr0, addr1, addr0},
+			found:       []sdk.AccAddress{addr0, addr1},
+			leftover:    nil,
+		},
+		{
+			name:        "two first first",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr0, addr0},
+			found:       []sdk.AccAddress{addr0},
+			leftover:    []sdk.AccAddress{addr1},
+		},
+		{
+			name:        "two second second",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr1, addr1},
+			found:       []sdk.AccAddress{addr1},
+			leftover:    []sdk.AccAddress{addr0},
+		},
+		{
+			name:        "two first other",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr0, addr2},
+			found:       []sdk.AccAddress{addr0},
+			leftover:    []sdk.AccAddress{addr1},
+		},
+		{
+			name:        "two second other",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr1, addr2},
+			found:       []sdk.AccAddress{addr1},
+			leftover:    []sdk.AccAddress{addr0},
+		},
+		{
+			name:        "two other first",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr2, addr0},
+			found:       []sdk.AccAddress{addr0},
+			leftover:    []sdk.AccAddress{addr1},
+		},
+		{
+			name:        "two other second",
+			allAddrs:    []sdk.AccAddress{addr0, addr1},
+			addrsToFind: []sdk.AccAddress{addr2, addr1},
+			found:       []sdk.AccAddress{addr1},
+			leftover:    []sdk.AccAddress{addr0},
+		},
+		{
+			name:        "four other third other",
+			allAddrs:    []sdk.AccAddress{addr0, addr1, addr2, addr3},
+			addrsToFind: []sdk.AccAddress{addr4, addr2, addr5},
+			found:       []sdk.AccAddress{addr2},
+			leftover:    []sdk.AccAddress{addr0, addr1, addr3},
+		},
+		{
+			name:        "dups in allAddrs",
+			allAddrs:    []sdk.AccAddress{addr0, addr1, addr0, addr1, addr2},
+			addrsToFind: []sdk.AccAddress{addr0, addr1},
+			found:       []sdk.AccAddress{addr0, addr1, addr0, addr1},
+			leftover:    []sdk.AccAddress{addr2},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			allAddrsOrig := MakeCopyOfAccAddresses(tc.allAddrs)
+			addrsToFindOrig := MakeCopyOfAccAddresses(tc.addrsToFind)
+			found, leftover := findAddresses(tc.allAddrs, tc.addrsToFind)
+			assert.Equal(t, tc.found, found, "found")
+			assert.Equal(t, tc.leftover, leftover, "leftover")
+			assert.Equal(t, allAddrsOrig, tc.allAddrs, "allAddrs before and after findAddresses")
+			assert.Equal(t, addrsToFindOrig, tc.addrsToFind, "addrsToFindOrig before and after findAddresses")
 		})
 	}
 }

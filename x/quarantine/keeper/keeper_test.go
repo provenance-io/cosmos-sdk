@@ -15,14 +15,99 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 	"github.com/cosmos/cosmos-sdk/x/quarantine/keeper"
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtime "github.com/tendermint/tendermint/types/time"
-
-	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
+
+// Make the "quarantine." unneeded for MakeTestAddr.
+var MakeTestAddr = quarantine.MakeTestAddr
+
+// Define a Mock Bank Keeper that defining of SendCoins errors and
+// records calls made to SendCoins (but doesn't do anything else).
+// Also have it just do a map lookup for GetAllBalances.
+
+// SentCoins are the arguments that were provided to SendCoins.
+type SentCoins struct {
+	FromAddr sdk.AccAddress
+	ToAddr   sdk.AccAddress
+	Amt      sdk.Coins
+}
+
+var _ quarantine.BankKeeper = &MockBankKeeper{}
+
+type MockBankKeeper struct {
+	// SentCoins are the arguments that were provided to SendCoins, one entry for each call to it.
+	SentCoins []*SentCoins
+	// AllBalances are the balances to return from GetAllBalances.
+	AllBalances map[string]sdk.Coins
+	// QueuedSendCoinsErrors are any errors queued up to return from SendCoins.
+	// An entry of nil means no error will be returned.
+	// If this is empty, no error is returned.
+	// Entries are removed once they're used.
+	QueuedSendCoinsErrors []error
+}
+
+func NewMockBankKeeper() *MockBankKeeper {
+	return &MockBankKeeper{
+		SentCoins:             nil,
+		AllBalances:           make(map[string]sdk.Coins),
+		QueuedSendCoinsErrors: nil,
+	}
+}
+
+func (k *MockBankKeeper) SetQuarantineKeeper(_ banktypes.QuarantineKeeper) {
+	// do nothing.
+}
+
+func (k *MockBankKeeper) GetAllBalances(_ sdk.Context, addr sdk.AccAddress) sdk.Coins {
+	return k.AllBalances[string(addr)]
+}
+
+func (k *MockBankKeeper) SendCoinsBypassQuarantine(_ sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+	if len(k.QueuedSendCoinsErrors) > 0 {
+		err := k.QueuedSendCoinsErrors[0]
+		k.QueuedSendCoinsErrors = k.QueuedSendCoinsErrors[1:]
+		if err != nil {
+			return err
+		}
+	}
+	k.SentCoins = append(k.SentCoins, &SentCoins{
+		FromAddr: fromAddr,
+		ToAddr:   toAddr,
+		Amt:      amt,
+	})
+	return nil
+}
+
+// czt is a way to create coins that requires fewer characters than sdk.NewCoins(sdk.NewInt64Coin("foo", 5))
+func czt(t *testing.T, coins string) sdk.Coins {
+	rv, err := sdk.ParseCoinsNormalized(coins)
+	require.NoError(t, err, "ParseCoinsNormalized(%q)", coins)
+	return rv
+}
+
+// updateQR updates the AccAddresses using the provided addrs.
+// Any AccAddress that is 1 byte long and can be an index in addrs,
+// is replaced by the addrs entry using that byte as the index.
+// E.g. if UnacceptedFromAddresses is []sdk.AccAddress{{1}}, then it will be replaced with addrs[1].
+func updateQR(addrs []sdk.AccAddress, record *quarantine.QuarantineRecord) {
+	if record != nil {
+		for i, addr := range record.UnacceptedFromAddresses {
+			if len(addr) == 1 && int(addr[0]) < len(addrs) {
+				record.UnacceptedFromAddresses[i] = addrs[addr[0]]
+			}
+		}
+		for i, addr := range record.AcceptedFromAddresses {
+			if len(addr) == 1 && int(addr[0]) < len(addrs) {
+				record.AcceptedFromAddresses[i] = addrs[addr[0]]
+			}
+		}
+	}
+}
 
 type TestSuite struct {
 	suite.Suite
@@ -55,38 +140,6 @@ func (s *TestSuite) SetupTest() {
 	s.addr3 = addrs[2]
 	s.addr4 = addrs[3]
 	s.addr5 = addrs[4]
-}
-
-func (s *TestSuite) StopIfFailed() {
-	if s.T().Failed() {
-		s.T().FailNow()
-	}
-}
-
-// czt is a way to create coins that requires fewer characters than sdk.NewCoins(sdk.NewInt64Coin("foo", 5))
-func czt(t *testing.T, coins string) sdk.Coins {
-	rv, err := sdk.ParseCoinsNormalized(coins)
-	require.NoError(t, err, "ParseCoinsNormalized(%q)", coins)
-	return rv
-}
-
-// updateQR updates the AccAddresses using the provided addrs.
-// Any AccAddress that is 1 byte long and can be an index in addrs,
-// is replaced by the addrs entry using that byte as the index.
-// E.g. if UnacceptedFromAddresses is []sdk.AccAddress{{1}}, then it will be replaced with addrs[1].
-func updateQR(addrs []sdk.AccAddress, record *quarantine.QuarantineRecord) {
-	if record != nil {
-		for i, addr := range record.UnacceptedFromAddresses {
-			if len(addr) == 1 && int(addr[0]) < len(addrs) {
-				record.UnacceptedFromAddresses[i] = addrs[addr[0]]
-			}
-		}
-		for i, addr := range record.AcceptedFromAddresses {
-			if len(addr) == 1 && int(addr[0]) < len(addrs) {
-				record.AcceptedFromAddresses[i] = addrs[addr[0]]
-			}
-		}
-	}
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -618,7 +671,7 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 			Coins:                   czt(s.T(), "456bar,1233foo"),
 			Declined:                false,
 		}
-		expected := MakeCopyOfQuarantineRecord(record)
+		expected := quarantine.MakeCopyOfQuarantineRecord(record)
 
 		testFuncSet := func() {
 			s.keeper.SetQuarantineRecord(s.sdkCtx, toAddr, record)
@@ -651,7 +704,7 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 			Coins:                   sdk.Coins{},
 			Declined:                false,
 		}
-		expected := MakeCopyOfQuarantineRecord(record)
+		expected := quarantine.MakeCopyOfQuarantineRecord(record)
 
 		testFuncSet := func() {
 			s.keeper.SetQuarantineRecord(s.sdkCtx, toAddr, record)
@@ -684,7 +737,7 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 			Coins:                   sdk.Coins{},
 			Declined:                false,
 		}
-		expected := MakeCopyOfQuarantineRecord(record)
+		expected := quarantine.MakeCopyOfQuarantineRecord(record)
 
 		testFuncSet := func() {
 			s.keeper.SetQuarantineRecord(s.sdkCtx, toAddr, record)
@@ -787,7 +840,7 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 			Coins:                   sdk.Coins{},
 			Declined:                false,
 		}
-		expected := MakeCopyOfQuarantineRecord(record)
+		expected := quarantine.MakeCopyOfQuarantineRecord(record)
 
 		testFuncSet := func() {
 			s.keeper.SetQuarantineRecord(s.sdkCtx, toAddr, record)
@@ -863,7 +916,7 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 			Coins:                   sdk.Coins{},
 			Declined:                false,
 		}
-		expected := MakeCopyOfQuarantineRecord(record)
+		expected := quarantine.MakeCopyOfQuarantineRecord(record)
 
 		testFuncSet := func() {
 			s.keeper.SetQuarantineRecord(s.sdkCtx, toAddr, record)

@@ -19,6 +19,29 @@ func containsAddress(addrs []sdk.AccAddress, addrToFind sdk.AccAddress) bool {
 	return false
 }
 
+// findAddresses searches allAddrs for each of the addrsToFind.
+// It returns two slices. The first is each of the addrsToFind that were in allAddrs.
+// The second is each of the allAddrs that were not in addrsToFind.
+// Each entry in allAddrs will either end up in the first or second return slice.
+func findAddresses(allAddrs []sdk.AccAddress, addrsToFind []sdk.AccAddress) (found []sdk.AccAddress, leftover []sdk.AccAddress) {
+	found = make([]sdk.AccAddress, 0, len(addrsToFind))
+	leftover = make([]sdk.AccAddress, 0, len(allAddrs))
+	for _, existing := range allAddrs {
+		if containsAddress(addrsToFind, existing) {
+			found = append(found, existing)
+		} else {
+			leftover = append(leftover, existing)
+		}
+	}
+	if len(found) == 0 {
+		found = nil
+	}
+	if len(leftover) == 0 {
+		leftover = nil
+	}
+	return found, leftover
+}
+
 // containsSuffix returns true if the suffixToFind is in the suffixes.
 func containsSuffix(suffixes [][]byte, suffixToFind []byte) bool {
 	for _, suffix := range suffixes {
@@ -193,22 +216,40 @@ func (r QuarantineRecord) IsFullyAccepted() bool {
 
 // AcceptFrom moves the provided addrs from the unaccepted slice to the accepted slice.
 // If none of the provided addrs are in this record's unaccepted slice, this does nothing.
-// Returns true if one or more addresses were moved to accepted.
+// Returns true if anything in this record changed.
 func (r *QuarantineRecord) AcceptFrom(addrs []sdk.AccAddress) bool {
-	rv := false
-	leftoverAddrs := make([]sdk.AccAddress, 0, len(r.UnacceptedFromAddresses))
-	for _, existing := range r.UnacceptedFromAddresses {
-		if containsAddress(addrs, existing) {
-			rv = true
-			r.AcceptedFromAddresses = append(r.AcceptedFromAddresses, existing)
-		} else {
-			leftoverAddrs = append(leftoverAddrs, existing)
-		}
+	nowAccepted, leftovers := findAddresses(r.UnacceptedFromAddresses, addrs)
+	if len(nowAccepted) == 0 {
+		return false
 	}
-	if len(leftoverAddrs) == 0 {
-		r.UnacceptedFromAddresses = nil
+	r.AcceptedFromAddresses = append(r.AcceptedFromAddresses, nowAccepted...)
+	if len(leftovers) > 0 {
+		r.UnacceptedFromAddresses = leftovers
 	} else {
-		r.UnacceptedFromAddresses = leftoverAddrs
+		r.UnacceptedFromAddresses = nil
+	}
+	return true
+}
+
+// DeclineFrom marks this as declined and moves any of the provided addrs from accepted to unaccepted.
+// If none of the provided addrs are in this record's accepted slice, accepted and unaccepted are left unchanged,
+// but the record is still marked as declined.
+// Returns true if anything in this record changed.
+func (r *QuarantineRecord) DeclineFrom(addrs []sdk.AccAddress) bool {
+	rv := false
+	if !r.Declined {
+		r.Declined = true
+		rv = true
+	}
+	backToUnaccepted, leftovers := findAddresses(r.AcceptedFromAddresses, addrs)
+	if len(backToUnaccepted) > 0 {
+		rv = true
+		r.UnacceptedFromAddresses = append(r.UnacceptedFromAddresses, backToUnaccepted...)
+		if len(leftovers) > 0 {
+			r.AcceptedFromAddresses = leftovers
+		} else {
+			r.AcceptedFromAddresses = nil
+		}
 	}
 	return rv
 }

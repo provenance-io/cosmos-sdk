@@ -296,8 +296,7 @@ func (k Keeper) AcceptQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, f
 // DeclineQuarantinedFunds marks as declined, all quarantined funds to toAddr where any fromAddr is a sender.
 func (k Keeper) DeclineQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) {
 	for _, record := range k.GetQuarantineRecords(ctx, toAddr, fromAddrs...) {
-		if !record.Declined {
-			record.Declined = true
+		if record.DeclineFrom(fromAddrs) {
 			k.SetQuarantineRecord(ctx, toAddr, record)
 		}
 	}

@@ -7,8 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/stretchr/testify/assert"
-
-	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
 
 func TestPrefixValues(t *testing.T) {
