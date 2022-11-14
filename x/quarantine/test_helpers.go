@@ -8,7 +8,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 // AssertErrorContents asserts that, if contains is empty, there's no error.
@@ -246,51 +245,4 @@ func MakeCopyOfAutoResponseEntry(orig *AutoResponseEntry) *AutoResponseEntry {
 		FromAddress: orig.FromAddress,
 		Response:    orig.Response,
 	}
-}
-
-// SentCoins are the arguments provided to SendCoinsBypassQuarantine.
-type SentCoins struct {
-	FromAddr sdk.AccAddress
-	ToAddr   sdk.AccAddress
-	Amt      sdk.Coins
-}
-
-var _ BankKeeper = &MockBankKeeper{}
-
-type MockBankKeeper struct {
-	SentCoins             []*SentCoins
-	AllBalances           map[string]sdk.Coins
-	QueuedSendCoinsErrors []error
-}
-
-func NewMockBankKeeper() *MockBankKeeper {
-	return &MockBankKeeper{
-		SentCoins:             nil,
-		AllBalances:           make(map[string]sdk.Coins),
-		QueuedSendCoinsErrors: nil,
-	}
-}
-
-func (k *MockBankKeeper) SetQuarantineKeeper(_ banktypes.QuarantineKeeper) {
-	// do nothing.
-}
-
-func (k *MockBankKeeper) GetAllBalances(_ sdk.Context, addr sdk.AccAddress) sdk.Coins {
-	return k.AllBalances[string(addr)]
-}
-
-func (k *MockBankKeeper) SendCoinsBypassQuarantine(_ sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
-	if len(k.QueuedSendCoinsErrors) > 0 {
-		err := k.QueuedSendCoinsErrors[0]
-		k.QueuedSendCoinsErrors = k.QueuedSendCoinsErrors[1:]
-		if err != nil {
-			return err
-		}
-	}
-	k.SentCoins = append(k.SentCoins, &SentCoins{
-		FromAddr: fromAddr,
-		ToAddr:   toAddr,
-		Amt:      amt,
-	})
-	return nil
 }
