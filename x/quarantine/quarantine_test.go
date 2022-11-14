@@ -1,4 +1,4 @@
-package quarantine
+package quarantine_test
 
 import (
 	"fmt"
@@ -6,6 +6,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/cosmos/cosmos-sdk/x/quarantine"
+	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
 
 type coinMaker func() sdk.Coins
@@ -268,7 +271,7 @@ func TestContainsAddress(t *testing.T) {
 			origSuffixes := MakeCopyOfAccAddresses(tc.addrs)
 			origSuffixToFind := MakeCopyOfAccAddress(tc.addrToFind)
 
-			actual := containsAddress(tc.addrs, tc.addrToFind)
+			actual := ContainsAddress(tc.addrs, tc.addrToFind)
 			assert.Equal(t, tc.expected, actual, "containsSuffix result")
 			assert.Equal(t, origSuffixes, tc.addrs, "addrs before and after containsSuffix")
 			assert.Equal(t, origSuffixToFind, tc.addrToFind, "addrToFind before and after containsSuffix")
@@ -437,7 +440,7 @@ func TestFindAddresses(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			allAddrsOrig := MakeCopyOfAccAddresses(tc.allAddrs)
 			addrsToFindOrig := MakeCopyOfAccAddresses(tc.addrsToFind)
-			found, leftover := findAddresses(tc.allAddrs, tc.addrsToFind)
+			found, leftover := FindAddresses(tc.allAddrs, tc.addrsToFind)
 			assert.Equal(t, tc.found, found, "found")
 			assert.Equal(t, tc.leftover, leftover, "leftover")
 			assert.Equal(t, allAddrsOrig, tc.allAddrs, "allAddrs before and after findAddresses")
@@ -694,7 +697,7 @@ func TestContainsSuffix(t *testing.T) {
 			origSuffixes := MakeCopyOfByteSliceSlice(tc.suffixes)
 			origSuffixToFind := MakeCopyOfByteSlice(tc.suffixToFind)
 
-			actual := containsSuffix(tc.suffixes, tc.suffixToFind)
+			actual := ContainsSuffix(tc.suffixes, tc.suffixToFind)
 			assert.Equal(t, tc.expected, actual, "containsSuffix result")
 			assert.Equal(t, origSuffixes, tc.suffixes, "suffixes before and after containsSuffix")
 			assert.Equal(t, origSuffixToFind, tc.suffixToFind, "suffixToFind before and after containsSuffix")

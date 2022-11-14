@@ -1,4 +1,4 @@
-package quarantine
+package testutil
 
 import (
 	"fmt"
@@ -8,7 +8,11 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
+
+	. "github.com/cosmos/cosmos-sdk/x/quarantine"
 )
+
+// This file contains some functions handy for doing unit tests.
 
 // AssertErrorContents asserts that, if contains is empty, there's no error.
 // Otherwise, asserts that there is an error, and that it contains each of the provided strings.

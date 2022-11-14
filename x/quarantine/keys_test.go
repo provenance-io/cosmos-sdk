@@ -1,4 +1,4 @@
-package quarantine
+package quarantine_test
 
 import (
 	"fmt"
@@ -7,6 +7,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/cosmos/cosmos-sdk/x/quarantine"
+	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
 
 func TestPrefixValues(t *testing.T) {
@@ -619,7 +622,7 @@ func TestCreateRecordKey(t *testing.T) {
 	})
 
 	makeExpected := func(toAddrBz []byte, fromAddrs ...sdk.AccAddress) []byte {
-		recordId := createRecordSuffix(fromAddrs)
+		recordId := CreateRecordSuffix(fromAddrs)
 		rv := make([]byte, 0, len(expectedPrefix)+1+len(toAddrBz)+1+len(recordId))
 		rv = append(rv, expectedPrefix...)
 		rv = append(rv, byte(len(toAddrBz)))
@@ -718,14 +721,14 @@ func TestCreateRecordSuffix(t *testing.T) {
 
 	t.Run("panics if no addrs", func(t *testing.T) {
 		assert.PanicsWithError(t, "at least one fromAddr is required: internal logic error",
-			func() { createRecordSuffix([]sdk.AccAddress{}) },
+			func() { CreateRecordSuffix([]sdk.AccAddress{}) },
 			"createRecordSuffix([]sdk.AccAddress{})",
 		)
 	})
 
 	t.Run("panics with nil addrs", func(t *testing.T) {
 		assert.PanicsWithError(t, "at least one fromAddr is required: internal logic error",
-			func() { createRecordSuffix(nil) },
+			func() { CreateRecordSuffix(nil) },
 			"createRecordSuffix(nil)",
 		)
 	})
@@ -742,7 +745,7 @@ func TestCreateRecordSuffix(t *testing.T) {
 				copy(orig[i], addr)
 			}
 		}
-		actual := createRecordSuffix(input)
+		actual := CreateRecordSuffix(input)
 		assert.Equal(t, orig, input, msgAndArgs...)
 		return actual
 	}
@@ -865,13 +868,13 @@ func TestParseRecordKey(t *testing.T) {
 			name:        "multiple from addrs",
 			key:         CreateRecordKey(testAddr0, testAddr1, testAddr2),
 			expToAddr:   testAddr0,
-			expFromAddr: createRecordSuffix([]sdk.AccAddress{testAddr1, testAddr2}),
+			expFromAddr: CreateRecordSuffix([]sdk.AccAddress{testAddr1, testAddr2}),
 		},
 		{
 			name:        "multiple from addrs diff order",
 			key:         CreateRecordKey(testAddr0, testAddr2, testAddr1),
 			expToAddr:   testAddr0,
-			expFromAddr: createRecordSuffix([]sdk.AccAddress{testAddr1, testAddr2}),
+			expFromAddr: CreateRecordSuffix([]sdk.AccAddress{testAddr1, testAddr2}),
 		},
 		{
 			name:     "bad toAddr len",

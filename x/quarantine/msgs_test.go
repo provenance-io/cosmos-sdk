@@ -1,4 +1,4 @@
-package quarantine
+package quarantine_test
 
 import (
 	"testing"
@@ -6,6 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	. "github.com/cosmos/cosmos-sdk/x/quarantine"
+	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
 
 func TestNewMsgOptIn(t *testing.T) {

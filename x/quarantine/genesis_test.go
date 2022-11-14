@@ -1,9 +1,12 @@
-package quarantine
+package quarantine_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/cosmos/cosmos-sdk/x/quarantine"
+	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
 
 func TestGenesisState_Validate(t *testing.T) {
