@@ -2539,20 +2539,313 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 				},
 			},
 		},
+		{
+			name:      "one from one record previously accepted",
+			addrBase:  "oforpa",
+			addrCount: 3,
+			fromAddrs: []int{1},
+			existing: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("8139oforpa"),
+					Declined:                false,
+				},
+			},
+			expected: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}, {1}},
+					Coins:                   cz("8139oforpa"),
+					Declined:                true,
+				},
+			},
+		},
+		{
+			name:      "one from two records",
+			addrBase:  "oftr",
+			addrCount: 4,
+			fromAddrs: []int{1},
+			existing: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("85oftr"),
+					Declined:                false,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
+					Coins:                   cz("190oftr"),
+					Declined:                false,
+				},
+			},
+			expected: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("85oftr"),
+					Declined:                true,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
+					Coins:                   cz("190oftr"),
+					Declined:                true,
+				},
+			},
+		},
+		{
+			name:      "two froms zero records",
+			addrBase:  "tfzr",
+			addrCount: 3,
+			fromAddrs: []int{1, 2},
+			existing:  nil,
+			expected:  nil,
+		},
+		{
+			name:      "two froms one record from first",
+			addrBase:  "tforff",
+			addrCount: 4,
+			fromAddrs: []int{1, 2},
+			existing: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
+					Coins:                   cz("321tforff"),
+					Declined:                false,
+				},
+			},
+			expected: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}, {1}},
+					Coins:                   cz("321tforff"),
+					Declined:                true,
+				},
+			},
+		},
+		{
+			name:      "two froms one record from second",
+			addrBase:  "tforfs",
+			addrCount: 4,
+			fromAddrs: []int{1, 2},
+			existing: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{2}},
+					Coins:                   cz("321tforfs"),
+					Declined:                false,
+				},
+			},
+			expected: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}, {2}},
+					Coins:                   cz("321tforfs"),
+					Declined:                true,
+				},
+			},
+		},
+		{
+			name:      "two froms one record from both",
+			addrBase:  "tforfb",
+			addrCount: 4,
+			fromAddrs: []int{1, 2},
+			existing: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("4tforfb"),
+					Declined:                false,
+				},
+			},
+			expected: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{3}, {1}, {2}},
+					AcceptedFromAddresses:   nil,
+					Coins:                   cz("4tforfb"),
+					Declined:                true,
+				},
+			},
+		},
+		{
+			name:      "two froms two records from first",
+			addrBase:  "tftrff",
+			addrCount: 5,
+			fromAddrs: []int{1, 2},
+			existing: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
+					Coins:                   cz("13tftrff"),
+					Declined:                false,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {4}},
+					Coins:                   cz("14tftrff"),
+					Declined:                false,
+				},
+			},
+			expected: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
+					Coins:                   cz("13tftrff"),
+					Declined:                true,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {4}},
+					Coins:                   cz("14tftrff"),
+					Declined:                true,
+				},
+			},
+		},
+		{
+			name:      "two froms two records from second",
+			addrBase:  "tftrfs",
+			addrCount: 5,
+			fromAddrs: []int{1, 2},
+			existing: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
+					Coins:                   cz("13tftrfs"),
+					Declined:                false,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}, {4}},
+					Coins:                   cz("14tftrfs"),
+					Declined:                false,
+				},
+			},
+			expected: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
+					Coins:                   cz("13tftrfs"),
+					Declined:                true,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}, {4}},
+					Coins:                   cz("14tftrfs"),
+					Declined:                true,
+				},
+			},
+		},
+		{
+			name:      "two froms two records one from each",
+			addrBase:  "tftrofe",
+			addrCount: 3,
+			fromAddrs: []int{1, 2},
+			existing: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					Coins:                   cz("1tftrofe"),
+					Declined:                false,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					Coins:                   cz("2tftrofe"),
+					Declined:                false,
+				},
+			},
+			expected: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					Coins:                   cz("1tftrofe"),
+					Declined:                true,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					Coins:                   cz("2tftrofe"),
+					Declined:                true,
+				},
+			},
+		},
+		{
+			name:      "two froms two records one from one other from both",
+			addrBase:  "tftrofb",
+			addrCount: 3,
+			fromAddrs: []int{1, 2},
+			existing: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					Coins:                   cz("1tftrofb"),
+					Declined:                false,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("12tftrofb"),
+					Declined:                false,
+				},
+			},
+			expected: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					Coins:                   cz("1tftrofb"),
+					Declined:                true,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("12tftrofb"),
+					Declined:                true,
+				},
+			},
+		},
+		{
+			name: "two froms five records",
+			// (1st, 2nd, 1st & 2nd, 1st & other, 2nd & other)
+			addrBase:  "tffr",
+			addrCount: 4,
+			fromAddrs: []int{1, 2},
+			existing: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					Coins:                   cz("1tffr"),
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					Coins:                   cz("2tffr"),
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{2}},
+					Coins:                   cz("12tffr"),
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
+					Coins:                   cz("13tffr"),
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}, {3}},
+					Coins:                   cz("23tffr"),
+				},
+			},
+			expected: []*quarantine.QuarantineRecord{
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					Coins:                   cz("1tffr"),
+					Declined:                true,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
+					Coins:                   cz("2tffr"),
+					Declined:                true,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
+					Coins:                   cz("12tffr"),
+					Declined:                true,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
+					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
+					Coins:                   cz("13tffr"),
+					Declined:                true,
+				},
+				{
+					UnacceptedFromAddresses: []sdk.AccAddress{{2}, {3}},
+					Coins:                   cz("23tffr"),
+					Declined:                true,
+				},
+			},
+		},
 	}
-
-	// Test cases:
-	// one from one record previously accepted
-	// one from two records
-	// two froms zero records
-	// two froms one record from first
-	// two froms one record from second
-	// two froms one record from both
-	// two froms two records from first
-	// two froms two records from second
-	// two froms two records one from each
-	// two froms two records one from one other from both
-	// two froms five records (1st, 2nd, 1st & 2nd, 1st & other, 2nd & other)
 
 	seenAddrBases := map[string]bool{}
 
@@ -2589,6 +2882,9 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 					s.keeper.SetQuarantineRecord(s.sdkCtx, toAddr, record)
 				}
 				s.Require().NotPanics(testFuncSet, "SetQuarantineRecord[%d]", i)
+				recordKey := quarantine.CreateRecordKey(toAddr, record.GetAllFromAddrs()...)
+				_, suffix := quarantine.ParseRecordKey(recordKey)
+				s.T().Logf("record[%d] suffix: %v", i, suffix)
 			}
 
 			// Do the thing.
@@ -2602,14 +2898,217 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 				actual = s.keeper.GetQuarantineRecords(s.sdkCtx, toAddr, fromAddrs...)
 			}
 			if s.Assert().NotPanics(testFuncGet, "GetQuarantineRecords") {
-				s.Assert().Equal(tc.expected, actual, "resulting quarantine records")
+				s.Assert().ElementsMatch(tc.expected, actual, "resulting quarantine records")
 			}
 		})
 	}
 }
 
-// TODO[1046]: IterateQuarantineRecords
-// TODO[1046]: GetAllQuarantinedFunds
+func (s *TestSuite) TestQuarantineRecordsIterateAndGetAll() {
+	// cz an even shorter way of creating coins since all creating should get the same *testing.T here.
+	cz := func(coins string) sdk.Coins {
+		return czt(s.T(), coins)
+	}
+
+	addrBase := "qriga"
+	addr0 := MakeTestAddr(addrBase, 0)
+	addr1 := MakeTestAddr(addrBase, 1)
+	addr2 := MakeTestAddr(addrBase, 2)
+	addr3 := MakeTestAddr(addrBase, 3)
+	addr4 := MakeTestAddr(addrBase, 4)
+	addr5 := MakeTestAddr(addrBase, 5)
+	addr6 := MakeTestAddr(addrBase, 6)
+	addr7 := MakeTestAddr(addrBase, 7)
+
+	// Create 7 records
+	initialRecords := []*struct {
+		to     sdk.AccAddress
+		record *quarantine.QuarantineRecord
+	}{
+		{
+			to: addr0,
+			record: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{addr1},
+				Coins:                   cz("1boom"),
+			},
+		},
+		{
+			to: addr0,
+			record: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{addr2},
+				Coins:                   cz("5boom"),
+			},
+		},
+		{
+			to: addr3,
+			record: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{addr1},
+				Coins:                   cz("23boom"),
+				Declined:                true,
+			},
+		},
+		{
+			to: addr5,
+			record: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{addr6},
+				AcceptedFromAddresses:   []sdk.AccAddress{addr7},
+				Coins:                   cz("79boom"),
+			},
+		},
+		{
+			to: addr0,
+			record: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{addr3},
+				Coins:                   cz("163boom"),
+			},
+		},
+		{
+			to: addr3,
+			record: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{addr4},
+				Coins:                   cz("331boom"),
+			},
+		},
+		{
+			to: addr0,
+			record: &quarantine.QuarantineRecord{
+				UnacceptedFromAddresses: []sdk.AccAddress{addr7},
+				Coins:                   cz("673boom"),
+			},
+		},
+	}
+
+	for i, rec := range initialRecords {
+		testFuncSet := func() {
+			s.keeper.SetQuarantineRecord(s.sdkCtx, rec.to, rec.record)
+		}
+		s.Require().NotPanics(testFuncSet, "SetQuarantineRecord[%d]", i)
+	}
+
+	// Remove the 2nd one by setting it as fully accepted.
+	secondTo := MakeCopyOfAccAddress(initialRecords[1].to)
+	secondRec := MakeCopyOfQuarantineRecord(initialRecords[1].record)
+	secondRec.AcceptFrom(secondRec.UnacceptedFromAddresses)
+	testFuncUnset := func() {
+		s.keeper.SetQuarantineRecord(s.sdkCtx, secondTo, secondRec)
+	}
+	s.Require().NotPanics(testFuncUnset, "SetQuarantineRecord to remove second")
+
+	// Final setup:
+	// They should be ordered by key and the keys should start with their indexes.
+	// [0] 0 <- 1 1boom
+	// [4] 0 <- 3 163boom
+	// [6] 0 <- 7 673boom
+	// [2] 3 <- 1 23boom (declined)
+	// [5] 3 <- 4 331boom
+	// [3] 5 <- 6,7 79boom (7 accepted)
+
+	allOrder := []int{0, 4, 6, 2, 5, 3}
+
+	tests := []struct {
+		name          string
+		toAddr        sdk.AccAddress
+		expectedOrder []int
+	}{
+		{
+			name:          "IterateQuarantineRecords all",
+			toAddr:        nil,
+			expectedOrder: allOrder,
+		},
+		{
+			name:          "IterateQuarantineRecords addr0",
+			toAddr:        addr0,
+			expectedOrder: []int{0, 4, 6},
+		},
+		{
+			name:          "IterateQuarantineRecords addr1",
+			toAddr:        addr1,
+			expectedOrder: []int{},
+		},
+		{
+			name:          "IterateQuarantineRecords addr2",
+			toAddr:        addr2,
+			expectedOrder: []int{},
+		},
+		{
+			name:          "IterateQuarantineRecords addr3",
+			toAddr:        addr3,
+			expectedOrder: []int{2, 5},
+		},
+		{
+			name:          "IterateQuarantineRecords addr4",
+			toAddr:        addr4,
+			expectedOrder: []int{},
+		},
+		{
+			name:          "IterateQuarantineRecords addr5",
+			toAddr:        addr5,
+			expectedOrder: []int{3},
+		},
+		{
+			name:          "IterateQuarantineRecords addr6",
+			toAddr:        addr6,
+			expectedOrder: []int{},
+		},
+		{
+			name:          "IterateQuarantineRecords addr7",
+			toAddr:        addr7,
+			expectedOrder: []int{},
+		},
+	}
+
+	// cbArgs are the arguments provided to the callback of IterateQuarantineRecords
+	type cbArgs struct {
+		toAddr sdk.AccAddress
+		suffix sdk.AccAddress
+		record *quarantine.QuarantineRecord
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			expected := make([]*cbArgs, len(tc.expectedOrder))
+			for i, iri := range tc.expectedOrder {
+				tr := initialRecords[iri]
+				key := quarantine.CreateRecordKey(tr.to, tr.record.GetAllFromAddrs()...)
+				_, suffix := quarantine.ParseRecordKey(key)
+				expected[i] = &cbArgs{
+					toAddr: MakeCopyOfAccAddress(tr.to),
+					suffix: MakeCopyOfAccAddress(suffix),
+					record: MakeCopyOfQuarantineRecord(tr.record),
+				}
+			}
+
+			actual := make([]*cbArgs, 0, len(expected))
+			callback := func(toAddr, recordSuffix sdk.AccAddress, record *quarantine.QuarantineRecord) bool {
+				actual = append(actual, &cbArgs{
+					toAddr: toAddr,
+					suffix: recordSuffix,
+					record: record,
+				})
+				return false
+			}
+			testFunc := func() {
+				s.keeper.IterateQuarantineRecords(s.sdkCtx, tc.toAddr, callback)
+			}
+			s.Require().NotPanics(testFunc, "IterateQuarantineRecords")
+			s.Assert().Equal(expected, actual, "callback args provided to IterateQuarantineRecords")
+		})
+	}
+
+	s.Run("GetAllQuarantinedFunds", func() {
+		expected := make([]*quarantine.QuarantinedFunds, len(allOrder))
+		for i, iri := range allOrder {
+			tr := initialRecords[iri]
+			expected[i] = tr.record.AsQuarantinedFunds(tr.to)
+		}
+		var actual []*quarantine.QuarantinedFunds
+		testFuncGetAll := func() {
+			actual = s.keeper.GetAllQuarantinedFunds(s.sdkCtx)
+		}
+		s.Require().NotPanics(testFuncGetAll, "GetAllQuarantinedFunds")
+		s.Assert().Equal(expected, actual, "GetAllQuarantinedFunds results")
+	})
+}
 
 // TODO[1046]: setQuarantineRecordSuffixIndex
 // TODO[1046]: bzToQuarantineRecordSuffixIndex
