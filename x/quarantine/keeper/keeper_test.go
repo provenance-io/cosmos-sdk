@@ -195,13 +195,14 @@ func (s *TestSuite) TestQuarantinedAccountsIterateAndGetAll() {
 	// Now opt out addr2.
 	s.Require().NoError(s.keeper.SetOptOut(s.sdkCtx, s.addr2), "SetOptOut addr2")
 
-	expectedAddrs := []sdk.AccAddress{s.addr1, s.addr3, s.addr5}
-	sort.Slice(expectedAddrs, func(i, j int) bool {
-		return bytes.Compare(expectedAddrs[i], expectedAddrs[j]) < 0
+	allAddrs := []sdk.AccAddress{s.addr1, s.addr3, s.addr5}
+	sort.Slice(allAddrs, func(i, j int) bool {
+		return bytes.Compare(allAddrs[i], allAddrs[j]) < 0
 	})
 
 	s.Run("IterateQuarantinedAccounts", func() {
-		addrs := make([]sdk.AccAddress, 0, len(expectedAddrs))
+		expected := allAddrs
+		addrs := make([]sdk.AccAddress, 0, len(expected))
 		callback := func(toAddr sdk.AccAddress) bool {
 			addrs = append(addrs, toAddr)
 			return false
@@ -211,12 +212,28 @@ func (s *TestSuite) TestQuarantinedAccountsIterateAndGetAll() {
 			s.keeper.IterateQuarantinedAccounts(s.sdkCtx, callback)
 		}
 		s.Require().NotPanics(testFunc, "IterateQuarantinedAccounts")
-		s.Assert().Equal(expectedAddrs, addrs, "iterated addrs")
+		s.Assert().Equal(expected, addrs, "iterated addrs")
+	})
+
+	s.Run("IterateQuarantinedAccounts early stop", func() {
+		stopLen := 2
+		expected := allAddrs[:stopLen]
+		addrs := make([]sdk.AccAddress, 0, stopLen)
+		callback := func(toAddr sdk.AccAddress) bool {
+			addrs = append(addrs, toAddr)
+			return len(addrs) >= stopLen
+		}
+
+		testFunc := func() {
+			s.keeper.IterateQuarantinedAccounts(s.sdkCtx, callback)
+		}
+		s.Require().NotPanics(testFunc, "IterateQuarantinedAccounts")
+		s.Assert().Equal(expected, addrs, "iterated addrs")
 	})
 
 	s.Run("GetAllQuarantinedAccounts", func() {
-		expected := make([]string, len(expectedAddrs))
-		for i, addr := range expectedAddrs {
+		expected := make([]string, len(allAddrs))
+		for i, addr := range allAddrs {
 			expected[i] = addr.String()
 		}
 
@@ -357,7 +374,7 @@ func (s *TestSuite) TestAutoResponsesItateAndGetAll() {
 		response quarantine.AutoResponse
 	}
 
-	expectedAllArgs := []callbackArgs{
+	allArgs := []callbackArgs{
 		{toAddr: s.addr1, fromAddr: s.addr2, response: arAccept},
 		{toAddr: s.addr1, fromAddr: s.addr3, response: arAccept},
 		{toAddr: s.addr1, fromAddr: s.addr4, response: arAccept},
@@ -373,7 +390,8 @@ func (s *TestSuite) TestAutoResponsesItateAndGetAll() {
 	}
 
 	s.Run("IterateAutoResponses all", func() {
-		actualAllArgs := make([]callbackArgs, 0, len(expectedAllArgs))
+		expected := allArgs
+		actualAllArgs := make([]callbackArgs, 0, len(allArgs))
 		callback := func(toAddr, fromAddr sdk.AccAddress, response quarantine.AutoResponse) bool {
 			actualAllArgs = append(actualAllArgs, callbackArgs{toAddr: toAddr, fromAddr: fromAddr, response: response})
 			return false
@@ -382,13 +400,13 @@ func (s *TestSuite) TestAutoResponsesItateAndGetAll() {
 			s.keeper.IterateAutoResponses(s.sdkCtx, nil, callback)
 		}
 		s.Require().NotPanics(testFunc, "IterateAutoResponses")
-		s.Assert().Equal(expectedAllArgs, actualAllArgs, "iterated args")
+		s.Assert().Equal(expected, actualAllArgs, "iterated args")
 	})
 
 	for i, addr := range []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5} {
 		s.Run(fmt.Sprintf("IterateAutoResponses addr%d", i+1), func() {
 			var expected []callbackArgs
-			for _, args := range expectedAllArgs {
+			for _, args := range allArgs {
 				if addr.Equals(args.toAddr) {
 					expected = append(expected, args)
 				}
@@ -406,9 +424,24 @@ func (s *TestSuite) TestAutoResponsesItateAndGetAll() {
 		})
 	}
 
+	s.Run("IterateAutoResponses stop early", func() {
+		stopLen := 4
+		expected := allArgs[:stopLen]
+		actual := make([]callbackArgs, 0, stopLen)
+		callback := func(toAddr, fromAddr sdk.AccAddress, response quarantine.AutoResponse) bool {
+			actual = append(actual, callbackArgs{toAddr: toAddr, fromAddr: fromAddr, response: response})
+			return len(actual) >= stopLen
+		}
+		testFunc := func() {
+			s.keeper.IterateAutoResponses(s.sdkCtx, nil, callback)
+		}
+		s.Require().NotPanics(testFunc, "IterateAutoResponses")
+		s.Assert().Equal(expected, actual, "iterated args")
+	})
+
 	s.Run("GetAllAutoResponseEntries", func() {
-		expected := make([]*quarantine.AutoResponseEntry, len(expectedAllArgs))
-		for i, args := range expectedAllArgs {
+		expected := make([]*quarantine.AutoResponseEntry, len(allArgs))
+		for i, args := range allArgs {
 			expected[i] = &quarantine.AutoResponseEntry{
 				ToAddress:   args.toAddr.String(),
 				FromAddress: args.fromAddr.String(),
@@ -3094,6 +3127,36 @@ func (s *TestSuite) TestQuarantineRecordsIterateAndGetAll() {
 			s.Assert().Equal(expected, actual, "callback args provided to IterateQuarantineRecords")
 		})
 	}
+
+	s.Run("IterateQuarantineRecords stop early", func() {
+		stopLen := 4
+		expected := make([]*cbArgs, stopLen)
+		for i, iri := range allOrder[:stopLen] {
+			tr := initialRecords[iri]
+			key := quarantine.CreateRecordKey(tr.to, tr.record.GetAllFromAddrs()...)
+			_, suffix := quarantine.ParseRecordKey(key)
+			expected[i] = &cbArgs{
+				toAddr: MakeCopyOfAccAddress(tr.to),
+				suffix: MakeCopyOfAccAddress(suffix),
+				record: MakeCopyOfQuarantineRecord(tr.record),
+			}
+		}
+
+		actual := make([]*cbArgs, 0, len(expected))
+		callback := func(toAddr, recordSuffix sdk.AccAddress, record *quarantine.QuarantineRecord) bool {
+			actual = append(actual, &cbArgs{
+				toAddr: toAddr,
+				suffix: recordSuffix,
+				record: record,
+			})
+			return len(actual) >= stopLen
+		}
+		testFunc := func() {
+			s.keeper.IterateQuarantineRecords(s.sdkCtx, nil, callback)
+		}
+		s.Require().NotPanics(testFunc, "IterateQuarantineRecords")
+		s.Assert().Equal(expected, actual, "callback args provided to IterateQuarantineRecords")
+	})
 
 	s.Run("GetAllQuarantinedFunds", func() {
 		expected := make([]*quarantine.QuarantinedFunds, len(allOrder))
