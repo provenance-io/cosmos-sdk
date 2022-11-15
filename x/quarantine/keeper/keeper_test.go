@@ -65,6 +65,11 @@ func qrsis(vals ...*quarantine.QuarantineRecordSuffixIndex) []*quarantine.Quaran
 	return vals
 }
 
+// accs is just a shorter way to create an []sdk.AccAddress
+func accs(accz ...sdk.AccAddress) []sdk.AccAddress {
+	return accz
+}
+
 type TestSuite struct {
 	suite.Suite
 
@@ -210,7 +215,7 @@ func (s *TestSuite) TestQuarantinedAccountsIterateAndGetAll() {
 	// Now opt out addr2.
 	s.Require().NoError(s.keeper.SetOptOut(s.sdkCtx, s.addr2), "SetOptOut addr2")
 
-	allAddrs := []sdk.AccAddress{s.addr1, s.addr3, s.addr5}
+	allAddrs := accs(s.addr1, s.addr3, s.addr5)
 	sort.Slice(allAddrs, func(i, j int) bool {
 		return bytes.Compare(allAddrs[i], allAddrs[j]) < 0
 	})
@@ -262,7 +267,7 @@ func (s *TestSuite) TestQuarantinedAccountsIterateAndGetAll() {
 }
 
 func (s *TestSuite) TestAutoResponseGetSet() {
-	allAddrs := []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5}
+	allAddrs := accs(s.addr1, s.addr2, s.addr3, s.addr4, s.addr5)
 	allResps := []quarantine.AutoResponse{
 		quarantine.AUTO_RESPONSE_ACCEPT,
 		quarantine.AUTO_RESPONSE_DECLINE,
@@ -418,7 +423,7 @@ func (s *TestSuite) TestAutoResponsesItateAndGetAll() {
 		s.Assert().Equal(expected, actualAllArgs, "iterated args")
 	})
 
-	for i, addr := range []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5} {
+	for i, addr := range accs(s.addr1, s.addr2, s.addr3, s.addr4, s.addr5) {
 		s.Run(fmt.Sprintf("IterateAutoResponses addr%d", i+1), func() {
 			var expected []callbackArgs
 			for _, args := range allArgs {
@@ -490,14 +495,14 @@ func (s *TestSuite) TestBzToQuarantineRecord() {
 		{
 			name: "control",
 			bz: cdc.MustMarshal(&quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{s.addr1},
-				AcceptedFromAddresses:   []sdk.AccAddress{s.addr2},
+				UnacceptedFromAddresses: accs(s.addr1),
+				AcceptedFromAddresses:   accs(s.addr2),
 				Coins:                   cz("9000bar,888foo"),
 				Declined:                false,
 			}),
 			expected: &quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{s.addr1},
-				AcceptedFromAddresses:   []sdk.AccAddress{s.addr2},
+				UnacceptedFromAddresses: accs(s.addr1),
+				AcceptedFromAddresses:   accs(s.addr2),
 				Coins:                   cz("9000bar,888foo"),
 				Declined:                false,
 			},
@@ -533,14 +538,14 @@ func (s *TestSuite) TestBzToQuarantineRecord() {
 		{
 			name: "declined",
 			bz: cdc.MustMarshal(&quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{s.addr1},
-				AcceptedFromAddresses:   []sdk.AccAddress{s.addr2},
+				UnacceptedFromAddresses: accs(s.addr1),
+				AcceptedFromAddresses:   accs(s.addr2),
 				Coins:                   cz("9001bar,889foo"),
 				Declined:                true,
 			}),
 			expected: &quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{s.addr1},
-				AcceptedFromAddresses:   []sdk.AccAddress{s.addr2},
+				UnacceptedFromAddresses: accs(s.addr1),
+				AcceptedFromAddresses:   accs(s.addr2),
 				Coins:                   cz("9001bar,889foo"),
 				Declined:                true,
 			},
@@ -549,13 +554,13 @@ func (s *TestSuite) TestBzToQuarantineRecord() {
 			name: "no unaccepted",
 			bz: cdc.MustMarshal(&quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{},
-				AcceptedFromAddresses:   []sdk.AccAddress{s.addr2, s.addr1, s.addr3},
+				AcceptedFromAddresses:   accs(s.addr2, s.addr1, s.addr3),
 				Coins:                   cz("9002bar,890foo"),
 				Declined:                false,
 			}),
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: nil,
-				AcceptedFromAddresses:   []sdk.AccAddress{s.addr2, s.addr1, s.addr3},
+				AcceptedFromAddresses:   accs(s.addr2, s.addr1, s.addr3),
 				Coins:                   cz("9002bar,890foo"),
 				Declined:                false,
 			},
@@ -563,13 +568,13 @@ func (s *TestSuite) TestBzToQuarantineRecord() {
 		{
 			name: "no accepted",
 			bz: cdc.MustMarshal(&quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{s.addr4, s.addr2, s.addr5},
+				UnacceptedFromAddresses: accs(s.addr4, s.addr2, s.addr5),
 				AcceptedFromAddresses:   []sdk.AccAddress{},
 				Coins:                   cz("9003bar,891foo"),
 				Declined:                false,
 			}),
 			expected: &quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{s.addr4, s.addr2, s.addr5},
+				UnacceptedFromAddresses: accs(s.addr4, s.addr2, s.addr5),
 				AcceptedFromAddresses:   nil,
 				Coins:                   cz("9003bar,891foo"),
 				Declined:                false,
@@ -578,14 +583,14 @@ func (s *TestSuite) TestBzToQuarantineRecord() {
 		{
 			name: "no coins",
 			bz: cdc.MustMarshal(&quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{s.addr1},
-				AcceptedFromAddresses:   []sdk.AccAddress{s.addr2},
+				UnacceptedFromAddresses: accs(s.addr1),
+				AcceptedFromAddresses:   accs(s.addr2),
 				Coins:                   nil,
 				Declined:                false,
 			}),
 			expected: &quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{s.addr1},
-				AcceptedFromAddresses:   []sdk.AccAddress{s.addr2},
+				UnacceptedFromAddresses: accs(s.addr1),
+				AcceptedFromAddresses:   accs(s.addr2),
 				Coins:                   sdk.Coins{},
 				Declined:                false,
 			},
@@ -655,7 +660,7 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 		toAddr := MakeTestAddr("sgouna", 0)
 		uFromAddr := MakeTestAddr("sgouna", 1)
 		record := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{uFromAddr},
+			UnacceptedFromAddresses: accs(uFromAddr),
 			AcceptedFromAddresses:   nil,
 			Coins:                   czt(s.T(), "456bar,1233foo"),
 			Declined:                false,
@@ -688,8 +693,8 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 		uFromAddr := MakeTestAddr("sgouoa", 1)
 		aFromAddr := MakeTestAddr("sgouoa", 2)
 		record := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{uFromAddr},
-			AcceptedFromAddresses:   []sdk.AccAddress{aFromAddr},
+			UnacceptedFromAddresses: accs(uFromAddr),
+			AcceptedFromAddresses:   accs(aFromAddr),
 			Coins:                   sdk.Coins{},
 			Declined:                false,
 		}
@@ -721,7 +726,7 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 		uFromAddr1 := MakeTestAddr("sgtuna", 1)
 		uFromAddr2 := MakeTestAddr("sgtuna", 2)
 		record := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{uFromAddr1, uFromAddr2},
+			UnacceptedFromAddresses: accs(uFromAddr1, uFromAddr2),
 			AcceptedFromAddresses:   nil,
 			Coins:                   sdk.Coins{},
 			Declined:                false,
@@ -768,7 +773,7 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 		aFromAddr := MakeTestAddr("sgnuoa", 1)
 		record := &quarantine.QuarantineRecord{
 			UnacceptedFromAddresses: nil,
-			AcceptedFromAddresses:   []sdk.AccAddress{aFromAddr},
+			AcceptedFromAddresses:   accs(aFromAddr),
 			Coins:                   sdk.Coins{},
 			Declined:                false,
 		}
@@ -792,7 +797,7 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 		aFromAddr2 := MakeTestAddr("sgnuta", 2)
 		record := &quarantine.QuarantineRecord{
 			UnacceptedFromAddresses: nil,
-			AcceptedFromAddresses:   []sdk.AccAddress{aFromAddr1, aFromAddr2},
+			AcceptedFromAddresses:   accs(aFromAddr1, aFromAddr2),
 			Coins:                   sdk.Coins{},
 			Declined:                false,
 		}
@@ -824,8 +829,8 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 		uFromAddr2 := MakeTestAddr("sgtuoa", 2)
 		aFromAddr := MakeTestAddr("sgtuoa", 3)
 		record := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{uFromAddr1, uFromAddr2},
-			AcceptedFromAddresses:   []sdk.AccAddress{aFromAddr},
+			UnacceptedFromAddresses: accs(uFromAddr1, uFromAddr2),
+			AcceptedFromAddresses:   accs(aFromAddr),
 			Coins:                   sdk.Coins{},
 			Declined:                false,
 		}
@@ -840,12 +845,12 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 			name      string
 			fromAddrs []sdk.AccAddress
 		}{
-			{"1 2 a", []sdk.AccAddress{uFromAddr1, uFromAddr2, aFromAddr}},
-			{"1 a 2", []sdk.AccAddress{uFromAddr1, aFromAddr, uFromAddr2}},
-			{"2 1 a", []sdk.AccAddress{uFromAddr2, uFromAddr1, aFromAddr}},
-			{"2 a 1", []sdk.AccAddress{uFromAddr2, aFromAddr, uFromAddr1}},
-			{"a 1 2", []sdk.AccAddress{aFromAddr, uFromAddr1, uFromAddr2}},
-			{"a 2 1", []sdk.AccAddress{aFromAddr, uFromAddr2, uFromAddr1}},
+			{"1 2 a", accs(uFromAddr1, uFromAddr2, aFromAddr)},
+			{"1 a 2", accs(uFromAddr1, aFromAddr, uFromAddr2)},
+			{"2 1 a", accs(uFromAddr2, uFromAddr1, aFromAddr)},
+			{"2 a 1", accs(uFromAddr2, aFromAddr, uFromAddr1)},
+			{"a 1 2", accs(aFromAddr, uFromAddr1, uFromAddr2)},
+			{"a 2 1", accs(aFromAddr, uFromAddr2, uFromAddr1)},
 		}
 		for _, tc := range positiveTests {
 			s.Run("GetQuarantineRecord order "+tc.name, func() {
@@ -863,23 +868,23 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 			name      string
 			fromAddrs []sdk.AccAddress
 		}{
-			{"1", []sdk.AccAddress{uFromAddr1}},
-			{"2", []sdk.AccAddress{uFromAddr2}},
-			{"a", []sdk.AccAddress{aFromAddr}},
-			{"1 1", []sdk.AccAddress{uFromAddr1, uFromAddr1}},
-			{"1 2", []sdk.AccAddress{uFromAddr1, uFromAddr2}},
-			{"1 a", []sdk.AccAddress{uFromAddr1, aFromAddr}},
-			{"2 1", []sdk.AccAddress{uFromAddr2, uFromAddr1}},
-			{"2 2", []sdk.AccAddress{uFromAddr2, uFromAddr2}},
-			{"2 a", []sdk.AccAddress{uFromAddr2, aFromAddr}},
-			{"a 1", []sdk.AccAddress{aFromAddr, uFromAddr1}},
-			{"a 2", []sdk.AccAddress{aFromAddr, uFromAddr2}},
-			{"a a", []sdk.AccAddress{aFromAddr, aFromAddr}},
-			{"1 1 2", []sdk.AccAddress{uFromAddr1, uFromAddr1, uFromAddr2}},
-			{"2 2 a", []sdk.AccAddress{uFromAddr2, uFromAddr2, aFromAddr}},
-			{"1 2 a 1", []sdk.AccAddress{uFromAddr1, uFromAddr2, aFromAddr, uFromAddr1}},
-			{"1 2 2 a", []sdk.AccAddress{uFromAddr1, uFromAddr2, uFromAddr2, aFromAddr}},
-			{"a 1 2 a", []sdk.AccAddress{aFromAddr, uFromAddr1, uFromAddr2, aFromAddr}},
+			{"1", accs(uFromAddr1)},
+			{"2", accs(uFromAddr2)},
+			{"a", accs(aFromAddr)},
+			{"1 1", accs(uFromAddr1, uFromAddr1)},
+			{"1 2", accs(uFromAddr1, uFromAddr2)},
+			{"1 a", accs(uFromAddr1, aFromAddr)},
+			{"2 1", accs(uFromAddr2, uFromAddr1)},
+			{"2 2", accs(uFromAddr2, uFromAddr2)},
+			{"2 a", accs(uFromAddr2, aFromAddr)},
+			{"a 1", accs(aFromAddr, uFromAddr1)},
+			{"a 2", accs(aFromAddr, uFromAddr2)},
+			{"a a", accs(aFromAddr, aFromAddr)},
+			{"1 1 2", accs(uFromAddr1, uFromAddr1, uFromAddr2)},
+			{"2 2 a", accs(uFromAddr2, uFromAddr2, aFromAddr)},
+			{"1 2 a 1", accs(uFromAddr1, uFromAddr2, aFromAddr, uFromAddr1)},
+			{"1 2 2 a", accs(uFromAddr1, uFromAddr2, uFromAddr2, aFromAddr)},
+			{"a 1 2 a", accs(aFromAddr, uFromAddr1, uFromAddr2, aFromAddr)},
 		}
 		for _, tc := range negativeTests {
 			s.Run("GetQuarantineRecord order "+tc.name, func() {
@@ -900,8 +905,8 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 		aFromAddr1 := MakeTestAddr("sgouta", 2)
 		aFromAddr2 := MakeTestAddr("sgouta", 3)
 		record := &quarantine.QuarantineRecord{
-			UnacceptedFromAddresses: []sdk.AccAddress{uFromAddr},
-			AcceptedFromAddresses:   []sdk.AccAddress{aFromAddr1, aFromAddr2},
+			UnacceptedFromAddresses: accs(uFromAddr),
+			AcceptedFromAddresses:   accs(aFromAddr1, aFromAddr2),
 			Coins:                   sdk.Coins{},
 			Declined:                false,
 		}
@@ -916,12 +921,12 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 			name      string
 			fromAddrs []sdk.AccAddress
 		}{
-			{"1 2 u", []sdk.AccAddress{aFromAddr1, aFromAddr2, uFromAddr}},
-			{"1 u 2", []sdk.AccAddress{aFromAddr1, uFromAddr, aFromAddr2}},
-			{"2 1 u", []sdk.AccAddress{aFromAddr2, aFromAddr1, uFromAddr}},
-			{"2 u 1", []sdk.AccAddress{aFromAddr2, uFromAddr, aFromAddr1}},
-			{"u 1 2", []sdk.AccAddress{uFromAddr, aFromAddr1, aFromAddr2}},
-			{"u 2 1", []sdk.AccAddress{uFromAddr, aFromAddr2, aFromAddr1}},
+			{"1 2 u", accs(aFromAddr1, aFromAddr2, uFromAddr)},
+			{"1 u 2", accs(aFromAddr1, uFromAddr, aFromAddr2)},
+			{"2 1 u", accs(aFromAddr2, aFromAddr1, uFromAddr)},
+			{"2 u 1", accs(aFromAddr2, uFromAddr, aFromAddr1)},
+			{"u 1 2", accs(uFromAddr, aFromAddr1, aFromAddr2)},
+			{"u 2 1", accs(uFromAddr, aFromAddr2, aFromAddr1)},
 		}
 		for _, tc := range positiveTests {
 			s.Run("GetQuarantineRecord order "+tc.name, func() {
@@ -939,23 +944,23 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 			name      string
 			fromAddrs []sdk.AccAddress
 		}{
-			{"1", []sdk.AccAddress{aFromAddr1}},
-			{"2", []sdk.AccAddress{aFromAddr2}},
-			{"u", []sdk.AccAddress{uFromAddr}},
-			{"1 1", []sdk.AccAddress{aFromAddr1, aFromAddr1}},
-			{"1 2", []sdk.AccAddress{aFromAddr1, aFromAddr2}},
-			{"1 u", []sdk.AccAddress{aFromAddr1, uFromAddr}},
-			{"2 1", []sdk.AccAddress{aFromAddr2, aFromAddr1}},
-			{"2 2", []sdk.AccAddress{aFromAddr2, aFromAddr2}},
-			{"2 u", []sdk.AccAddress{aFromAddr2, uFromAddr}},
-			{"u 1", []sdk.AccAddress{uFromAddr, aFromAddr1}},
-			{"u 2", []sdk.AccAddress{uFromAddr, aFromAddr2}},
-			{"u u", []sdk.AccAddress{uFromAddr, uFromAddr}},
-			{"1 1 2", []sdk.AccAddress{aFromAddr1, aFromAddr1, aFromAddr2}},
-			{"2 2 u", []sdk.AccAddress{aFromAddr2, aFromAddr2, uFromAddr}},
-			{"1 2 u 1", []sdk.AccAddress{aFromAddr1, aFromAddr2, uFromAddr, aFromAddr1}},
-			{"1 2 2 u", []sdk.AccAddress{aFromAddr1, aFromAddr2, aFromAddr2, uFromAddr}},
-			{"u 1 2 u", []sdk.AccAddress{uFromAddr, aFromAddr1, uFromAddr, uFromAddr}},
+			{"1", accs(aFromAddr1)},
+			{"2", accs(aFromAddr2)},
+			{"u", accs(uFromAddr)},
+			{"1 1", accs(aFromAddr1, aFromAddr1)},
+			{"1 2", accs(aFromAddr1, aFromAddr2)},
+			{"1 u", accs(aFromAddr1, uFromAddr)},
+			{"2 1", accs(aFromAddr2, aFromAddr1)},
+			{"2 2", accs(aFromAddr2, aFromAddr2)},
+			{"2 u", accs(aFromAddr2, uFromAddr)},
+			{"u 1", accs(uFromAddr, aFromAddr1)},
+			{"u 2", accs(uFromAddr, aFromAddr2)},
+			{"u u", accs(uFromAddr, uFromAddr)},
+			{"1 1 2", accs(aFromAddr1, aFromAddr1, aFromAddr2)},
+			{"2 2 u", accs(aFromAddr2, aFromAddr2, uFromAddr)},
+			{"1 2 u 1", accs(aFromAddr1, aFromAddr2, uFromAddr, aFromAddr1)},
+			{"1 2 2 u", accs(aFromAddr1, aFromAddr2, aFromAddr2, uFromAddr)},
+			{"u 1 2 u", accs(uFromAddr, aFromAddr1, uFromAddr, uFromAddr)},
 		}
 		for _, tc := range negativeTests {
 			s.Run("GetQuarantineRecord order "+tc.name, func() {
@@ -984,26 +989,26 @@ func (s *TestSuite) TestGetQuarantineRecords() {
 	}
 
 	recordA := &quarantine.QuarantineRecord{
-		UnacceptedFromAddresses: []sdk.AccAddress{addr1},
+		UnacceptedFromAddresses: accs(addr1),
 		Coins:                   mustCoins("1acoin"),
 		Declined:                true,
 	}
 	recordB := &quarantine.QuarantineRecord{
-		UnacceptedFromAddresses: []sdk.AccAddress{addr1},
-		AcceptedFromAddresses:   []sdk.AccAddress{addr2},
+		UnacceptedFromAddresses: accs(addr1),
+		AcceptedFromAddresses:   accs(addr2),
 		Coins:                   mustCoins("10bcoin"),
 	}
 	recordC := &quarantine.QuarantineRecord{
-		UnacceptedFromAddresses: []sdk.AccAddress{addr2},
+		UnacceptedFromAddresses: accs(addr2),
 		Coins:                   mustCoins("100ccoin"),
 	}
 	recordD := &quarantine.QuarantineRecord{
-		UnacceptedFromAddresses: []sdk.AccAddress{addr1},
-		AcceptedFromAddresses:   []sdk.AccAddress{addr0, addr2},
+		UnacceptedFromAddresses: accs(addr1),
+		AcceptedFromAddresses:   accs(addr0, addr2),
 		Coins:                   mustCoins("1000dcoin"),
 	}
 	recordE := &quarantine.QuarantineRecord{
-		UnacceptedFromAddresses: []sdk.AccAddress{addr3},
+		UnacceptedFromAddresses: accs(addr3),
 		Coins:                   mustCoins("100000ecoin"),
 	}
 
@@ -1026,10 +1031,6 @@ func (s *TestSuite) TestGetQuarantineRecords() {
 	// 0 <- 0 1 2: 1000dcoin
 	// 0 <- 3: 10000ecoin
 
-	addrs := func(addz ...sdk.AccAddress) []sdk.AccAddress {
-		return addz
-	}
-
 	qrs := func(qrz ...*quarantine.QuarantineRecord) []*quarantine.QuarantineRecord {
 		return qrz
 	}
@@ -1043,265 +1044,265 @@ func (s *TestSuite) TestGetQuarantineRecords() {
 		{
 			name:      "to 0 from none",
 			toAddr:    addr0,
-			fromAddrs: addrs(),
+			fromAddrs: accs(),
 			expected:  nil,
 		},
 		{
 			name:      "to 1 from none",
 			toAddr:    addr0,
-			fromAddrs: addrs(),
+			fromAddrs: accs(),
 			expected:  nil,
 		},
 		{
 			name:      "to 2 from none",
 			toAddr:    addr0,
-			fromAddrs: addrs(),
+			fromAddrs: accs(),
 			expected:  nil,
 		},
 		{
 			name:      "to 3 from none",
 			toAddr:    addr0,
-			fromAddrs: addrs(),
+			fromAddrs: accs(),
 			expected:  nil,
 		},
 		{
 			name:      "to 1 from 0",
 			toAddr:    addr1,
-			fromAddrs: addrs(addr0),
+			fromAddrs: accs(addr0),
 			expected:  nil,
 		},
 		{
 			name:      "to 1 from 1",
 			toAddr:    addr1,
-			fromAddrs: addrs(addr1),
+			fromAddrs: accs(addr1),
 			expected:  nil,
 		},
 		{
 			name:      "to 1 from 2",
 			toAddr:    addr1,
-			fromAddrs: addrs(addr2),
+			fromAddrs: accs(addr2),
 			expected:  nil,
 		},
 		{
 			name:      "to 1 from 3",
 			toAddr:    addr1,
-			fromAddrs: addrs(addr3),
+			fromAddrs: accs(addr3),
 			expected:  nil,
 		},
 		{
 			name:      "to 2 from 0",
 			toAddr:    addr2,
-			fromAddrs: addrs(addr0),
+			fromAddrs: accs(addr0),
 			expected:  nil,
 		},
 		{
 			name:      "to 2 from 1",
 			toAddr:    addr2,
-			fromAddrs: addrs(addr1),
+			fromAddrs: accs(addr1),
 			expected:  nil,
 		},
 		{
 			name:      "to 2 from 2",
 			toAddr:    addr2,
-			fromAddrs: addrs(addr2),
+			fromAddrs: accs(addr2),
 			expected:  nil,
 		},
 		{
 			name:      "to 2 from 3",
 			toAddr:    addr2,
-			fromAddrs: addrs(addr3),
+			fromAddrs: accs(addr3),
 			expected:  nil,
 		},
 		{
 			name:      "to 3 from 0",
 			toAddr:    addr3,
-			fromAddrs: addrs(addr0),
+			fromAddrs: accs(addr0),
 			expected:  nil,
 		},
 		{
 			name:      "to 3 from 1",
 			toAddr:    addr3,
-			fromAddrs: addrs(addr1),
+			fromAddrs: accs(addr1),
 			expected:  nil,
 		},
 		{
 			name:      "to 3 from 2",
 			toAddr:    addr3,
-			fromAddrs: addrs(addr2),
+			fromAddrs: accs(addr2),
 			expected:  nil,
 		},
 		{
 			name:      "to 3 from 3",
 			toAddr:    addr3,
-			fromAddrs: addrs(addr3),
+			fromAddrs: accs(addr3),
 			expected:  nil,
 		},
 		{
 			name:      "to 3 from 0 1 2 3",
 			toAddr:    addr3,
-			fromAddrs: addrs(addr0, addr1, addr2, addr3),
+			fromAddrs: accs(addr0, addr1, addr2, addr3),
 			expected:  nil,
 		},
 		{
 			name:      "to 0 from 0 finds 1: d",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr0),
+			fromAddrs: accs(addr0),
 			expected:  qrs(recordD),
 		},
 		{
 			name:      "to 0 from 1 finds 3: abd",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr1),
+			fromAddrs: accs(addr1),
 			expected:  qrs(recordA, recordB, recordD),
 		},
 		{
 			name:      "to 0 from 2 finds 3: bcd",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr2),
+			fromAddrs: accs(addr2),
 			expected:  qrs(recordB, recordC, recordD),
 		},
 		{
 			name:      "to 0 from 3 finds 1: e",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr3),
+			fromAddrs: accs(addr3),
 			expected:  qrs(recordE),
 		},
 		{
 			name:      "to 0 from 0 0 finds 1: d",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr0, addr0),
+			fromAddrs: accs(addr0, addr0),
 			expected:  qrs(recordD),
 		},
 		{
 			name:      "to 0 from 0 1 finds 3: abd",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr0, addr1),
+			fromAddrs: accs(addr0, addr1),
 			expected:  qrs(recordA, recordB, recordD),
 		},
 		{
 			name:      "to 0 from 0 2 finds 3: bcd",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr0, addr2),
+			fromAddrs: accs(addr0, addr2),
 			expected:  qrs(recordB, recordC, recordD),
 		},
 		{
 			name:      "to 0 from 0 3 finds 2: de",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr0, addr3),
+			fromAddrs: accs(addr0, addr3),
 			expected:  qrs(recordD, recordE),
 		},
 		{
 			name:      "to 0 from 1 0 finds 3: abd",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr1, addr0),
+			fromAddrs: accs(addr1, addr0),
 			expected:  qrs(recordA, recordB, recordD),
 		},
 		{
 			name:      "to 0 from 1 1 finds 3: abd",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr1, addr1),
+			fromAddrs: accs(addr1, addr1),
 			expected:  qrs(recordA, recordB, recordD),
 		},
 		{
 			name:      "to 0 from 1 2 finds 4: abcd",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr1, addr2),
+			fromAddrs: accs(addr1, addr2),
 			expected:  qrs(recordA, recordB, recordC, recordD),
 		},
 		{
 			name:      "to 0 from 1 3 finds 4: abde",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr1, addr3),
+			fromAddrs: accs(addr1, addr3),
 			expected:  qrs(recordA, recordB, recordD, recordE),
 		},
 		{
 			name:      "to 0 from 2 0 finds 3: bcd",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr2, addr0),
+			fromAddrs: accs(addr2, addr0),
 			expected:  qrs(recordB, recordC, recordD),
 		},
 		{
 			name:      "to 0 from 2 1 finds 4: abcd",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr2, addr1),
+			fromAddrs: accs(addr2, addr1),
 			expected:  qrs(recordA, recordB, recordC, recordD),
 		},
 		{
 			name:      "to 0 from 2 2 finds 3: bcd",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr2, addr2),
+			fromAddrs: accs(addr2, addr2),
 			expected:  qrs(recordB, recordC, recordD),
 		},
 		{
 			name:      "to 0 from 2 3 finds 4: bcde",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr2, addr3),
+			fromAddrs: accs(addr2, addr3),
 			expected:  qrs(recordB, recordC, recordD, recordE),
 		},
 		{
 			name:      "to 0 from 3 0 finds 2: de",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr3, addr0),
+			fromAddrs: accs(addr3, addr0),
 			expected:  qrs(recordD, recordE),
 		},
 		{
 			name:      "to 0 from 3 1 finds 4: abde",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr3, addr1),
+			fromAddrs: accs(addr3, addr1),
 			expected:  qrs(recordA, recordB, recordD, recordE),
 		},
 		{
 			name:      "to 0 from 3 2 finds 4: bcde",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr3, addr2),
+			fromAddrs: accs(addr3, addr2),
 			expected:  qrs(recordB, recordC, recordD, recordE),
 		},
 		{
 			name:      "to 0 from 3 3 finds 1: e",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr3, addr3),
+			fromAddrs: accs(addr3, addr3),
 			expected:  qrs(recordE),
 		},
 		{
 			name:      "to 0 from 0 1 2 finds 4: abcd",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr0, addr1, addr2),
+			fromAddrs: accs(addr0, addr1, addr2),
 			expected:  qrs(recordA, recordB, recordC, recordD),
 		},
 		{
 			name:      "to 0 from 0 1 3 finds 4: abde",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr0, addr1, addr3),
+			fromAddrs: accs(addr0, addr1, addr3),
 			expected:  qrs(recordA, recordB, recordD, recordE),
 		},
 		{
 			name:      "to 0 from 0 2 3 finds 4: bcde",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr0, addr2, addr3),
+			fromAddrs: accs(addr0, addr2, addr3),
 			expected:  qrs(recordB, recordC, recordD, recordE),
 		},
 		{
 			name:      "to 0 from 1 2 3 finds 5: abcde",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr1, addr2, addr3),
+			fromAddrs: accs(addr1, addr2, addr3),
 			expected:  qrs(recordA, recordB, recordC, recordD, recordE),
 		},
 		{
 			name:      "to 0 from 0 1 2 3 finds 5: abcde",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr0, addr1, addr2, addr3),
+			fromAddrs: accs(addr0, addr1, addr2, addr3),
 			expected:  qrs(recordA, recordB, recordC, recordD, recordE),
 		},
 		{
 			name:      "to 0 from 1 3 0 2 finds 5: abcde",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr1, addr3, addr0, addr2),
+			fromAddrs: accs(addr1, addr3, addr0, addr2),
 			expected:  qrs(recordA, recordB, recordC, recordD, recordE),
 		},
 		{
 			name:      "to 0 from 1 3 1 2 finds 5: abcde",
 			toAddr:    addr0,
-			fromAddrs: addrs(addr1, addr3, addr1, addr2),
+			fromAddrs: accs(addr1, addr3, addr1, addr2),
 			expected:  qrs(recordA, recordB, recordC, recordD, recordE),
 		},
 	}
@@ -2445,24 +2446,24 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 		fromAddr2 := MakeTestAddr(addrBase, 2)
 		fromAddr3 := MakeTestAddr(addrBase, 3)
 		fromAddr4 := MakeTestAddr(addrBase, 4)
-		fromAddrs := []sdk.AccAddress{fromAddr1, fromAddr2, fromAddr3, fromAddr4}
+		fromAddrs := accs(fromAddr1, fromAddr2, fromAddr3, fromAddr4)
 
 		// Define the existing records and expected stuff.
 		existingRecords := []*quarantine.QuarantineRecord{
 			{
-				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr1},
+				UnacceptedFromAddresses: accs(fromAddr1),
 				Coins:                   cz("1addra"),
 			},
 			{
-				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr2},
+				UnacceptedFromAddresses: accs(fromAddr2),
 				Coins:                   cz("2addrb"),
 			},
 			{
-				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr3},
+				UnacceptedFromAddresses: accs(fromAddr3),
 				Coins:                   cz("3addrc"),
 			},
 			{
-				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr4},
+				UnacceptedFromAddresses: accs(fromAddr4),
 				Coins:                   cz("4addrd"),
 			},
 		}
@@ -2471,11 +2472,11 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 
 		expectedRecords := []*quarantine.QuarantineRecord{
 			{
-				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr3},
+				UnacceptedFromAddresses: accs(fromAddr3),
 				Coins:                   cz("3addrc"),
 			},
 			{
-				UnacceptedFromAddresses: []sdk.AccAddress{fromAddr4},
+				UnacceptedFromAddresses: accs(fromAddr4),
 				Coins:                   cz("4addrd"),
 			},
 		}
@@ -2976,21 +2977,21 @@ func (s *TestSuite) TestQuarantineRecordsIterateAndGetAll() {
 		{
 			to: addr0,
 			record: &quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{addr1},
+				UnacceptedFromAddresses: accs(addr1),
 				Coins:                   cz("1boom"),
 			},
 		},
 		{
 			to: addr0,
 			record: &quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{addr2},
+				UnacceptedFromAddresses: accs(addr2),
 				Coins:                   cz("5boom"),
 			},
 		},
 		{
 			to: addr3,
 			record: &quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{addr1},
+				UnacceptedFromAddresses: accs(addr1),
 				Coins:                   cz("23boom"),
 				Declined:                true,
 			},
@@ -2998,29 +2999,29 @@ func (s *TestSuite) TestQuarantineRecordsIterateAndGetAll() {
 		{
 			to: addr5,
 			record: &quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{addr6},
-				AcceptedFromAddresses:   []sdk.AccAddress{addr7},
+				UnacceptedFromAddresses: accs(addr6),
+				AcceptedFromAddresses:   accs(addr7),
 				Coins:                   cz("79boom"),
 			},
 		},
 		{
 			to: addr0,
 			record: &quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{addr3},
+				UnacceptedFromAddresses: accs(addr3),
 				Coins:                   cz("163boom"),
 			},
 		},
 		{
 			to: addr3,
 			record: &quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{addr4},
+				UnacceptedFromAddresses: accs(addr4),
 				Coins:                   cz("331boom"),
 			},
 		},
 		{
 			to: addr0,
 			record: &quarantine.QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{addr7},
+				UnacceptedFromAddresses: accs(addr7),
 				Coins:                   cz("673boom"),
 			},
 		},
@@ -3340,11 +3341,6 @@ func (s *TestSuite) TestAddQuarantineRecordSuffixIndexes() {
 	suffix2 := []byte(MakeTestAddr("sfxsad", 2))
 	suffix3 := []byte(MakeTestAddr("sfxsad", 3))
 
-	// accs is just a shorter way of defining []sdk.AccAddress.
-	accs := func(accz ...sdk.AccAddress) []sdk.AccAddress {
-		return accz
-	}
-
 	tests := []struct {
 		name      string
 		toAddr    sdk.AccAddress
@@ -3427,11 +3423,6 @@ func (s *TestSuite) TestDeleteQuarantineRecordSuffixIndexes() {
 	suffix1 := []byte(MakeTestAddr("sfxsad", 1))
 	suffix2 := []byte(MakeTestAddr("sfxsad", 2))
 	suffix3 := []byte(MakeTestAddr("sfxsad", 3))
-
-	// accs is just a shorter way of defining []sdk.AccAddress.
-	accs := func(accz ...sdk.AccAddress) []sdk.AccAddress {
-		return accz
-	}
 
 	// Create some existing entries that can then be altered.
 	existing := []struct {
@@ -3557,10 +3548,6 @@ func (s *TestSuite) TestGetQuarantineRecordSuffixes() {
 	suffix7 := []byte(MakeTestAddr("sfxgqrs", 7))
 	fromAddr8 := MakeTestAddr("gqrs", 8)
 
-	// accs is just a shorter way of creating a []sdk.AccAddress.
-	accs := func(accz ...sdk.AccAddress) []sdk.AccAddress {
-		return accz
-	}
 	// sfxs is just a shorter way of creating a [][]byte
 	sfxs := func(suffixes ...[]byte) [][]byte {
 		return suffixes
