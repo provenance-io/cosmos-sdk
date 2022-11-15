@@ -42,6 +42,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Improvements
 
 * Bring in Cosmos-SDK [v0.46.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.4) changes [#362](https://github.com/provenance-io/cosmos-sdk/pull/362).
+* (server) [#362](https://github.com/provenance-io/cosmos-sdk/pull/362) Change the default for the re-added start command --iavl-disable-fastnode flag back to true to match the config default.
 
 ---
 
