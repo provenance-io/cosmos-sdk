@@ -227,7 +227,7 @@ func (k Keeper) GetQuarantineRecord(ctx sdk.Context, toAddr sdk.AccAddress, from
 // If you want a single record from all the fromAddrs, use GetQuarantineRecord.
 func (k Keeper) GetQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) []*quarantine.QuarantineRecord {
 	store := ctx.KVStore(k.storeKey)
-	allSuffixes := k.getQuarantineRecordSuffixes(store, toAddr, fromAddrs...)
+	allSuffixes := k.getQuarantineRecordSuffixes(store, toAddr, fromAddrs)
 	var rv []*quarantine.QuarantineRecord
 	for _, suffix := range allSuffixes {
 		key := quarantine.CreateRecordKey(toAddr, suffix)
@@ -375,7 +375,7 @@ func (k Keeper) getQuarantineRecordSuffixIndex(store sdk.KVStore, toAddr, fromAd
 
 // getQuarantineRecordSuffixes gets a sorted list of known record suffixes of quarantine records to toAddr
 // from any of the fromAddrs. The list will not contain duplicates, but may contain suffixes that don't point to records.
-func (k Keeper) getQuarantineRecordSuffixes(store sdk.KVStore, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) [][]byte {
+func (k Keeper) getQuarantineRecordSuffixes(store sdk.KVStore, toAddr sdk.AccAddress, fromAddrs []sdk.AccAddress) [][]byte {
 	rv := &quarantine.QuarantineRecordSuffixIndex{}
 	for _, fromAddr := range fromAddrs {
 		suffixes, _ := k.getQuarantineRecordSuffixIndex(store, toAddr, fromAddr)

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 )
@@ -21,9 +22,14 @@ func (k Keeper) WithBankKeeper(bankKeeper quarantine.BankKeeper) Keeper {
 	return k
 }
 
-// GetCodec gets this keeper's codec.
+// GetCodec exposes this keeper's codec (cdc) for unit tests.
 func (k Keeper) GetCodec() codec.BinaryCodec {
 	return k.cdc
+}
+
+// GetStoreKey exposes this keeper's storekey for unit tests.
+func (k Keeper) GetStoreKey() storetypes.StoreKey {
+	return k.storeKey
 }
 
 // BzToQuarantineRecord exposes bzToQuarantineRecord for unit tests.
@@ -57,8 +63,8 @@ func (k Keeper) GetQuarantineRecordSuffixIndex(store sdk.KVStore, toAddr, fromAd
 }
 
 // GetQuarantineRecordSuffixes exposes getQuarantineRecordSuffixes for unit tests.
-func (k Keeper) GetQuarantineRecordSuffixes(store sdk.KVStore, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) [][]byte {
-	return k.getQuarantineRecordSuffixes(store, toAddr, fromAddrs...)
+func (k Keeper) GetQuarantineRecordSuffixes(store sdk.KVStore, toAddr sdk.AccAddress, fromAddrs []sdk.AccAddress) [][]byte {
+	return k.getQuarantineRecordSuffixes(store, toAddr, fromAddrs)
 }
 
 // AddQuarantineRecordSuffixIndexes exposes addQuarantineRecordSuffixIndexes for unit tests.
