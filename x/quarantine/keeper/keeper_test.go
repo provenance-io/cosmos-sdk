@@ -50,6 +50,21 @@ func updateQR(addrs []sdk.AccAddress, record *quarantine.QuarantineRecord) {
 	}
 }
 
+// qrsi is just a shorter way to create a *quarantine.QuarantineRecordSuffixIndex
+func qrsi(suffixes ...[]byte) *quarantine.QuarantineRecordSuffixIndex {
+	rv := &quarantine.QuarantineRecordSuffixIndex{}
+	if len(suffixes) > 0 {
+		rv.RecordSuffixes = suffixes
+	}
+	return rv
+}
+
+// qrsis is just a shorter way to create []*quarantine.QuarantineRecordSuffixIndex
+// Combine with qrsi for true power.
+func qrsis(vals ...*quarantine.QuarantineRecordSuffixIndex) []*quarantine.QuarantineRecordSuffixIndex {
+	return vals
+}
+
 type TestSuite struct {
 	suite.Suite
 
@@ -246,8 +261,8 @@ func (s *TestSuite) TestQuarantinedAccountsIterateAndGetAll() {
 	})
 }
 
-func (s *TestSuite) TestAutoResponseGettersSetter() {
-	addrs := []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5}
+func (s *TestSuite) TestAutoResponseGetSet() {
+	allAddrs := []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5}
 	allResps := []quarantine.AutoResponse{
 		quarantine.AUTO_RESPONSE_ACCEPT,
 		quarantine.AUTO_RESPONSE_DECLINE,
@@ -256,8 +271,8 @@ func (s *TestSuite) TestAutoResponseGettersSetter() {
 
 	s.Run("GetAutoResponse on unset addrs", func() {
 		expected := quarantine.AUTO_RESPONSE_UNSPECIFIED
-		for i, addrI := range addrs {
-			for j, addrJ := range addrs {
+		for i, addrI := range allAddrs {
+			for j, addrJ := range allAddrs {
 				if i == j {
 					continue
 				}
@@ -269,7 +284,7 @@ func (s *TestSuite) TestAutoResponseGettersSetter() {
 
 	s.Run("GetAutoResponse on same addr", func() {
 		expected := quarantine.AUTO_RESPONSE_ACCEPT
-		for i, addr := range addrs {
+		for i, addr := range allAddrs {
 			actual := s.keeper.GetAutoResponse(s.sdkCtx, addr, addr)
 			s.Assert().Equal(expected, actual, "GetAutoResponse addr%d addr%d", i+1, i+1)
 		}
@@ -3173,9 +3188,453 @@ func (s *TestSuite) TestQuarantineRecordsIterateAndGetAll() {
 	})
 }
 
-// TODO[1046]: setQuarantineRecordSuffixIndex
-// TODO[1046]: bzToQuarantineRecordSuffixIndex
-// TODO[1046]: getQuarantineRecordSuffixIndex
-// TODO[1046]: getQuarantineRecordSuffixes
-// TODO[1046]: addQuarantineRecordSuffixIndexes
-// TODO[1046]: deleteQuarantineRecordSuffixIndexes
+func (s *TestSuite) TestBzToQuarantineRecordSuffixIndex() {
+	cdc := s.keeper.GetCodec()
+
+	tests := []struct {
+		name     string
+		bz       []byte
+		expected *quarantine.QuarantineRecordSuffixIndex
+		expErr   string
+	}{
+		{
+			name: "control",
+			bz: cdc.MustMarshal(&quarantine.QuarantineRecordSuffixIndex{
+				RecordSuffixes: [][]byte{{1, 2, 3}, {1, 5, 5}},
+			}),
+			expected: &quarantine.QuarantineRecordSuffixIndex{
+				RecordSuffixes: [][]byte{{1, 2, 3}, {1, 5, 5}},
+			},
+		},
+		{
+			name: "nil bz",
+			bz:   nil,
+			expected: &quarantine.QuarantineRecordSuffixIndex{
+				RecordSuffixes: nil,
+			},
+		},
+		{
+			name: "empty bz",
+			bz:   []byte{},
+			expected: &quarantine.QuarantineRecordSuffixIndex{
+				RecordSuffixes: nil,
+			},
+		},
+		{
+			name:   "unknown bytes",
+			bz:     []byte{0x75, 110, 0153, 0x6e, 0157, 119, 0156, 0xff, 0142, 0x79, 116, 0x65, 0163},
+			expErr: "proto: illegal wireType 7",
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			var actual *quarantine.QuarantineRecordSuffixIndex
+			var err error
+			testFunc := func() {
+				actual, err = s.keeper.BzToQuarantineRecordSuffixIndex(tc.bz)
+			}
+			s.Require().NotPanics(testFunc, "bzToQuarantineRecordSuffixIndex")
+			if len(tc.expErr) > 0 {
+				s.Require().EqualError(err, tc.expErr, "bzToQuarantineRecordSuffixIndex error: %v", actual)
+			} else {
+				s.Require().NoError(err, "bzToQuarantineRecordSuffixIndex error")
+				s.Assert().Equal(tc.expected, actual, "bzToQuarantineRecordSuffixIndex index")
+			}
+		})
+
+		s.Run("must "+tc.name, func() {
+			var actual *quarantine.QuarantineRecordSuffixIndex
+			testFunc := func() {
+				actual = s.keeper.MustBzToQuarantineRecordSuffixIndex(tc.bz)
+			}
+			if len(tc.expErr) > 0 {
+				s.Require().PanicsWithError(tc.expErr, testFunc, "mustBzToQuarantineRecordSuffixIndex: %v", actual)
+			} else {
+				s.Require().NotPanics(testFunc, "mustBzToQuarantineRecordSuffixIndex")
+				s.Assert().Equal(tc.expected, actual, "bzToQuarantineRecordSuffixIndex index")
+			}
+		})
+	}
+}
+
+func (s *TestSuite) TestSuffixIndexGetSet() {
+	toAddr := MakeTestAddr("sigs", 0)
+	fromAddr := MakeTestAddr("sigs", 1)
+	suffix0 := []byte(MakeTestAddr("sfxsigs", 0))
+	suffix1 := []byte(MakeTestAddr("sfxsigs", 1))
+	suffix2 := []byte(MakeTestAddr("sfxsigs", 2))
+	suffix3 := []byte(MakeTestAddr("sfxsigs", 3))
+	suffix4 := []byte(MakeTestAddr("sfxsigs", 4))
+	suffix5 := []byte(MakeTestAddr("sfxsigs", 5))
+
+	s.Run("1 getQuarantineRecordSuffix on unset entry", func() {
+		store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+		expectedIndex := &quarantine.QuarantineRecordSuffixIndex{RecordSuffixes: nil}
+		expectedKey := quarantine.CreateRecordIndexKey(toAddr, fromAddr)
+
+		var actualIndex *quarantine.QuarantineRecordSuffixIndex
+		var actualKey []byte
+		testFunc := func() {
+			actualIndex, actualKey = s.keeper.GetQuarantineRecordSuffixIndex(store, toAddr, fromAddr)
+		}
+		s.Require().NotPanics(testFunc, "getQuarantineRecordSuffixIndex")
+		s.Assert().Equal(expectedIndex, actualIndex, "returned index")
+		s.Assert().Equal(expectedKey, actualKey, "returned key")
+	})
+
+	s.Run("2 setQuarantineRecordSuffixIndex on unset entry", func() {
+		store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+		index := &quarantine.QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffix0, suffix1}}
+		key := quarantine.CreateRecordIndexKey(toAddr, fromAddr)
+
+		testFunc := func() {
+			s.keeper.SetQuarantineRecordSuffixIndex(store, key, index)
+		}
+		s.Require().NotPanics(testFunc, "setQuarantineRecordSuffixIndex")
+	})
+
+	s.Run("3 getQuarantineRecordSuffix on previously set entry", func() {
+		store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+		expectedIndex := &quarantine.QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffix0, suffix1}}
+		expectedKey := quarantine.CreateRecordIndexKey(toAddr, fromAddr)
+
+		var actualIndex *quarantine.QuarantineRecordSuffixIndex
+		var actualKey []byte
+		testFunc := func() {
+			actualIndex, actualKey = s.keeper.GetQuarantineRecordSuffixIndex(store, toAddr, fromAddr)
+		}
+		s.Require().NotPanics(testFunc, "getQuarantineRecordSuffixIndex")
+		s.Assert().Equal(expectedIndex, actualIndex, "returned index")
+		s.Assert().Equal(expectedKey, actualKey, "returned key")
+	})
+
+	s.Run("4 set get unordered on previously set entry", func() {
+		store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+		expectedIndex := &quarantine.QuarantineRecordSuffixIndex{RecordSuffixes: [][]byte{suffix2, suffix3, suffix1, suffix4, suffix5}}
+		expectedKey := quarantine.CreateRecordIndexKey(toAddr, fromAddr)
+
+		testFuncSet := func() {
+			s.keeper.SetQuarantineRecordSuffixIndex(store, expectedKey, expectedIndex)
+		}
+		s.Require().NotPanics(testFuncSet, "setQuarantineRecordSuffixIndex")
+
+		var actualIndex *quarantine.QuarantineRecordSuffixIndex
+		var actualKey []byte
+		testFuncGet := func() {
+			actualIndex, actualKey = s.keeper.GetQuarantineRecordSuffixIndex(store, toAddr, fromAddr)
+		}
+		s.Require().NotPanics(testFuncGet, "getQuarantineRecordSuffixIndex")
+		s.Assert().Equal(expectedIndex, actualIndex, "returned index")
+		s.Assert().Equal(expectedKey, actualKey, "returned key")
+	})
+}
+
+func (s *TestSuite) TestAddQuarantineRecordSuffixIndexes() {
+	toAddr := MakeTestAddr("sad", 0)
+	fromAddr1 := MakeTestAddr("sad", 1)
+	fromAddr2 := MakeTestAddr("sad", 2)
+	fromAddr3 := MakeTestAddr("sad", 3)
+	suffix0 := []byte(MakeTestAddr("sfxsad", 0))
+	suffix1 := []byte(MakeTestAddr("sfxsad", 1))
+	suffix2 := []byte(MakeTestAddr("sfxsad", 2))
+	suffix3 := []byte(MakeTestAddr("sfxsad", 3))
+
+	// accs is just a shorter way of defining []sdk.AccAddress.
+	accs := func(accz ...sdk.AccAddress) []sdk.AccAddress {
+		return accz
+	}
+
+	tests := []struct {
+		name      string
+		toAddr    sdk.AccAddress
+		fromAddrs []sdk.AccAddress
+		suffix    []byte
+		expected  *quarantine.QuarantineRecordSuffixIndex
+	}{
+		{
+			name:      "add to one nothing",
+			toAddr:    toAddr,
+			fromAddrs: accs(fromAddr1),
+			suffix:    suffix0,
+			expected:  qrsi(suffix0),
+		},
+		{
+			name:      "add to two nothings",
+			toAddr:    toAddr,
+			fromAddrs: accs(fromAddr2, fromAddr3),
+			suffix:    suffix3,
+			expected:  qrsi(suffix3),
+		},
+		{
+			name:      "add to one existing",
+			toAddr:    toAddr,
+			fromAddrs: accs(fromAddr1),
+			suffix:    suffix1,
+			expected:  qrsi(suffix0, suffix1),
+		},
+		{
+			name:      "add to two existing",
+			toAddr:    toAddr,
+			fromAddrs: accs(fromAddr2, fromAddr3),
+			suffix:    suffix2,
+			expected:  qrsi(suffix2, suffix3), // Note that this tests ordering too.
+		},
+		{
+			name:      "entry already exists",
+			toAddr:    toAddr,
+			fromAddrs: accs(fromAddr1),
+			suffix:    suffix0,
+			expected:  qrsi(suffix0, suffix1),
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+			toAddrOrig := MakeCopyOfAccAddress(tc.toAddr)
+			fromAddrsOrig := MakeCopyOfAccAddresses(tc.fromAddrs)
+			suffixOrig := MakeCopyOfByteSlice(tc.suffix)
+
+			testFuncAdd := func() {
+				s.keeper.AddQuarantineRecordSuffixIndexes(store, tc.toAddr, tc.fromAddrs, tc.suffix)
+			}
+			s.Require().NotPanics(testFuncAdd, "addQuarantineRecordSuffixIndexes")
+			s.Assert().Equal(toAddrOrig, tc.toAddr, "toAddr before and after")
+			s.Assert().Equal(fromAddrsOrig, tc.fromAddrs, "fromAddrs before and after")
+			s.Assert().Equal(suffixOrig, tc.suffix, "suffix before and after")
+
+			for i, fromAddr := range fromAddrsOrig {
+				expected := MakeCopyOfQuarantineRecordSuffixIndex(tc.expected)
+				var actual *quarantine.QuarantineRecordSuffixIndex
+				testFuncGet := func() {
+					actual, _ = s.keeper.GetQuarantineRecordSuffixIndex(store, toAddrOrig, fromAddr)
+				}
+				if s.Assert().NotPanics(testFuncGet, "GetQuarantineRecordSuffixIndex[%d]", i) {
+					s.Assert().Equal(expected, actual, "result of GetQuarantineRecordSuffixIndex[%d]", i)
+				}
+			}
+		})
+	}
+}
+
+func (s *TestSuite) TestDeleteQuarantineRecordSuffixIndexes() {
+	toAddr := MakeTestAddr("sad", 0)
+	fromAddr1 := MakeTestAddr("sad", 1)
+	fromAddr2 := MakeTestAddr("sad", 2)
+	fromAddr3 := MakeTestAddr("sad", 3)
+	suffix0 := []byte(MakeTestAddr("sfxsad", 0))
+	suffix1 := []byte(MakeTestAddr("sfxsad", 1))
+	suffix2 := []byte(MakeTestAddr("sfxsad", 2))
+	suffix3 := []byte(MakeTestAddr("sfxsad", 3))
+
+	// accs is just a shorter way of defining []sdk.AccAddress.
+	accs := func(accz ...sdk.AccAddress) []sdk.AccAddress {
+		return accz
+	}
+
+	// Create some existing entries that can then be altered.
+	existing := []struct {
+		key   []byte
+		value *quarantine.QuarantineRecordSuffixIndex
+	}{
+		{
+			key:   quarantine.CreateRecordIndexKey(toAddr, fromAddr1),
+			value: qrsi(suffix0, suffix1, suffix2),
+		},
+		{
+			key:   quarantine.CreateRecordIndexKey(toAddr, fromAddr2),
+			value: qrsi(suffix2, suffix3),
+		},
+	}
+
+	for i, e := range existing {
+		store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+		testFuncSet := func() {
+			s.keeper.SetQuarantineRecordSuffixIndex(store, e.key, e.value)
+		}
+		s.Require().NotPanics(testFuncSet, "setQuarantineRecordSuffixIndex[%d] for setup", i)
+	}
+
+	// Setup:
+	// All will have the same toAddr.
+	// <- 1: 0, 1, 2
+	// <- 2: 2, 3
+	// The above will be altered as the tests progress.
+
+	tests := []struct {
+		name      string
+		fromAddrs []sdk.AccAddress
+		suffix    []byte
+		expected  []*quarantine.QuarantineRecordSuffixIndex
+	}{
+		{
+			name:      "index does not exist",
+			fromAddrs: accs(fromAddr3),
+			suffix:    suffix0,
+			expected:  qrsis(qrsi()),
+		},
+		{
+			name:      "index exists without suffix",
+			fromAddrs: accs(fromAddr1),
+			suffix:    suffix3,
+			expected:  qrsis(qrsi(suffix0, suffix1, suffix2)),
+		},
+		{
+			name:      "index has suffix",
+			fromAddrs: accs(fromAddr1),
+			suffix:    suffix1,
+			expected:  qrsis(qrsi(suffix0, suffix2)),
+		},
+		{
+			name:      "three froms two have suffix other no index",
+			fromAddrs: accs(fromAddr1, fromAddr2, fromAddr3),
+			suffix:    suffix2,
+			expected:  qrsis(qrsi(suffix0), qrsi(suffix3), qrsi()),
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+			toAddrOrig := MakeCopyOfAccAddress(toAddr)
+			fromAddrsOrig := MakeCopyOfAccAddresses(tc.fromAddrs)
+			suffixOrig := MakeCopyOfByteSlice(tc.suffix)
+
+			testFuncDelete := func() {
+				s.keeper.DeleteQuarantineRecordSuffixIndexes(store, toAddr, tc.fromAddrs, tc.suffix)
+			}
+			s.Require().NotPanics(testFuncDelete, "deleteQuarantineRecordSuffixIndexes")
+			s.Assert().Equal(toAddrOrig, toAddr, "toAddr before and after")
+			s.Assert().Equal(fromAddrsOrig, tc.fromAddrs, "fromAddrs before and after")
+			s.Assert().Equal(suffixOrig, tc.suffix, "suffix before and after")
+
+			for i, expected := range tc.expected {
+				var actual *quarantine.QuarantineRecordSuffixIndex
+				testFuncGet := func() {
+					actual, _ = s.keeper.GetQuarantineRecordSuffixIndex(store, toAddrOrig, fromAddrsOrig[i])
+				}
+				if s.Assert().NotPanics(testFuncGet, "GetQuarantineRecordSuffixIndex[%d]", i) {
+					s.Assert().Equal(expected, actual, "result of GetQuarantineRecordSuffixIndex[%d]", i)
+				}
+			}
+		})
+	}
+
+	s.Run("deleting last entry removes it from the store", func() {
+		store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+		key := quarantine.CreateRecordIndexKey(toAddr, fromAddr1)
+		s.Require().True(store.Has(key), "store.Has(key) before the test starts")
+
+		testFuncDelete := func() {
+			s.keeper.DeleteQuarantineRecordSuffixIndexes(store, toAddr, accs(fromAddr1), suffix0)
+		}
+		s.Require().NotPanics(testFuncDelete, "deleteQuarantineRecordSuffixIndexes")
+		if !s.Assert().False(store.Has(key), "store.Has(key) after last record should have been removed") {
+			var actual *quarantine.QuarantineRecordSuffixIndex
+			testFuncGet := func() {
+				actual, _ = s.keeper.GetQuarantineRecordSuffixIndex(store, toAddr, fromAddr1)
+			}
+			if s.Assert().NotPanics(testFuncGet, "getQuarantineRecordSuffixIndex") {
+				// This should always fail because getQuarantineRecordSuffixIndex never returns nil.
+				// This is being called only when toe store still has the entry.
+				// So this is just here so that the value in the store is included in the failure messages.
+				s.Assert().Nil(actual)
+			}
+		}
+	})
+}
+
+func (s *TestSuite) TestGetQuarantineRecordSuffixes() {
+	// The effects of getQuarantineRecordSuffixes are well tested elsewhere. Just doing a big one-off here.
+	toAddr := MakeTestAddr("gqrs", 0)
+	fromAddr1 := MakeTestAddr("gqrs", 1)
+	fromAddr2 := MakeTestAddr("gqrs", 2)
+	fromAddr3 := MakeTestAddr("gqrs", 3)
+	fromAddr4 := MakeTestAddr("gqrs", 4)
+	suffix5 := []byte(MakeTestAddr("sfxgqrs", 5))
+	suffix6 := []byte(MakeTestAddr("sfxgqrs", 6))
+	suffix7 := []byte(MakeTestAddr("sfxgqrs", 7))
+	fromAddr8 := MakeTestAddr("gqrs", 8)
+
+	// accs is just a shorter way of creating a []sdk.AccAddress.
+	accs := func(accz ...sdk.AccAddress) []sdk.AccAddress {
+		return accz
+	}
+	// sfxs is just a shorter way of creating a [][]byte
+	sfxs := func(suffixes ...[]byte) [][]byte {
+		return suffixes
+	}
+
+	// Setup:
+	// This may or may not actually make sense, but it's how I'm setting it up.
+	// {toAddr} <- {fromAddr} = {suffixes}
+	// 0 <- 1 = 5,6
+	// 0 <- 2 = 5,6
+	// 0 <- 3 = 5
+	// 0 <- 4 = (none)
+	// 0 <- 8 = 7
+
+	existing := []struct {
+		from   sdk.AccAddress
+		suffix []byte
+	}{
+		{from: fromAddr1, suffix: suffix5},
+		{from: fromAddr1, suffix: suffix6},
+		{from: fromAddr2, suffix: suffix5},
+		{from: fromAddr2, suffix: suffix6},
+		{from: fromAddr1, suffix: suffix5},
+		{from: fromAddr3, suffix: suffix5},
+		{from: fromAddr8, suffix: suffix7},
+	}
+
+	for i, e := range existing {
+		store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+		testFuncAdd := func() {
+			s.keeper.AddQuarantineRecordSuffixIndexes(store, toAddr, accs(e.from), e.suffix)
+		}
+		s.Require().NotPanics(testFuncAdd, "addQuarantineRecordSuffixIndexes[%d] for setup", i)
+	}
+
+	tests := []struct {
+		name      string
+		fromAddrs []sdk.AccAddress
+		expected  [][]byte
+	}{
+		{name: "nil froms", fromAddrs: nil, expected: nil},
+		{name: "empty froms", fromAddrs: []sdk.AccAddress{}, expected: nil},
+		{name: "one from with zero suffixes", fromAddrs: accs(fromAddr4), expected: sfxs(fromAddr4)},
+		{name: "one from with one shared suffix", fromAddrs: accs(fromAddr3), expected: sfxs(fromAddr3, suffix5)},
+		{name: "one from with one lone suffix", fromAddrs: accs(fromAddr8), expected: sfxs(suffix7, fromAddr8)},
+		{name: "one from with two suffixes", fromAddrs: accs(fromAddr1), expected: sfxs(fromAddr1, suffix5, suffix6)},
+		{
+			name:      "two froms with two overlapping suffixes",
+			fromAddrs: accs(fromAddr1, fromAddr2),
+			expected:  sfxs(fromAddr1, fromAddr2, suffix5, suffix6)},
+		{
+			name:      "two froms with two different suffixes",
+			fromAddrs: accs(fromAddr8, fromAddr3),
+			expected:  sfxs(fromAddr3, suffix5, suffix7, fromAddr8)},
+		{
+			name:      "five froms plus a dupe with 3 suffixes",
+			fromAddrs: accs(fromAddr4, fromAddr1, fromAddr8, fromAddr2, fromAddr3, fromAddr1),
+			expected:  sfxs(fromAddr1, fromAddr2, fromAddr3, fromAddr4, suffix5, suffix6, suffix7, fromAddr8)},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+			toAddrOrig := MakeCopyOfAccAddress(toAddr)
+			fromAddrsOrig := MakeCopyOfAccAddresses(tc.fromAddrs)
+
+			var actual [][]byte
+			testFuncGet := func() {
+				actual = s.keeper.GetQuarantineRecordSuffixes(store, toAddr, tc.fromAddrs)
+			}
+			s.Require().NotPanics(testFuncGet, "getQuarantineRecordSuffixes")
+			s.Assert().Equal(toAddrOrig, toAddr, "toAddr before and after")
+			s.Assert().Equal(fromAddrsOrig, tc.fromAddrs, "fromAddrs before and after")
+			s.Assert().Equal(tc.expected, actual, "result of getQuarantineRecordSuffixes")
+		})
+	}
+}

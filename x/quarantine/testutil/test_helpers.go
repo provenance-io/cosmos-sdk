@@ -250,3 +250,13 @@ func MakeCopyOfAutoResponseEntry(orig *AutoResponseEntry) *AutoResponseEntry {
 		Response:    orig.Response,
 	}
 }
+
+// MakeCopyOfQuarantineRecordSuffixIndex makes a deep copy of a QuarantineRecordSuffixIndex
+func MakeCopyOfQuarantineRecordSuffixIndex(orig *QuarantineRecordSuffixIndex) *QuarantineRecordSuffixIndex {
+	if orig == nil {
+		return nil
+	}
+	return &QuarantineRecordSuffixIndex{
+		RecordSuffixes: MakeCopyOfByteSliceSlice(orig.RecordSuffixes),
+	}
+}
