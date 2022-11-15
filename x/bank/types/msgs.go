@@ -7,9 +7,8 @@ import (
 
 // bank message types
 const (
-	TypeMsgSend                = "send"
-	TypeMsgMultiSend           = "multisend"
-	TypeMsgUpdateDenomMetadata = "updatedenommetada"
+	TypeMsgSend      = "send"
+	TypeMsgMultiSend = "multisend"
 )
 
 var _ sdk.Msg = &MsgSend{}
@@ -184,46 +183,4 @@ func ValidateInputsOutputs(inputs []Input, outputs []Output) error {
 	}
 
 	return nil
-}
-
-var _ sdk.Msg = &MsgUpdateDenomMetadata{}
-
-// NewMsgUpdateDenomMetadata - construct a message to update denom metadata
-func NewMsgUpdateDenomMetadata(fromAddr, title string, description string, metadata *Metadata) *MsgUpdateDenomMetadata {
-	return &MsgUpdateDenomMetadata{
-		FromAddress: fromAddr,
-		Title:       title,
-		Description: description,
-		Metadata:    metadata,
-	}
-}
-
-// Route Implements Msg
-func (msg MsgUpdateDenomMetadata) Route() string {
-	return RouterKey
-}
-
-// Type Implements Msg
-func (msg MsgUpdateDenomMetadata) Type() string {
-	return TypeMsgUpdateDenomMetadata
-}
-
-// ValidateBasic Implements Msg.
-func (msg MsgUpdateDenomMetadata) ValidateBasic() error {
-	err := msg.Metadata.Validate()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// GetSignBytes Implements Msg.
-func (msg MsgUpdateDenomMetadata) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
-}
-
-// GetSigners Implements Msg.
-func (msg MsgUpdateDenomMetadata) GetSigners() []sdk.AccAddress {
-	fromAddress, _ := sdk.AccAddressFromBech32(msg.FromAddress)
-	return []sdk.AccAddress{fromAddress}
 }
