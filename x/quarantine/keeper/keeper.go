@@ -313,11 +313,11 @@ func (k Keeper) getQuarantineRecordPrefixStore(ctx sdk.Context, toAddr sdk.AccAd
 	return prefix.NewStore(ctx.KVStore(k.storeKey), pre), pre
 }
 
-// IterateQuarantineRecords iterates over the quarantined funds for a given recipient address,
-// or if no address is provided, iterates over all quarantined funds.
+// IterateQuarantineRecords iterates over the quarantine records for a given recipient address,
+// or if no address is provided, iterates over all quarantine records.
 // The callback function should accept a to address, record suffix, and QuarantineRecord (in that order).
 // It should return whether to stop iteration early. I.e. false will allow iteration to continue, true will stop iteration.
-func (k Keeper) IterateQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, recordSuffix sdk.AccAddress, funds *quarantine.QuarantineRecord) (stop bool)) {
+func (k Keeper) IterateQuarantineRecords(ctx sdk.Context, toAddr sdk.AccAddress, cb func(toAddr, recordSuffix sdk.AccAddress, record *quarantine.QuarantineRecord) (stop bool)) {
 	store, pre := k.getQuarantineRecordPrefixStore(ctx, toAddr)
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
