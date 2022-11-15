@@ -35,3 +35,38 @@ func (k Keeper) BzToQuarantineRecord(bz []byte) (*quarantine.QuarantineRecord, e
 func (k Keeper) MustBzToQuarantineRecord(bz []byte) *quarantine.QuarantineRecord {
 	return k.mustBzToQuarantineRecord(bz)
 }
+
+// SetQuarantineRecordSuffixIndex exposes setQuarantineRecordSuffixIndex for unit tests.
+func (k Keeper) SetQuarantineRecordSuffixIndex(store sdk.KVStore, key []byte, value *quarantine.QuarantineRecordSuffixIndex) {
+	k.setQuarantineRecordSuffixIndex(store, key, value)
+}
+
+// BzToQuarantineRecordSuffixIndex exposes bzToQuarantineRecordSuffixIndex for unit tests.
+func (k Keeper) BzToQuarantineRecordSuffixIndex(bz []byte) (*quarantine.QuarantineRecordSuffixIndex, error) {
+	return k.bzToQuarantineRecordSuffixIndex(bz)
+}
+
+// MustBzToQuarantineRecordSuffixIndex exposes mustBzToQuarantineRecordSuffixIndex for unit tests.
+func (k Keeper) MustBzToQuarantineRecordSuffixIndex(bz []byte) *quarantine.QuarantineRecordSuffixIndex {
+	return k.mustBzToQuarantineRecordSuffixIndex(bz)
+}
+
+// GetQuarantineRecordSuffixIndex exposes getQuarantineRecordSuffixIndex for unit tests.
+func (k Keeper) GetQuarantineRecordSuffixIndex(store sdk.KVStore, toAddr, fromAddr sdk.AccAddress) (*quarantine.QuarantineRecordSuffixIndex, []byte) {
+	return k.getQuarantineRecordSuffixIndex(store, toAddr, fromAddr)
+}
+
+// GetQuarantineRecordSuffixes exposes getQuarantineRecordSuffixes for unit tests.
+func (k Keeper) GetQuarantineRecordSuffixes(store sdk.KVStore, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) [][]byte {
+	return k.getQuarantineRecordSuffixes(store, toAddr, fromAddrs...)
+}
+
+// AddQuarantineRecordSuffixIndexes exposes addQuarantineRecordSuffixIndexes for unit tests.
+func (k Keeper) AddQuarantineRecordSuffixIndexes(store sdk.KVStore, toAddr sdk.AccAddress, fromAddrs []sdk.AccAddress, suffix []byte) {
+	k.addQuarantineRecordSuffixIndexes(store, toAddr, fromAddrs, suffix)
+}
+
+// DeleteQuarantineRecordSuffixIndexes exposes deleteQuarantineRecordSuffixIndexes for unit tests.
+func (k Keeper) DeleteQuarantineRecordSuffixIndexes(store sdk.KVStore, toAddr sdk.AccAddress, fromAddrs []sdk.AccAddress, suffix []byte) {
+	k.deleteQuarantineRecordSuffixIndexes(store, toAddr, fromAddrs, suffix)
+}
