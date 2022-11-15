@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"testing"
@@ -3624,4 +3625,150 @@ func (s *TestSuite) TestGetQuarantineRecordSuffixes() {
 			s.Assert().Equal(tc.expected, actual, "result of getQuarantineRecordSuffixes")
 		})
 	}
+}
+
+func (s *TestSuite) TestInitAndExportGenesis() {
+	cz := func(coins string) sdk.Coins {
+		return czt(s.T(), coins)
+	}
+
+	addr0 := MakeTestAddr("ieg", 0).String()
+	addr1 := MakeTestAddr("ieg", 1).String()
+	addr2 := MakeTestAddr("ieg", 2).String()
+	addr3 := MakeTestAddr("ieg", 3).String()
+	addr4 := MakeTestAddr("ieg", 4).String()
+	addr5 := MakeTestAddr("ieg", 5).String()
+	addr6 := MakeTestAddr("ieg", 6).String()
+	addr7 := MakeTestAddr("ieg", 7).String()
+
+	genesisState := &quarantine.GenesisState{
+		QuarantinedAddresses: []string{addr0, addr2, addr4, addr6, addr7, addr5, addr1, addr3},
+		AutoResponses: []*quarantine.AutoResponseEntry{
+			{
+				ToAddress:   addr5,
+				FromAddress: addr4,
+				Response:    quarantine.AUTO_RESPONSE_ACCEPT,
+			},
+			{
+				ToAddress:   addr5,
+				FromAddress: addr1,
+				Response:    quarantine.AUTO_RESPONSE_ACCEPT,
+			},
+			{
+				ToAddress:   addr5,
+				FromAddress: addr2,
+				Response:    quarantine.AUTO_RESPONSE_DECLINE,
+			},
+			{
+				ToAddress:   addr2,
+				FromAddress: addr5,
+				Response:    quarantine.AUTO_RESPONSE_ACCEPT,
+			},
+			{
+				ToAddress:   addr0,
+				FromAddress: addr7,
+				Response:    quarantine.AUTO_RESPONSE_UNSPECIFIED,
+			},
+			{
+				ToAddress:   addr0,
+				FromAddress: addr3,
+				Response:    quarantine.AUTO_RESPONSE_DECLINE,
+			},
+		},
+		QuarantinedFunds: []*quarantine.QuarantinedFunds{
+			{
+				ToAddress:               addr5,
+				UnacceptedFromAddresses: []string{addr2},
+				Coins:                   cz("2dull,5fancy"),
+				Declined:                false,
+			},
+			{
+				ToAddress:               addr0,
+				UnacceptedFromAddresses: []string{addr1},
+				Coins:                   cz("8fancy"),
+				Declined:                false,
+			},
+			{
+				ToAddress:               addr4,
+				UnacceptedFromAddresses: []string{addr6},
+				Coins:                   cz("200000dolla"),
+				Declined:                false,
+			},
+			{
+				ToAddress:               addr0,
+				UnacceptedFromAddresses: []string{addr1, addr2},
+				Coins:                   cz("21fancy"),
+				Declined:                false,
+			},
+		},
+	}
+
+	expectedGenesisState := &quarantine.GenesisState{
+		QuarantinedAddresses: []string{addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7},
+		AutoResponses: []*quarantine.AutoResponseEntry{
+			MakeCopyOfAutoResponseEntry(genesisState.AutoResponses[5]),
+			MakeCopyOfAutoResponseEntry(genesisState.AutoResponses[3]),
+			MakeCopyOfAutoResponseEntry(genesisState.AutoResponses[1]),
+			MakeCopyOfAutoResponseEntry(genesisState.AutoResponses[2]),
+			MakeCopyOfAutoResponseEntry(genesisState.AutoResponses[0]),
+		},
+		QuarantinedFunds: []*quarantine.QuarantinedFunds{
+			MakeCopyOfQuarantinedFunds(genesisState.QuarantinedFunds[1]),
+			MakeCopyOfQuarantinedFunds(genesisState.QuarantinedFunds[3]),
+			MakeCopyOfQuarantinedFunds(genesisState.QuarantinedFunds[2]),
+			MakeCopyOfQuarantinedFunds(genesisState.QuarantinedFunds[0]),
+		},
+	}
+
+	cdc := simapp.MakeTestEncodingConfig().Codec
+	genStateJSON, err := json.MarshalIndent(genesisState, "", "\t")
+	s.Require().NoError(err, "json.MarshalIndent(genesisState, ...)")
+
+	s.Run("export while empty", func() {
+		expected := &quarantine.GenesisState{
+			QuarantinedAddresses: nil,
+			AutoResponses:        nil,
+			QuarantinedFunds:     nil,
+		}
+		var actual *quarantine.GenesisState
+		testFuncExport := func() {
+			actual = s.keeper.ExportGenesis(s.sdkCtx, cdc)
+		}
+		s.Require().NotPanics(testFuncExport, "ExportGenesis")
+		s.Assert().Equal(expected, actual, "exported genesis state")
+
+	})
+
+	s.Run("init not enough funds", func() {
+		bKeeper := NewMockBankKeeper()
+		bKeeper.AllBalances[string(s.keeper.GetFundsHolder())] = cz("199999dolla,1dull,33fancy")
+		qKeeper := s.keeper.WithBankKeeper(bKeeper)
+		expectedErr := fmt.Sprintf("quarantine fund holder account %q does not have enough funds %q to cover quarantined funds %q",
+			s.keeper.GetFundsHolder().String(), "199999dolla,1dull,33fancy", "200000dolla,2dull,34fancy")
+
+		testFuncInit := func() {
+			qKeeper.InitGenesis(s.sdkCtx, cdc, genStateJSON)
+		}
+		s.Require().PanicsWithError(expectedErr, testFuncInit, "InitGenesis")
+	})
+
+	s.Run("init with enough funds", func() {
+		bKeeper := NewMockBankKeeper()
+		bKeeper.AllBalances[string(s.keeper.GetFundsHolder())] = cz("200000dolla,2dull,34fancy")
+		qKeeper := s.keeper.WithBankKeeper(bKeeper)
+
+		testFuncInit := func() {
+			qKeeper.InitGenesis(s.sdkCtx, cdc, genStateJSON)
+		}
+		s.Require().NotPanics(testFuncInit, "InitGenesis")
+	})
+
+	s.Run("export after successful init", func() {
+		var actualGenesisState *quarantine.GenesisState
+		testFuncExport := func() {
+			actualGenesisState = s.keeper.ExportGenesis(s.sdkCtx, cdc)
+		}
+		s.Require().NotPanics(testFuncExport, "ExportGenesis")
+		s.Assert().Equal(expectedGenesisState, actualGenesisState, "exported genesis state")
+	})
 }
