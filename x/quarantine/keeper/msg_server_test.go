@@ -3,8 +3,11 @@ package keeper_test
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
+
 	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
+
+// These tests are initiated by TestKeeperTestSuite in keeper_test.go
 
 func (s *TestSuite) TestOptIn() {
 	addr0 := MakeTestAddr("optin", 0).String()
@@ -32,11 +35,11 @@ func (s *TestSuite) TestOptIn() {
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
 			actResp, actErr := s.keeper.OptIn(s.stdlibCtx, tc.msg)
-			AssertErrorContents(s.T(), actErr, tc.expErr, "OptIn error")
+			s.AssertErrorContents(actErr, tc.expErr, "OptIn error")
 			if len(tc.expErr) == 0 {
 				s.Assert().NotNil(actResp, "MsgOptInResponse")
 				addr, err := sdk.AccAddressFromBech32(tc.msg.ToAddress)
-				if err == nil {
+				if s.Assert().NoError(err, "AccAddressFromBech32 ToAddress") {
 					isQ := s.keeper.IsQuarantinedAddr(s.sdkCtx, addr)
 					s.Assert().True(isQ, "IsQuarantinedAddr")
 				}
@@ -69,15 +72,15 @@ func (s *TestSuite) TestOptOut() {
 			expErr: []string{"decoding bech32 failed"},
 		},
 		{
-			name: "not opted in",
+			name: "wasnt opted in",
 			msg:  &quarantine.MsgOptOut{ToAddress: addr1},
 		},
 		{
-			name: "opted in",
+			name: "was opted in",
 			msg:  &quarantine.MsgOptOut{ToAddress: addr0},
 		},
 		{
-			name: "opted in again",
+			name: "again with the one that was opted in",
 			msg:  &quarantine.MsgOptOut{ToAddress: addr0},
 		},
 	}
@@ -85,11 +88,11 @@ func (s *TestSuite) TestOptOut() {
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
 			actResp, actErr := s.keeper.OptOut(s.stdlibCtx, tc.msg)
-			AssertErrorContents(s.T(), actErr, tc.expErr, "OptIn error")
+			s.AssertErrorContents(actErr, tc.expErr, "OptOut error")
 			if len(tc.expErr) == 0 {
-				s.Assert().NotNil(actResp, "MsgOptInResponse")
+				s.Assert().NotNil(actResp, "MsgOptOutResponse")
 				addr, err := sdk.AccAddressFromBech32(tc.msg.ToAddress)
-				if err == nil {
+				if s.Assert().NoError(err) {
 					isQ := s.keeper.IsQuarantinedAddr(s.sdkCtx, addr)
 					s.Assert().False(isQ, "IsQuarantinedAddr")
 				}
@@ -116,8 +119,8 @@ func (s *TestSuite) TestAccept() {
 	addr2Acc, addr2 := makeAddr(2)
 
 	// Set up some quarantined funds to 0 from 1 and to 0 from 2.
-	amt1 := czt(s.T(), "5491book")
-	amt2 := czt(s.T(), "8383tape")
+	amt1 := s.cz("5491book")
+	amt2 := s.cz("8383tape")
 	s.Require().NoError(s.keeper.AddQuarantinedCoins(s.sdkCtx, amt1, addr0Acc, addr1Acc), "AddQuarantinedCoins 0 1")
 	s.Require().NoError(s.keeper.AddQuarantinedCoins(s.sdkCtx, amt2, addr0Acc, addr2Acc), "AddQuarantinedCoins 0 2")
 
@@ -222,7 +225,7 @@ func (s *TestSuite) TestAccept() {
 			em := sdk.NewEventManager()
 			ctx := sdk.WrapSDKContext(s.sdkCtx.WithEventManager(em))
 			actResp, actErr := qKeeper.Accept(ctx, tc.msg)
-			AssertErrorContents(s.T(), actErr, tc.expErr, "Accept error")
+			s.AssertErrorContents(actErr, tc.expErr, "Accept error")
 			if len(tc.expErr) == 0 {
 				s.Assert().NotNil(actResp, "MsgAcceptResponse")
 			}
@@ -265,8 +268,8 @@ func (s *TestSuite) TestDecline() {
 	addr2Acc, addr2 := makeAddr(2)
 
 	// Set up some quarantined funds to 0 from 1 and to 0 from 2.
-	amt1 := czt(s.T(), "66route")
-	amt2 := czt(s.T(), "55hagar")
+	amt1 := s.cz("66route")
+	amt2 := s.cz("55hagar")
 	s.Require().NoError(s.keeper.AddQuarantinedCoins(s.sdkCtx, amt1, addr0Acc, addr1Acc), "AddQuarantinedCoins 0 1")
 	s.Require().NoError(s.keeper.AddQuarantinedCoins(s.sdkCtx, amt2, addr0Acc, addr2Acc), "AddQuarantinedCoins 0 2")
 
@@ -369,7 +372,7 @@ func (s *TestSuite) TestDecline() {
 			em := sdk.NewEventManager()
 			ctx := sdk.WrapSDKContext(s.sdkCtx.WithEventManager(em))
 			actResp, actErr := s.keeper.Decline(ctx, tc.msg)
-			AssertErrorContents(s.T(), actErr, tc.expErr, "Decline error")
+			s.AssertErrorContents(actErr, tc.expErr, "Decline error")
 			if len(tc.expErr) == 0 {
 				s.Assert().NotNil(actResp, "MsgDeclineResponse")
 			}
@@ -522,7 +525,7 @@ func (s *TestSuite) TestUpdateAutoResponses() {
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
 			actResp, actErr := s.keeper.UpdateAutoResponses(s.stdlibCtx, tc.msg)
-			AssertErrorContents(s.T(), actErr, tc.expErr, "UpdateAutoResponses error")
+			s.AssertErrorContents(actErr, tc.expErr, "UpdateAutoResponses error")
 			if len(tc.expErr) == 0 {
 				s.Assert().NotNil(actResp, "MsgUpdateAutoResponsesResponse")
 			}

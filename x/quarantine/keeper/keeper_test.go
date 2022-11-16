@@ -25,13 +25,6 @@ import (
 	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
 
-// czt is a way to create coins that requires fewer characters than sdk.NewCoins(sdk.NewInt64Coin("foo", 5))
-func czt(t *testing.T, coins string) sdk.Coins {
-	rv, err := sdk.ParseCoinsNormalized(coins)
-	require.NoError(t, err, "ParseCoinsNormalized(%q)", coins)
-	return rv
-}
-
 // updateQR updates the AccAddresses using the provided addrs.
 // Any AccAddress that is 1 byte long and can be an index in addrs,
 // is replaced by the addrs entry using that byte as the index.
@@ -102,6 +95,18 @@ func (s *TestSuite) SetupTest() {
 	s.addr3 = addrs[2]
 	s.addr4 = addrs[3]
 	s.addr5 = addrs[4]
+}
+
+func (s *TestSuite) cz(coins string) sdk.Coins {
+	s.T().Helper()
+	rv, err := sdk.ParseCoinsNormalized(coins)
+	s.Require().NoError(err, "ParseCoinsNormalized(%q)", coins)
+	return rv
+}
+
+func (s *TestSuite) AssertErrorContents(theError error, contains []string, msgAndArgs ...interface{}) bool {
+	s.T().Helper()
+	return AssertErrorContents(s.T(), theError, contains, msgAndArgs...)
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -480,11 +485,6 @@ func (s *TestSuite) TestAutoResponsesItateAndGetAll() {
 }
 
 func (s *TestSuite) TestBzToQuarantineRecord() {
-	// cz an even shorter way of creating coins since all creating should get the same *testing.T here.
-	cz := func(coins string) sdk.Coins {
-		return czt(s.T(), coins)
-	}
-
 	cdc := s.keeper.GetCodec()
 
 	tests := []struct {
@@ -498,13 +498,13 @@ func (s *TestSuite) TestBzToQuarantineRecord() {
 			bz: cdc.MustMarshal(&quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(s.addr1),
 				AcceptedFromAddresses:   accs(s.addr2),
-				Coins:                   cz("9000bar,888foo"),
+				Coins:                   s.cz("9000bar,888foo"),
 				Declined:                false,
 			}),
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(s.addr1),
 				AcceptedFromAddresses:   accs(s.addr2),
-				Coins:                   cz("9000bar,888foo"),
+				Coins:                   s.cz("9000bar,888foo"),
 				Declined:                false,
 			},
 		},
@@ -541,13 +541,13 @@ func (s *TestSuite) TestBzToQuarantineRecord() {
 			bz: cdc.MustMarshal(&quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(s.addr1),
 				AcceptedFromAddresses:   accs(s.addr2),
-				Coins:                   cz("9001bar,889foo"),
+				Coins:                   s.cz("9001bar,889foo"),
 				Declined:                true,
 			}),
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(s.addr1),
 				AcceptedFromAddresses:   accs(s.addr2),
-				Coins:                   cz("9001bar,889foo"),
+				Coins:                   s.cz("9001bar,889foo"),
 				Declined:                true,
 			},
 		},
@@ -556,13 +556,13 @@ func (s *TestSuite) TestBzToQuarantineRecord() {
 			bz: cdc.MustMarshal(&quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{},
 				AcceptedFromAddresses:   accs(s.addr2, s.addr1, s.addr3),
-				Coins:                   cz("9002bar,890foo"),
+				Coins:                   s.cz("9002bar,890foo"),
 				Declined:                false,
 			}),
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: nil,
 				AcceptedFromAddresses:   accs(s.addr2, s.addr1, s.addr3),
-				Coins:                   cz("9002bar,890foo"),
+				Coins:                   s.cz("9002bar,890foo"),
 				Declined:                false,
 			},
 		},
@@ -571,13 +571,13 @@ func (s *TestSuite) TestBzToQuarantineRecord() {
 			bz: cdc.MustMarshal(&quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(s.addr4, s.addr2, s.addr5),
 				AcceptedFromAddresses:   []sdk.AccAddress{},
-				Coins:                   cz("9003bar,891foo"),
+				Coins:                   s.cz("9003bar,891foo"),
 				Declined:                false,
 			}),
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(s.addr4, s.addr2, s.addr5),
 				AcceptedFromAddresses:   nil,
-				Coins:                   cz("9003bar,891foo"),
+				Coins:                   s.cz("9003bar,891foo"),
 				Declined:                false,
 			},
 		},
@@ -663,7 +663,7 @@ func (s *TestSuite) TestQuarantineRecordGetSet() {
 		record := &quarantine.QuarantineRecord{
 			UnacceptedFromAddresses: accs(uFromAddr),
 			AcceptedFromAddresses:   nil,
-			Coins:                   czt(s.T(), "456bar,1233foo"),
+			Coins:                   s.cz("456bar,1233foo"),
 			Declined:                false,
 		}
 		expected := MakeCopyOfQuarantineRecord(record)
@@ -1317,10 +1317,6 @@ func (s *TestSuite) TestGetQuarantineRecords() {
 }
 
 func (s *TestSuite) TestAddQuarantinedCoins() {
-	// cz an even shorter way of creating coins since all creating should get the same *testing.T here.
-	cz := func(coins string) sdk.Coins {
-		return czt(s.T(), coins)
-	}
 	// Getting a little tricky here because I want different addresses for each test.
 	// The addrBase is used to generate addrCount addresses.
 	// Then, the autoAccept, autoDecline, toAddr and fromAddrs are address indexes to use.
@@ -1343,24 +1339,24 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			name:      "new record is created",
 			addrBase:  "nr",
 			addrCount: 2,
-			coins:     cz("99bananas"),
+			coins:     s.cz("99bananas"),
 			toAddr:    0,
 			fromAddrs: []int{1},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("99bananas"),
+				Coins:                   s.cz("99bananas"),
 			},
 		},
 		{
 			name:      "new record 2 froms is created",
 			addrBase:  "nr2f",
 			addrCount: 3,
-			coins:     cz("88crazy"),
+			coins:     s.cz("88crazy"),
 			toAddr:    0,
 			fromAddrs: []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("88crazy"),
+				Coins:                   s.cz("88crazy"),
 			},
 		},
 		{
@@ -1369,14 +1365,14 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 2,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("11pants"),
+				Coins:                   s.cz("11pants"),
 			},
-			coins:     cz("200pants"),
+			coins:     s.cz("200pants"),
 			toAddr:    0,
 			fromAddrs: []int{1},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("211pants"),
+				Coins:                   s.cz("211pants"),
 			},
 		},
 		{
@@ -1385,14 +1381,14 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 2,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("102tower"),
+				Coins:                   s.cz("102tower"),
 			},
-			coins:     cz("5pit"),
+			coins:     s.cz("5pit"),
 			toAddr:    0,
 			fromAddrs: []int{1},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("5pit,102tower"),
+				Coins:                   s.cz("5pit,102tower"),
 			},
 		},
 		{
@@ -1402,15 +1398,15 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 				AcceptedFromAddresses:   []sdk.AccAddress{{2}},
-				Coins:                   cz("53pcoin"),
+				Coins:                   s.cz("53pcoin"),
 			},
-			coins:     cz("9000pcoin"),
+			coins:     s.cz("9000pcoin"),
 			toAddr:    0,
 			fromAddrs: []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 				AcceptedFromAddresses:   []sdk.AccAddress{{2}},
-				Coins:                   cz("9053pcoin"),
+				Coins:                   s.cz("9053pcoin"),
 			},
 		},
 		{
@@ -1420,15 +1416,15 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 				AcceptedFromAddresses:   []sdk.AccAddress{{2}},
-				Coins:                   cz("35pcoin"),
+				Coins:                   s.cz("35pcoin"),
 			},
-			coins:     cz("800pcoin"),
+			coins:     s.cz("800pcoin"),
 			toAddr:    0,
 			fromAddrs: []int{2, 1},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 				AcceptedFromAddresses:   []sdk.AccAddress{{2}},
-				Coins:                   cz("835pcoin"),
+				Coins:                   s.cz("835pcoin"),
 			},
 		},
 		{
@@ -1437,15 +1433,15 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 2,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("543interstellar"),
+				Coins:                   s.cz("543interstellar"),
 			},
 			autoAccept: []int{1},
-			coins:      cz("5012interstellar"),
+			coins:      s.cz("5012interstellar"),
 			toAddr:     0,
 			fromAddrs:  []int{1},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("5555interstellar"), // One more time!
+				Coins:                   s.cz("5555interstellar"), // One more time!
 			},
 		},
 		{
@@ -1453,7 +1449,7 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrBase:   "nrfa",
 			addrCount:  2,
 			autoAccept: []int{1},
-			coins:      cz("76trombones"),
+			coins:      s.cz("76trombones"),
 			toAddr:     0,
 			fromAddrs:  []int{1},
 			expected:   nil,
@@ -1463,13 +1459,13 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrBase:   "nr2fa",
 			addrCount:  3,
 			autoAccept: []int{1},
-			coins:      cz("52pinata"),
+			coins:      s.cz("52pinata"),
 			toAddr:     0,
 			fromAddrs:  []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{2}},
 				AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-				Coins:                   cz("52pinata"),
+				Coins:                   s.cz("52pinata"),
 			},
 		},
 		{
@@ -1477,13 +1473,13 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrBase:   "nr2sa",
 			addrCount:  3,
 			autoAccept: []int{2},
-			coins:      cz("3fiddy"), // Loch Ness Monster, is that you?
+			coins:      s.cz("3fiddy"), // Loch Ness Monster, is that you?
 			toAddr:     0,
 			fromAddrs:  []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 				AcceptedFromAddresses:   []sdk.AccAddress{{2}},
-				Coins:                   cz("3fiddy"),
+				Coins:                   s.cz("3fiddy"),
 			},
 		},
 		{
@@ -1491,7 +1487,7 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrBase:   "nr2ba",
 			addrCount:  3,
 			autoAccept: []int{1, 2},
-			coins:      cz("4moo"),
+			coins:      s.cz("4moo"),
 			toAddr:     0,
 			fromAddrs:  []int{1, 2},
 			expected:   nil,
@@ -1502,15 +1498,15 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 2,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("8nodeca"),
+				Coins:                   s.cz("8nodeca"),
 				Declined:                false,
 			},
-			coins:     cz("50nodeca"),
+			coins:     s.cz("50nodeca"),
 			toAddr:    0,
 			fromAddrs: []int{1},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("58nodeca"),
+				Coins:                   s.cz("58nodeca"),
 				Declined:                false,
 			},
 		},
@@ -1520,16 +1516,16 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 2,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("20deca"),
+				Coins:                   s.cz("20deca"),
 				Declined:                false,
 			},
 			autoDecline: []int{1},
-			coins:       cz("406deca"),
+			coins:       s.cz("406deca"),
 			toAddr:      0,
 			fromAddrs:   []int{1},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("426deca"),
+				Coins:                   s.cz("426deca"),
 				Declined:                true,
 			},
 		},
@@ -1539,16 +1535,16 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 2,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("3000yarp"),
+				Coins:                   s.cz("3000yarp"),
 				Declined:                true,
 			},
 			autoDecline: []int{1},
-			coins:       cz("3yarp"),
+			coins:       s.cz("3yarp"),
 			toAddr:      0,
 			fromAddrs:   []int{1},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("3003yarp"),
+				Coins:                   s.cz("3003yarp"),
 				Declined:                true,
 			},
 		},
@@ -1558,16 +1554,16 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 2,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("14dalmatian"),
+				Coins:                   s.cz("14dalmatian"),
 				Declined:                true,
 			},
 			autoDecline: nil,
-			coins:       cz("87dalmatian"),
+			coins:       s.cz("87dalmatian"),
 			toAddr:      0,
 			fromAddrs:   []int{1},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-				Coins:                   cz("101dalmatian"),
+				Coins:                   s.cz("101dalmatian"),
 				Declined:                false,
 			},
 		},
@@ -1577,16 +1573,16 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 3,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("3bill"),
+				Coins:                   s.cz("3bill"),
 				Declined:                false,
 			},
 			autoDecline: nil,
-			coins:       cz("4bill"),
+			coins:       s.cz("4bill"),
 			toAddr:      0,
 			fromAddrs:   []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("7bill"),
+				Coins:                   s.cz("7bill"),
 				Declined:                false,
 			},
 		},
@@ -1596,16 +1592,16 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 3,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("20123zela"),
+				Coins:                   s.cz("20123zela"),
 				Declined:                false,
 			},
 			autoDecline: []int{1},
-			coins:       cz("5000000000zela"),
+			coins:       s.cz("5000000000zela"),
 			toAddr:      0,
 			fromAddrs:   []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("5000020123zela"),
+				Coins:                   s.cz("5000020123zela"),
 				Declined:                true,
 			},
 		},
@@ -1615,16 +1611,16 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 3,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("456789vids"),
+				Coins:                   s.cz("456789vids"),
 				Declined:                false,
 			},
 			autoDecline: []int{2},
-			coins:       cz("123000000vids"),
+			coins:       s.cz("123000000vids"),
 			toAddr:      0,
 			fromAddrs:   []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("123456789vids"),
+				Coins:                   s.cz("123456789vids"),
 				Declined:                true,
 			},
 		},
@@ -1634,16 +1630,16 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 3,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("5green"),
+				Coins:                   s.cz("5green"),
 				Declined:                false,
 			},
 			autoDecline: []int{1, 2},
-			coins:       cz("333333333333333green"),
+			coins:       s.cz("333333333333333green"),
 			toAddr:      0,
 			fromAddrs:   []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("333333333333338green"),
+				Coins:                   s.cz("333333333333338green"),
 				Declined:                true,
 			},
 		},
@@ -1653,16 +1649,16 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 3,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("4frank"),
+				Coins:                   s.cz("4frank"),
 				Declined:                true,
 			},
 			autoDecline: nil,
-			coins:       cz("3frank"),
+			coins:       s.cz("3frank"),
 			toAddr:      0,
 			fromAddrs:   []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("7frank"),
+				Coins:                   s.cz("7frank"),
 				Declined:                false,
 			},
 		},
@@ -1672,16 +1668,16 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 3,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("10zulu"),
+				Coins:                   s.cz("10zulu"),
 				Declined:                true,
 			},
 			autoDecline: []int{1},
-			coins:       cz("11zulu"),
+			coins:       s.cz("11zulu"),
 			toAddr:      0,
 			fromAddrs:   []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("21zulu"),
+				Coins:                   s.cz("21zulu"),
 				Declined:                true,
 			},
 		},
@@ -1691,16 +1687,16 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 3,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("11stars"),
+				Coins:                   s.cz("11stars"),
 				Declined:                true,
 			},
 			autoDecline: []int{2},
-			coins:       cz("99stars"),
+			coins:       s.cz("99stars"),
 			toAddr:      0,
 			fromAddrs:   []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("110stars"),
+				Coins:                   s.cz("110stars"),
 				Declined:                true,
 			},
 		},
@@ -1710,16 +1706,16 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 			addrCount: 3,
 			existing: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("44blue"),
+				Coins:                   s.cz("44blue"),
 				Declined:                true,
 			},
 			autoDecline: []int{1, 2},
-			coins:       cz("360blue"),
+			coins:       s.cz("360blue"),
 			toAddr:      0,
 			fromAddrs:   []int{1, 2},
 			expected: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-				Coins:                   cz("404blue"),
+				Coins:                   s.cz("404blue"),
 				Declined:                true,
 			},
 		},
@@ -1810,11 +1806,6 @@ func (s *TestSuite) TestAddQuarantinedCoins() {
 }
 
 func (s *TestSuite) TestAcceptQuarantinedFunds() {
-	// cz an even shorter way of creating coins since all creating should get the same *testing.T here.
-	cz := func(coins string) sdk.Coins {
-		return czt(s.T(), coins)
-	}
-
 	// makeEvent creates a funds-released event.
 	makeEvent := func(t *testing.T, addr sdk.AccAddress, amt sdk.Coins) sdk.Event {
 		event, err := sdk.TypedEventToEvent(&quarantine.EventFundsReleased{
@@ -1835,7 +1826,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 		for i, amtStr := range coins {
 			// doing this now so that an invalid coin string fails the test before it gets started.
 			// Really, I didn't want to have to update cz to also take in a *testing.T.
-			amt := cz(amtStr)
+			amt := s.cz(amtStr)
 			rv[i] = func(t *testing.T, addr sdk.AccAddress) sdk.Event {
 				return makeEvent(t, addr, amt)
 			}
@@ -1877,12 +1868,12 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("17lemon"),
+					Coins:                   s.cz("17lemon"),
 				},
 			},
 			fromAddrs:       []int{1},
 			expectedRecords: nil,
-			expectedSent:    []sdk.Coins{cz("17lemon")},
+			expectedSent:    []sdk.Coins{s.cz("17lemon")},
 			expectedEvents:  makeEventMakers("17lemon"),
 		},
 		{
@@ -1893,12 +1884,12 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{2}, {3}},
-					Coins:                   cz("8878pillow"),
+					Coins:                   s.cz("8878pillow"),
 				},
 			},
 			fromAddrs:       []int{1},
 			expectedRecords: nil,
-			expectedSent:    []sdk.Coins{cz("8878pillow")},
+			expectedSent:    []sdk.Coins{s.cz("8878pillow")},
 			expectedEvents:  makeEventMakers("8878pillow"),
 		},
 		{
@@ -1908,13 +1899,13 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("5rings,4birds,3hens"),
+					Coins:                   s.cz("5rings,4birds,3hens"),
 					Declined:                true,
 				},
 			},
 			fromAddrs:       []int{1},
 			expectedRecords: nil,
-			expectedSent:    []sdk.Coins{cz("5rings,4birds,3hens")},
+			expectedSent:    []sdk.Coins{s.cz("5rings,4birds,3hens")},
 			expectedEvents:  makeEventMakers("5rings,4birds,3hens"),
 		},
 		{
@@ -1924,7 +1915,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("1snow"),
+					Coins:                   s.cz("1snow"),
 					Declined:                false,
 				},
 			},
@@ -1933,7 +1924,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("1snow"),
+					Coins:                   s.cz("1snow"),
 					Declined:                false,
 				},
 			},
@@ -1947,7 +1938,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("55orchid"),
+					Coins:                   s.cz("55orchid"),
 					Declined:                true,
 				},
 			},
@@ -1956,7 +1947,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("55orchid"),
+					Coins:                   s.cz("55orchid"),
 					Declined:                false,
 				},
 			},
@@ -1970,7 +1961,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("99redballoons"),
+					Coins:                   s.cz("99redballoons"),
 					Declined:                true,
 				},
 			},
@@ -1980,7 +1971,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("99redballoons"),
+					Coins:                   s.cz("99redballoons"),
 					Declined:                true,
 				},
 			},
@@ -1994,7 +1985,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("7777frog"),
+					Coins:                   s.cz("7777frog"),
 					Declined:                true,
 				},
 			},
@@ -2004,7 +1995,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("7777frog"),
+					Coins:                   s.cz("7777frog"),
 					Declined:                false,
 				},
 			},
@@ -2020,12 +2011,12 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("20533lamp"),
+					Coins:                   s.cz("20533lamp"),
 					Declined:                true,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
-					Coins:                   cz("45sun"),
+					Coins:                   s.cz("45sun"),
 					Declined:                true,
 				},
 			},
@@ -2034,12 +2025,12 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("20533lamp"),
+					Coins:                   s.cz("20533lamp"),
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("45sun"),
+					Coins:                   s.cz("45sun"),
 				},
 			},
 			expectedSent:   nil,
@@ -2056,12 +2047,12 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{2}},
-					Coins:                   cz("43bulb"),
+					Coins:                   s.cz("43bulb"),
 				},
 				// key suffix = 47F604CA662719863E40CF215D4DE088C22B7FF217236D887A99AF63A8F124E9
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
-					Coins:                   cz("5005shade"),
+					Coins:                   s.cz("5005shade"),
 				},
 			},
 			fromAddrs: []int{1},
@@ -2069,10 +2060,10 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("5005shade"),
+					Coins:                   s.cz("5005shade"),
 				},
 			},
-			expectedSent:   []sdk.Coins{cz("43bulb")},
+			expectedSent:   []sdk.Coins{s.cz("43bulb")},
 			expectedEvents: makeEventMakers("43bulb"),
 		},
 		{
@@ -2085,13 +2076,13 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				// key suffix = EFC545E02C1785EEAAE9004385C6106E75AC42E8096556376097037A0C122E41
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
-					Coins:                   cz("346awning"),
+					Coins:                   s.cz("346awning"),
 				},
 				// key suffix = F898B0EAF64B4D67BC2C285E541D381FA422D85B05C69D697C099B1968003955
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{2}},
-					Coins:                   cz("9444sprout"),
+					Coins:                   s.cz("9444sprout"),
 				},
 			},
 			fromAddrs: []int{1},
@@ -2099,10 +2090,10 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("346awning"),
+					Coins:                   s.cz("346awning"),
 				},
 			},
-			expectedSent:   []sdk.Coins{cz("9444sprout")},
+			expectedSent:   []sdk.Coins{s.cz("9444sprout")},
 			expectedEvents: makeEventMakers("9444sprout"),
 		},
 		{
@@ -2114,17 +2105,17 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("4312stand"),
+					Coins:                   s.cz("4312stand"),
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{2}, {3}},
-					Coins:                   cz("9867sit"),
+					Coins:                   s.cz("9867sit"),
 				},
 			},
 			fromAddrs:       []int{1},
 			expectedRecords: nil,
-			expectedSent:    []sdk.Coins{cz("4312stand"), cz("9867sit")},
+			expectedSent:    []sdk.Coins{s.cz("4312stand"), s.cz("9867sit")},
 			expectedEvents:  makeEventMakers("4312stand", "9867sit"),
 		},
 		{
@@ -2143,12 +2134,12 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("838hibiscus"),
+					Coins:                   s.cz("838hibiscus"),
 				},
 			},
 			fromAddrs:       []int{1, 2},
 			expectedRecords: nil,
-			expectedSent:    []sdk.Coins{cz("838hibiscus")},
+			expectedSent:    []sdk.Coins{s.cz("838hibiscus")},
 			expectedEvents:  makeEventMakers("838hibiscus"),
 		},
 		{
@@ -2158,12 +2149,12 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("10downing"),
+					Coins:                   s.cz("10downing"),
 				},
 			},
 			fromAddrs:       []int{2, 1},
 			expectedRecords: nil,
-			expectedSent:    []sdk.Coins{cz("10downing")},
+			expectedSent:    []sdk.Coins{s.cz("10downing")},
 			expectedEvents:  makeEventMakers("10downing"),
 		},
 		{
@@ -2173,7 +2164,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}, {3}},
-					Coins:                   cz("1060waddison"),
+					Coins:                   s.cz("1060waddison"),
 				},
 			},
 			fromAddrs: []int{1, 2},
@@ -2181,7 +2172,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("1060waddison"),
+					Coins:                   s.cz("1060waddison"),
 				},
 			},
 			expectedSent:   nil,
@@ -2194,7 +2185,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}, {3}},
-					Coins:                   cz("1060waddison"),
+					Coins:                   s.cz("1060waddison"),
 				},
 			},
 			fromAddrs: []int{2, 1},
@@ -2202,7 +2193,7 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("1060waddison"),
+					Coins:                   s.cz("1060waddison"),
 				},
 			},
 			expectedSent:   nil,
@@ -2218,12 +2209,12 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				// key suffix = 70705D4547681D550CF0D2A5B0996B6C2B42E181FF3F84A71CF6DAD8527C8C9C
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}, {4}},
-					Coins:                   cz("12drummers"),
+					Coins:                   s.cz("12drummers"),
 				},
 				// key suffix = 83A580037E196C7BB4B36FDB5531BA715DF24F86681A61FE7D72D77BE2ABA4E8
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}, {3}},
-					Coins:                   cz("11pipers"),
+					Coins:                   s.cz("11pipers"),
 				},
 			},
 			fromAddrs: []int{1, 2},
@@ -2231,12 +2222,12 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{4}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("12drummers"),
+					Coins:                   s.cz("12drummers"),
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("11pipers"),
+					Coins:                   s.cz("11pipers"),
 				},
 			},
 			expectedSent:   nil,
@@ -2252,12 +2243,12 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				// key suffix = 72536EA1F5EB0C1FF2897309892EF28553E7A6C2508AB1751D363B8C3A31A56F
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
-					Coins:                   cz("8maids,7swans"),
+					Coins:                   s.cz("8maids,7swans"),
 				},
 				// key suffix = BDA18A04E7AC80DDA290C262CBEF7C2928B95F9DBFE8F392BA82EC0186DBA0CC
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("10lords,9ladies"),
+					Coins:                   s.cz("10lords,9ladies"),
 				},
 			},
 			fromAddrs: []int{1, 3},
@@ -2265,10 +2256,10 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("10lords,9ladies"),
+					Coins:                   s.cz("10lords,9ladies"),
 				},
 			},
-			expectedSent:   []sdk.Coins{cz("8maids,7swans")},
+			expectedSent:   []sdk.Coins{s.cz("8maids,7swans")},
 			expectedEvents: makeEventMakers("8maids,7swans"),
 		},
 		{
@@ -2281,12 +2272,12 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				// key suffix = 00E641E0BF6DF9F97E61B94BBBA58B78F74198BB72681C9A24C12D2BF1DDC371
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("6geese"),
+					Coins:                   s.cz("6geese"),
 				},
 				// key suffix = D052411A78E6208D482F600692C7382C814C35FB75B49430E5CF895B4FE5EEFF
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
-					Coins:                   cz("2doves,1peartree"),
+					Coins:                   s.cz("2doves,1peartree"),
 				},
 			},
 			fromAddrs: []int{1, 3},
@@ -2294,10 +2285,10 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("6geese"),
+					Coins:                   s.cz("6geese"),
 				},
 			},
-			expectedSent:   []sdk.Coins{cz("2doves,1peartree")},
+			expectedSent:   []sdk.Coins{s.cz("2doves,1peartree")},
 			expectedEvents: makeEventMakers("2doves,1peartree"),
 		},
 		{
@@ -2309,16 +2300,16 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			records: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("3amigos"),
+					Coins:                   s.cz("3amigos"),
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
-					Coins:                   cz("8amigos"),
+					Coins:                   s.cz("8amigos"),
 				},
 			},
 			fromAddrs:       []int{1, 2},
 			expectedRecords: nil,
-			expectedSent:    []sdk.Coins{cz("3amigos"), cz("8amigos")},
+			expectedSent:    []sdk.Coins{s.cz("3amigos"), s.cz("8amigos")},
 			expectedEvents:  makeEventMakers("3amigos", "8amigos"),
 		},
 	}
@@ -2453,19 +2444,19 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 		existingRecords := []*quarantine.QuarantineRecord{
 			{
 				UnacceptedFromAddresses: accs(fromAddr1),
-				Coins:                   cz("1addra"),
+				Coins:                   s.cz("1addra"),
 			},
 			{
 				UnacceptedFromAddresses: accs(fromAddr2),
-				Coins:                   cz("2addrb"),
+				Coins:                   s.cz("2addrb"),
 			},
 			{
 				UnacceptedFromAddresses: accs(fromAddr3),
-				Coins:                   cz("3addrc"),
+				Coins:                   s.cz("3addrc"),
 			},
 			{
 				UnacceptedFromAddresses: accs(fromAddr4),
-				Coins:                   cz("4addrd"),
+				Coins:                   s.cz("4addrd"),
 			},
 		}
 
@@ -2474,11 +2465,11 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 		expectedRecords := []*quarantine.QuarantineRecord{
 			{
 				UnacceptedFromAddresses: accs(fromAddr3),
-				Coins:                   cz("3addrc"),
+				Coins:                   s.cz("3addrc"),
 			},
 			{
 				UnacceptedFromAddresses: accs(fromAddr4),
-				Coins:                   cz("4addrd"),
+				Coins:                   s.cz("4addrd"),
 			},
 		}
 
@@ -2486,18 +2477,18 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			{
 				FromAddr: s.keeper.GetFundsHolder(),
 				ToAddr:   toAddr,
-				Amt:      cz("1addra"),
+				Amt:      s.cz("1addra"),
 			},
 			{
 				FromAddr: s.keeper.GetFundsHolder(),
 				ToAddr:   toAddr,
-				Amt:      cz("2addrb"),
+				Amt:      s.cz("2addrb"),
 			},
 		}
 
 		expectedEvents := sdk.Events{
-			makeEvent(s.T(), toAddr, cz("1addra")),
-			makeEvent(s.T(), toAddr, cz("2addrb")),
+			makeEvent(s.T(), toAddr, s.cz("1addra")),
+			makeEvent(s.T(), toAddr, s.cz("2addrb")),
 		}
 
 		// mock the bank keeper and set it to return an error on the 3rd send.
@@ -2548,11 +2539,6 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 }
 
 func (s *TestSuite) TestDeclineQuarantinedFunds() {
-	// cz an even shorter way of creating coins since all creating should get the same *testing.T here.
-	cz := func(coins string) sdk.Coins {
-		return czt(s.T(), coins)
-	}
-
 	tests := []struct {
 		name      string
 		addrBase  string
@@ -2577,14 +2563,14 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 			existing: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("13ofor"),
+					Coins:                   s.cz("13ofor"),
 					Declined:                false,
 				},
 			},
 			expected: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("13ofor"),
+					Coins:                   s.cz("13ofor"),
 					Declined:                true,
 				},
 			},
@@ -2598,14 +2584,14 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("8139oforpa"),
+					Coins:                   s.cz("8139oforpa"),
 					Declined:                false,
 				},
 			},
 			expected: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}, {1}},
-					Coins:                   cz("8139oforpa"),
+					Coins:                   s.cz("8139oforpa"),
 					Declined:                true,
 				},
 			},
@@ -2618,24 +2604,24 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 			existing: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("85oftr"),
+					Coins:                   s.cz("85oftr"),
 					Declined:                false,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
-					Coins:                   cz("190oftr"),
+					Coins:                   s.cz("190oftr"),
 					Declined:                false,
 				},
 			},
 			expected: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("85oftr"),
+					Coins:                   s.cz("85oftr"),
 					Declined:                true,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {3}},
-					Coins:                   cz("190oftr"),
+					Coins:                   s.cz("190oftr"),
 					Declined:                true,
 				},
 			},
@@ -2657,14 +2643,14 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}},
-					Coins:                   cz("321tforff"),
+					Coins:                   s.cz("321tforff"),
 					Declined:                false,
 				},
 			},
 			expected: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}, {1}},
-					Coins:                   cz("321tforff"),
+					Coins:                   s.cz("321tforff"),
 					Declined:                true,
 				},
 			},
@@ -2678,14 +2664,14 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{2}},
-					Coins:                   cz("321tforfs"),
+					Coins:                   s.cz("321tforfs"),
 					Declined:                false,
 				},
 			},
 			expected: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}, {2}},
-					Coins:                   cz("321tforfs"),
+					Coins:                   s.cz("321tforfs"),
 					Declined:                true,
 				},
 			},
@@ -2699,7 +2685,7 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("4tforfb"),
+					Coins:                   s.cz("4tforfb"),
 					Declined:                false,
 				},
 			},
@@ -2707,7 +2693,7 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{3}, {1}, {2}},
 					AcceptedFromAddresses:   nil,
-					Coins:                   cz("4tforfb"),
+					Coins:                   s.cz("4tforfb"),
 					Declined:                true,
 				},
 			},
@@ -2721,12 +2707,12 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
-					Coins:                   cz("13tftrff"),
+					Coins:                   s.cz("13tftrff"),
 					Declined:                false,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {4}},
-					Coins:                   cz("14tftrff"),
+					Coins:                   s.cz("14tftrff"),
 					Declined:                false,
 				},
 			},
@@ -2734,12 +2720,12 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
-					Coins:                   cz("13tftrff"),
+					Coins:                   s.cz("13tftrff"),
 					Declined:                true,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {4}},
-					Coins:                   cz("14tftrff"),
+					Coins:                   s.cz("14tftrff"),
 					Declined:                true,
 				},
 			},
@@ -2753,12 +2739,12 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
-					Coins:                   cz("13tftrfs"),
+					Coins:                   s.cz("13tftrfs"),
 					Declined:                false,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}, {4}},
-					Coins:                   cz("14tftrfs"),
+					Coins:                   s.cz("14tftrfs"),
 					Declined:                false,
 				},
 			},
@@ -2766,12 +2752,12 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
-					Coins:                   cz("13tftrfs"),
+					Coins:                   s.cz("13tftrfs"),
 					Declined:                true,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}, {4}},
-					Coins:                   cz("14tftrfs"),
+					Coins:                   s.cz("14tftrfs"),
 					Declined:                true,
 				},
 			},
@@ -2784,24 +2770,24 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 			existing: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("1tftrofe"),
+					Coins:                   s.cz("1tftrofe"),
 					Declined:                false,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
-					Coins:                   cz("2tftrofe"),
+					Coins:                   s.cz("2tftrofe"),
 					Declined:                false,
 				},
 			},
 			expected: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("1tftrofe"),
+					Coins:                   s.cz("1tftrofe"),
 					Declined:                true,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
-					Coins:                   cz("2tftrofe"),
+					Coins:                   s.cz("2tftrofe"),
 					Declined:                true,
 				},
 			},
@@ -2814,24 +2800,24 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 			existing: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("1tftrofb"),
+					Coins:                   s.cz("1tftrofb"),
 					Declined:                false,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("12tftrofb"),
+					Coins:                   s.cz("12tftrofb"),
 					Declined:                false,
 				},
 			},
 			expected: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("1tftrofb"),
+					Coins:                   s.cz("1tftrofb"),
 					Declined:                true,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("12tftrofb"),
+					Coins:                   s.cz("12tftrofb"),
 					Declined:                true,
 				},
 			},
@@ -2845,52 +2831,52 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 			existing: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("1tffr"),
+					Coins:                   s.cz("1tffr"),
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
-					Coins:                   cz("2tffr"),
+					Coins:                   s.cz("2tffr"),
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{2}},
-					Coins:                   cz("12tffr"),
+					Coins:                   s.cz("12tffr"),
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
-					Coins:                   cz("13tffr"),
+					Coins:                   s.cz("13tffr"),
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}, {3}},
-					Coins:                   cz("23tffr"),
+					Coins:                   s.cz("23tffr"),
 				},
 			},
 			expected: []*quarantine.QuarantineRecord{
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
-					Coins:                   cz("1tffr"),
+					Coins:                   s.cz("1tffr"),
 					Declined:                true,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}},
-					Coins:                   cz("2tffr"),
+					Coins:                   s.cz("2tffr"),
 					Declined:                true,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}, {2}},
-					Coins:                   cz("12tffr"),
+					Coins:                   s.cz("12tffr"),
 					Declined:                true,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{1}},
 					AcceptedFromAddresses:   []sdk.AccAddress{{3}},
-					Coins:                   cz("13tffr"),
+					Coins:                   s.cz("13tffr"),
 					Declined:                true,
 				},
 				{
 					UnacceptedFromAddresses: []sdk.AccAddress{{2}, {3}},
-					Coins:                   cz("23tffr"),
+					Coins:                   s.cz("23tffr"),
 					Declined:                true,
 				},
 			},
@@ -2955,11 +2941,6 @@ func (s *TestSuite) TestDeclineQuarantinedFunds() {
 }
 
 func (s *TestSuite) TestQuarantineRecordsIterateAndGetAll() {
-	// cz an even shorter way of creating coins since all creating should get the same *testing.T here.
-	cz := func(coins string) sdk.Coins {
-		return czt(s.T(), coins)
-	}
-
 	addrBase := "qriga"
 	addr0 := MakeTestAddr(addrBase, 0)
 	addr1 := MakeTestAddr(addrBase, 1)
@@ -2979,21 +2960,21 @@ func (s *TestSuite) TestQuarantineRecordsIterateAndGetAll() {
 			to: addr0,
 			record: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(addr1),
-				Coins:                   cz("1boom"),
+				Coins:                   s.cz("1boom"),
 			},
 		},
 		{
 			to: addr0,
 			record: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(addr2),
-				Coins:                   cz("5boom"),
+				Coins:                   s.cz("5boom"),
 			},
 		},
 		{
 			to: addr3,
 			record: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(addr1),
-				Coins:                   cz("23boom"),
+				Coins:                   s.cz("23boom"),
 				Declined:                true,
 			},
 		},
@@ -3002,28 +2983,28 @@ func (s *TestSuite) TestQuarantineRecordsIterateAndGetAll() {
 			record: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(addr6),
 				AcceptedFromAddresses:   accs(addr7),
-				Coins:                   cz("79boom"),
+				Coins:                   s.cz("79boom"),
 			},
 		},
 		{
 			to: addr0,
 			record: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(addr3),
-				Coins:                   cz("163boom"),
+				Coins:                   s.cz("163boom"),
 			},
 		},
 		{
 			to: addr3,
 			record: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(addr4),
-				Coins:                   cz("331boom"),
+				Coins:                   s.cz("331boom"),
 			},
 		},
 		{
 			to: addr0,
 			record: &quarantine.QuarantineRecord{
 				UnacceptedFromAddresses: accs(addr7),
-				Coins:                   cz("673boom"),
+				Coins:                   s.cz("673boom"),
 			},
 		},
 	}
@@ -3628,10 +3609,6 @@ func (s *TestSuite) TestGetQuarantineRecordSuffixes() {
 }
 
 func (s *TestSuite) TestInitAndExportGenesis() {
-	cz := func(coins string) sdk.Coins {
-		return czt(s.T(), coins)
-	}
-
 	addr0 := MakeTestAddr("ieg", 0).String()
 	addr1 := MakeTestAddr("ieg", 1).String()
 	addr2 := MakeTestAddr("ieg", 2).String()
@@ -3679,25 +3656,25 @@ func (s *TestSuite) TestInitAndExportGenesis() {
 			{
 				ToAddress:               addr5,
 				UnacceptedFromAddresses: []string{addr2},
-				Coins:                   cz("2dull,5fancy"),
+				Coins:                   s.cz("2dull,5fancy"),
 				Declined:                false,
 			},
 			{
 				ToAddress:               addr0,
 				UnacceptedFromAddresses: []string{addr1},
-				Coins:                   cz("8fancy"),
+				Coins:                   s.cz("8fancy"),
 				Declined:                false,
 			},
 			{
 				ToAddress:               addr4,
 				UnacceptedFromAddresses: []string{addr6},
-				Coins:                   cz("200000dolla"),
+				Coins:                   s.cz("200000dolla"),
 				Declined:                false,
 			},
 			{
 				ToAddress:               addr0,
 				UnacceptedFromAddresses: []string{addr1, addr2},
-				Coins:                   cz("21fancy"),
+				Coins:                   s.cz("21fancy"),
 				Declined:                false,
 			},
 		},
@@ -3741,7 +3718,7 @@ func (s *TestSuite) TestInitAndExportGenesis() {
 
 	s.Run("init not enough funds", func() {
 		bKeeper := NewMockBankKeeper()
-		bKeeper.AllBalances[string(s.keeper.GetFundsHolder())] = cz("199999dolla,1dull,33fancy")
+		bKeeper.AllBalances[string(s.keeper.GetFundsHolder())] = s.cz("199999dolla,1dull,33fancy")
 		qKeeper := s.keeper.WithBankKeeper(bKeeper)
 		expectedErr := fmt.Sprintf("quarantine fund holder account %q does not have enough funds %q to cover quarantined funds %q",
 			s.keeper.GetFundsHolder().String(), "199999dolla,1dull,33fancy", "200000dolla,2dull,34fancy")
@@ -3754,7 +3731,7 @@ func (s *TestSuite) TestInitAndExportGenesis() {
 
 	s.Run("init with enough funds", func() {
 		bKeeper := NewMockBankKeeper()
-		bKeeper.AllBalances[string(s.keeper.GetFundsHolder())] = cz("200000dolla,2dull,34fancy")
+		bKeeper.AllBalances[string(s.keeper.GetFundsHolder())] = s.cz("200000dolla,2dull,34fancy")
 		qKeeper := s.keeper.WithBankKeeper(bKeeper)
 
 		testFuncInit := func() {
