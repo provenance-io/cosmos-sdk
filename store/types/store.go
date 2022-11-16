@@ -195,7 +195,7 @@ type CommitMultiStore interface {
 	AddListeners(keys []StoreKey)
 
 	// PopStateCache returns the accumulated state change messages from MemoryListener
-	PopStateCache() []StoreKVPair
+	PopStateCache() []*StoreKVPair
 }
 
 //---------subsp-------------------------------

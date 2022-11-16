@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -230,11 +231,10 @@ func NewSimApp(
 	// not include this key.
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey, "testingkey")
 
-	// enable streaming?
-	enableKey := fmt.Sprintf("%s.%s", baseapp.StreamingTomlKey, baseapp.StreamingEnableTomlKey)
-	if enable := cast.ToBool(appOpts.Get(enableKey)); enable {
-		pluginKey := fmt.Sprintf("%s.%s", baseapp.StreamingTomlKey, baseapp.StreamingPluginTomlKey)
-		pluginName := cast.ToString(appOpts.Get(pluginKey))
+	// register streaming service
+	pluginKey := fmt.Sprintf("%s.%s", baseapp.StreamingTomlKey, baseapp.StreamingPluginTomlKey)
+	pluginName := strings.TrimSpace(cast.ToString(appOpts.Get(pluginKey)))
+	if len(pluginName) > 0 {
 		logLevel := cast.ToString(appOpts.Get(flags.FlagLogLevel))
 		plugin, err := streaming.NewStreamingPlugin(pluginName, logLevel)
 		if err != nil {
