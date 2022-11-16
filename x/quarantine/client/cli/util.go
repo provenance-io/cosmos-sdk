@@ -43,11 +43,11 @@ func validateAddress(addr string, argName string) (string, error) {
 // ParseAutoResponseUpdatesFromArgs parses the args to extract the desired AutoResponseUpdate entries.
 // The args should be the entire args list. Parsing of the auto-response updates args will start at startIndex.
 func ParseAutoResponseUpdatesFromArgs(args []string, startIndex int) ([]*quarantine.AutoResponseUpdate, error) {
-	iLastArg := len(args) - 1      // index of the last arg.
-	arArgCount := 0                // a count of arguments that have been auto-responses.
-	arAddrCount := 0               // a count of from_addresses provided for the most recent auto-response.
-	var lastArArg string           // the actual arg string of the last auto-response arg.
-	var ar quarantine.AutoResponse // the current auto-response.
+	iLastArg := len(args) - 1 - startIndex // index of the last arg.
+	arArgCount := 0                        // a count of arguments that have been auto-responses.
+	arAddrCount := 0                       // a count of from_addresses provided for the most recent auto-response.
+	var lastArArg string                   // the actual arg string of the last auto-response arg.
+	var ar quarantine.AutoResponse         // the current auto-response.
 
 	var rv []*quarantine.AutoResponseUpdate
 
@@ -55,17 +55,17 @@ func ParseAutoResponseUpdatesFromArgs(args []string, startIndex int) ([]*quarant
 		newAr, isAr := ParseAutoResponseArg(arg)
 		// first arg must be an auto-response.
 		if i == 0 && !isAr {
-			return nil, fmt.Errorf("invalid auto-response: %q", arg)
+			return nil, fmt.Errorf("invalid arg %d: invalid auto-response: %q", i+startIndex+1, arg)
 		}
 		if isAr {
 			// If not the first arg, there must be at least one address for the previous auto-response.
 			if i > 0 && arAddrCount == 0 {
-				return nil, fmt.Errorf("invalid arg %d: no from_address args provided after auto-response %d: %q", i+startIndex, arArgCount, lastArArg)
+				return nil, fmt.Errorf("invalid arg %d: no from_address args provided after auto-response %d: %q", i+startIndex+1, arArgCount, lastArArg)
 			}
 			// The last argument cannot be an auto-response either.
 			if i == iLastArg {
 				// Slightly different message on purpose. Makes it easier to track down the source of an error.
-				return nil, fmt.Errorf("invalid last arg %d: no from_address args provided after auto-response %d: %q", i+startIndex, arArgCount+1, arg)
+				return nil, fmt.Errorf("invalid arg %d: last arg cannot be an auto-response, got: %q", i+startIndex+1, arg)
 			}
 			arArgCount += 1
 			ar = newAr
@@ -75,7 +75,7 @@ func ParseAutoResponseUpdatesFromArgs(args []string, startIndex int) ([]*quarant
 			arAddrCount += 1
 			fromAddr, err := validateAddress(arg, "from_address")
 			if err != nil {
-				return nil, fmt.Errorf("unknown arg %d %q: auto-response %d %q: from_address %d: %w", i+startIndex, arg, arArgCount, lastArArg, arAddrCount, err)
+				return nil, fmt.Errorf("unknown arg %d %q: auto-response %d %q: from_address %d: %w", i+startIndex+1, arg, arArgCount, lastArArg, arAddrCount, err)
 			}
 			rv = append(rv, &quarantine.AutoResponseUpdate{
 				FromAddress: fromAddr,
@@ -91,11 +91,11 @@ func ParseAutoResponseUpdatesFromArgs(args []string, startIndex int) ([]*quarant
 // The bool return value is true if parsing was successful.
 func ParseAutoResponseArg(arg string) (quarantine.AutoResponse, bool) {
 	switch strings.ToLower(arg) {
-	case "accept", "a":
+	case "accept", "a", "1":
 		return quarantine.AUTO_RESPONSE_ACCEPT, true
-	case "decline", "d":
+	case "decline", "d", "2":
 		return quarantine.AUTO_RESPONSE_DECLINE, true
-	case "unspecified", "u", "off", "o":
+	case "unspecified", "u", "off", "o", "0":
 		return quarantine.AUTO_RESPONSE_UNSPECIFIED, true
 	default:
 		return quarantine.AUTO_RESPONSE_UNSPECIFIED, false
