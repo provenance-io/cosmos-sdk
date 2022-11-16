@@ -398,4 +398,144 @@ func (s *TestSuite) TestDecline() {
 	}
 }
 
-// TODO[1046]: TestUpdateAutoResponses()
+func (s *TestSuite) TestUpdateAutoResponses() {
+	addr0 := MakeTestAddr("uar", 0).String()
+	addr1 := MakeTestAddr("uar", 1).String()
+	addr2 := MakeTestAddr("uar", 2).String()
+	addr3 := MakeTestAddr("uar", 3).String()
+	addr4 := MakeTestAddr("uar", 4).String()
+	addr5 := MakeTestAddr("uar", 5).String()
+	addr6 := MakeTestAddr("uar", 6).String()
+
+	tests := []struct {
+		name   string
+		msg    *quarantine.MsgUpdateAutoResponses
+		expErr []string
+		exp    []*quarantine.AutoResponseEntry
+	}{
+		{
+			name:   "bad toAddr",
+			msg:    &quarantine.MsgUpdateAutoResponses{ToAddress: "badtoaddr"},
+			expErr: []string{"decoding bech32 failed", "invalid to address"},
+		},
+		{
+			name: "bad first from",
+			msg: &quarantine.MsgUpdateAutoResponses{
+				ToAddress: addr0,
+				Updates: []*quarantine.AutoResponseUpdate{
+					{FromAddress: "bad0", Response: 0},
+				},
+			},
+			expErr: []string{"decoding bech32 failed", "invalid from address[0]"},
+		},
+		{
+			name: "bad second from",
+			msg: &quarantine.MsgUpdateAutoResponses{
+				ToAddress: addr0,
+				Updates: []*quarantine.AutoResponseUpdate{
+					{FromAddress: addr1, Response: 0},
+					{FromAddress: "bad1", Response: 0},
+					{FromAddress: addr3, Response: 0},
+				},
+			},
+			expErr: []string{"decoding bech32 failed", "invalid from address[1]"},
+		},
+		{
+			name: "bad third from",
+			msg: &quarantine.MsgUpdateAutoResponses{
+				ToAddress: addr0,
+				Updates: []*quarantine.AutoResponseUpdate{
+					{FromAddress: addr1, Response: 0},
+					{FromAddress: addr2, Response: 0},
+					{FromAddress: "bad2", Response: 0},
+				},
+			},
+			expErr: []string{"decoding bech32 failed", "invalid from address[2]"},
+		},
+		{
+			name: "single entry accept",
+			msg: &quarantine.MsgUpdateAutoResponses{
+				ToAddress: addr0,
+				Updates: []*quarantine.AutoResponseUpdate{
+					{FromAddress: addr1, Response: quarantine.AUTO_RESPONSE_ACCEPT},
+				},
+			},
+			exp: []*quarantine.AutoResponseEntry{
+				{ToAddress: addr0, FromAddress: addr1, Response: quarantine.AUTO_RESPONSE_ACCEPT},
+			},
+		},
+		{
+			// Note: The next test assumes that this succeeds and is in place (to undo).
+			name: "single entry decline",
+			msg: &quarantine.MsgUpdateAutoResponses{
+				ToAddress: addr0,
+				Updates: []*quarantine.AutoResponseUpdate{
+					{FromAddress: addr2, Response: quarantine.AUTO_RESPONSE_DECLINE},
+				},
+			},
+			exp: []*quarantine.AutoResponseEntry{
+				{
+					ToAddress:   addr0,
+					FromAddress: addr2,
+					Response:    quarantine.AUTO_RESPONSE_DECLINE,
+				},
+			},
+		},
+		{
+			// This assumes a previous test set an auto response to 0 from 2.
+			name: "single entry unspecified",
+			msg: &quarantine.MsgUpdateAutoResponses{
+				ToAddress: addr0,
+				Updates: []*quarantine.AutoResponseUpdate{
+					{FromAddress: addr2, Response: quarantine.AUTO_RESPONSE_UNSPECIFIED},
+				},
+			},
+			exp: []*quarantine.AutoResponseEntry{
+				{ToAddress: addr0, FromAddress: addr2, Response: quarantine.AUTO_RESPONSE_UNSPECIFIED},
+			},
+		},
+		{
+			name: "multiple entries",
+			msg: &quarantine.MsgUpdateAutoResponses{
+				ToAddress: addr0,
+				Updates: []*quarantine.AutoResponseUpdate{
+					{FromAddress: addr6, Response: quarantine.AUTO_RESPONSE_ACCEPT},
+					{FromAddress: addr2, Response: quarantine.AUTO_RESPONSE_ACCEPT},
+					{FromAddress: addr4, Response: quarantine.AUTO_RESPONSE_DECLINE},
+					{FromAddress: addr1, Response: quarantine.AUTO_RESPONSE_DECLINE},
+					{FromAddress: addr5, Response: quarantine.AUTO_RESPONSE_ACCEPT},
+					{FromAddress: addr3, Response: quarantine.AUTO_RESPONSE_UNSPECIFIED},
+					{FromAddress: addr5, Response: quarantine.AUTO_RESPONSE_UNSPECIFIED},
+				},
+			},
+			exp: []*quarantine.AutoResponseEntry{
+				{ToAddress: addr0, FromAddress: addr1, Response: quarantine.AUTO_RESPONSE_DECLINE},
+				{ToAddress: addr0, FromAddress: addr2, Response: quarantine.AUTO_RESPONSE_ACCEPT},
+				{ToAddress: addr0, FromAddress: addr3, Response: quarantine.AUTO_RESPONSE_UNSPECIFIED},
+				{ToAddress: addr0, FromAddress: addr4, Response: quarantine.AUTO_RESPONSE_DECLINE},
+				{ToAddress: addr0, FromAddress: addr5, Response: quarantine.AUTO_RESPONSE_UNSPECIFIED},
+				{ToAddress: addr0, FromAddress: addr6, Response: quarantine.AUTO_RESPONSE_ACCEPT},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			actResp, actErr := s.keeper.UpdateAutoResponses(s.stdlibCtx, tc.msg)
+			AssertErrorContents(s.T(), actErr, tc.expErr, "UpdateAutoResponses error")
+			if len(tc.expErr) == 0 {
+				s.Assert().NotNil(actResp, "MsgUpdateAutoResponsesResponse")
+			}
+			for i, exp := range tc.exp {
+				toAddr, err := sdk.AccAddressFromBech32(exp.ToAddress)
+				if s.Assert().NoError(err, "decoding ToAddress[%d]", i) {
+					fromAddr, err := sdk.AccAddressFromBech32(exp.FromAddress)
+					if s.Assert().NoError(err, "decoding FromAddress[%d]", i) {
+						actResponse := s.keeper.GetAutoResponse(s.sdkCtx, toAddr, fromAddr)
+						s.Assert().Equal(exp.Response, actResponse, "GetAutoResponse[%d]", i)
+					}
+				}
+			}
+		})
+	}
+}
