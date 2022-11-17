@@ -104,6 +104,10 @@ $ %[1]s opt-out --from personal
 				return fmt.Errorf("no to_name_or_address provided")
 			}
 
+			if err := cmd.Flags().Set(flags.FlagFrom, args[0]); err != nil {
+				return err
+			}
+
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
