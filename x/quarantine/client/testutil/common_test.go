@@ -56,6 +56,12 @@ func (s *IntegrationTestSuite) TearDownSuite() {
 	s.network.Cleanup()
 }
 
+func (s *IntegrationTestSuite) stopIfFailed() {
+	if s.T().Failed() {
+		s.T().FailNow()
+	}
+}
+
 // bondCoin creates an sdk.Coin with the bond-denom in the amount provided.
 func (s *IntegrationTestSuite) bondCoin(amt int64) sdk.Coin {
 	return sdk.NewInt64Coin(s.cfg.BondDenom, amt)
@@ -92,14 +98,6 @@ func (s *IntegrationTestSuite) createAndFundAccount(index int, bondCoinAmt int64
 	s.Require().NoError(err, "MsgSendExec[%d]", index)
 
 	return account.String()
-}
-
-func (s *IntegrationTestSuite) createAccounts(quantity int) []string {
-	accounts := make([]string, quantity)
-	for i := 0; i < quantity; i++ {
-		accounts[i] = s.createAndFundAccount(i, 2000)
-	}
-	return accounts
 }
 
 func (s *IntegrationTestSuite) appendCommonFlagsTo(args ...string) []string {
