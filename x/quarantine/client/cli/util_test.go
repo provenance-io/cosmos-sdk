@@ -2,15 +2,61 @@ package cli
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 
 	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
+
+func TestExampleAddress(t *testing.T) {
+	// The only thing to really test here is that it's consistent.
+	// So just do a few known values (known because the actual values
+	// are logged out then the tests are fixed).
+	tests := []struct {
+		name string
+		exp  sdk.AccAddress
+	}{
+		{
+			name: "",
+			exp: sdk.AccAddress{
+				227, 176, 196, 66, 152, 252, 28, 20, 154, 251,
+				244, 200, 153, 111, 185, 36, 39, 174, 65, 228,
+			},
+		},
+		{
+			name: "addr",
+			exp: sdk.AccAddress{
+				162, 89, 60, 152, 108, 134, 202, 50, 58, 51,
+				157, 119, 129, 204, 4, 187, 47, 209, 90, 195,
+			},
+		},
+		{
+			name: "exampleAddr1",
+			exp: sdk.AccAddress{
+				199, 131, 86, 61, 89, 233, 25, 212, 30, 112,
+				118, 234, 154, 3, 90, 170, 220, 156, 233, 166,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		name := tc.name
+		if len(name) == 0 {
+			name = "empty"
+		}
+		t.Run(name, func(t *testing.T) {
+			act := exampleAddr(tc.name)
+			t.Log(strings.ReplaceAll(fmt.Sprintf("%v", []byte(act)), " ", ", "))
+			assert.Equal(t, tc.exp, act, "exampleAddr(%q) result", tc.name)
+		})
+	}
+}
 
 func TestValidateAddress(t *testing.T) {
 	tests := []struct {
