@@ -2,12 +2,14 @@ package testutil
 
 import (
 	"fmt"
+
+	tmcli "github.com/tendermint/tendermint/libs/cli"
+
 	"github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/client/testutil"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 	client "github.com/cosmos/cosmos-sdk/x/quarantine/client/cli"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
 )
 
 // These tests are initiated by TestIntegrationTestSuite in cli_test.go

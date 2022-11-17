@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 
