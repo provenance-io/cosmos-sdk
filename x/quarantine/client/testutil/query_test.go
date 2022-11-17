@@ -125,7 +125,8 @@ func (s *IntegrationTestSuite) TestQueryQuarantinedFundsCmd() {
 				}
 				if s.Assert().NotPanics(testFunc, "UnmarshalJSON on output") {
 					if s.Assert().NoError(err, "UnmarshalJSON on output") {
-						s.Assert().Equal(tc.exp, act)
+						s.Assert().ElementsMatch(tc.exp.QuarantinedFunds, act.QuarantinedFunds, "QuarantinedFunds")
+						s.Assert().Equal(tc.exp.Pagination, act.Pagination, "Pagination")
 					}
 				}
 			}
@@ -142,6 +143,8 @@ func (s *IntegrationTestSuite) TestQueryIsQuarantinedCmd() {
 		s.appendCommonFlagsTo(addr0),
 	)
 	s.Require().NoError(err, "TxOptInCmd addr0")
+
+	s.Require().NoError(s.network.WaitForNextBlock(), "WaitForNextBlock")
 
 	tests := []struct {
 		name   string
@@ -203,6 +206,8 @@ func (s *IntegrationTestSuite) TestQueryAutoResponsesCmd() {
 		s.appendCommonFlagsTo(addr0, "accept", addr1, "decline", addr2),
 	)
 	s.Require().NoError(err, "TxUpdateAutoResponsesCmd for setup")
+
+	s.Require().NoError(s.network.WaitForNextBlock(), "WaitForNextBlock")
 
 	newARE := func(to, from string, response quarantine.AutoResponse) *quarantine.AutoResponseEntry {
 		return &quarantine.AutoResponseEntry{
@@ -297,7 +302,8 @@ func (s *IntegrationTestSuite) TestQueryAutoResponsesCmd() {
 				}
 				if s.Assert().NotPanics(testFunc, "UnmarshalJSON on output") {
 					if s.Assert().NoError(err, "UnmarshalJSON on output") {
-						s.Assert().Equal(tc.exp, act)
+						s.Assert().ElementsMatch(tc.exp.AutoResponses, act.AutoResponses, "AutoResponses")
+						s.Assert().Equal(tc.exp.Pagination, act.Pagination, "Pagination")
 					}
 				}
 			}
