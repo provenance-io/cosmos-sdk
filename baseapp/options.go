@@ -263,3 +263,10 @@ func (app *BaseApp) SetAggregateEventsFunc(aggregateEventsFunc func(resultEvents
 
 	app.aggregateEventsFunc = aggregateEventsFunc
 }
+
+// SetStreamingService is used to set a streaming service into the BaseApp hooks and load the listeners into the multistore
+func (app *BaseApp) SetStreamingService(s ABCIListener) {
+	// register the StreamingService within the BaseApp
+	// BaseApp will pass BeginBlock, DeliverTx, and EndBlock requests and responses to the streaming services to update their ABCI context
+	app.abciListeners = append(app.abciListeners, s)
+}
