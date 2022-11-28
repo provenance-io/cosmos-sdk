@@ -18,6 +18,8 @@ import (
 
 var _ Keeper = (*BaseKeeper)(nil)
 
+const govModuleName = "gov"
+
 // Keeper defines a module interface that facilitates the transfer of coins
 // between accounts.
 type Keeper interface {
@@ -47,6 +49,8 @@ type Keeper interface {
 	DelegateCoins(ctx sdk.Context, delegatorAddr, moduleAccAddr sdk.AccAddress, amt sdk.Coins) error
 	UndelegateCoins(ctx sdk.Context, moduleAccAddr, delegatorAddr sdk.AccAddress, amt sdk.Coins) error
 
+	GetAuthority() string
+
 	types.QueryServer
 }
 
@@ -59,6 +63,7 @@ type BaseKeeper struct {
 	storeKey               storetypes.StoreKey
 	paramSpace             paramtypes.Subspace
 	mintCoinsRestrictionFn MintingRestrictionFn
+	authority              string
 }
 
 type MintingRestrictionFn func(ctx sdk.Context, coins sdk.Coins) error
@@ -113,6 +118,7 @@ func NewBaseKeeper(
 		storeKey:               storeKey,
 		paramSpace:             paramSpace,
 		mintCoinsRestrictionFn: func(ctx sdk.Context, coins sdk.Coins) error { return nil },
+		authority:              authtypes.NewModuleAddress(govModuleName).String(), // hardcoded till all transitive dependencies can be updated to pass in the constructor instead
 	}
 }
 
@@ -549,4 +555,8 @@ func (k BaseViewKeeper) IterateTotalSupply(ctx sdk.Context, cb func(sdk.Coin) bo
 			break
 		}
 	}
+}
+
+func (k BaseKeeper) GetAuthority() string {
+	return k.authority
 }

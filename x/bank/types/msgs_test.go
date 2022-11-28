@@ -275,3 +275,35 @@ func TestMsgSendGetSigners(t *testing.T) {
 	require.Equal(t, 1, len(res))
 	require.True(t, from.Equals(res[0]))
 }
+
+func TestUpdateDenomMetadataGetSignBytes(t *testing.T) {
+	//from := sdk.AccAddress("input")
+	//coins := sdk.NewCoins(sdk.NewInt64Coin("atom", 10))
+	msg := MsgUpdateDenomMetadata{
+		Title: "title",
+		Description: "description",
+		Metadata: &Metadata {
+			Name:        "diamondback",
+			Symbol:      "DB",
+			Description: "The native staking token",
+			DenomUnits: []*DenomUnit{
+				{"udiamondback", uint32(0), []string{"microdiamondback"}},
+			},
+		},
+	}
+	res := msg.GetSignBytes()
+
+	expected := `{"type":"cosmos-sdk/MsgUpdateDenomMetadata","value":{"description":"description","metadata":{"denom_units":[{"aliases":["microdiamondback"],"denom":"udiamondback"}],"description":"The native staking token","name":"diamondback","symbol":"DB"},"title":"title"}}`
+	require.Equal(t, expected, string(res))
+}
+
+func TestUpdateDenomMetadataGetSigners(t *testing.T) {
+	from := sdk.AccAddress("cosmos1d9h8qat57ljhcm")
+	title := "Proposal Title"
+	description := "Proposal description"
+	metadata := Metadata{}
+	msg := NewMsgUpdateDenomMetadata(from.String(), title, description, &metadata)
+	res := msg.GetSigners()
+	require.Equal(t, 1, len(res))
+	require.True(t, from.Equals(res[0]))
+}
