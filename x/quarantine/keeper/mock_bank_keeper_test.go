@@ -43,6 +43,10 @@ func (k *MockBankKeeper) SetQuarantineKeeper(_ banktypes.QuarantineKeeper) {
 	// do nothing.
 }
 
+func (k *MockBankKeeper) SetSanctionKeeper(_ banktypes.SanctionKeeper) {
+	// do nothing
+}
+
 func (k *MockBankKeeper) GetAllBalances(_ sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	return k.AllBalances[string(addr)]
 }

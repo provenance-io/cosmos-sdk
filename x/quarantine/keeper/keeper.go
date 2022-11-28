@@ -29,6 +29,7 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey, bankKeeper q
 		fundsHolder: fundsHolder,
 	}
 	bankKeeper.SetQuarantineKeeper(rv)
+	// TODO[1046]: Add call to bankKeeper.SetSanctionKeeper(rv) once it's ready.
 	return rv
 }
 
@@ -404,4 +405,10 @@ func (k Keeper) deleteQuarantineRecordSuffixIndexes(store sdk.KVStore, toAddr sd
 		ind.Simplify(fromAddr, suffix)
 		k.setQuarantineRecordSuffixIndex(store, key, ind)
 	}
+}
+
+// IsSanctionedAddr returns true if the provided address is sanctioned.
+func (k Keeper) IsSanctionedAddr(ctx sdk.Context, addr sdk.AccAddress) bool {
+	// TODO[1046]: Implement IsSanctionedAddr
+	panic("not implemented")
 }
