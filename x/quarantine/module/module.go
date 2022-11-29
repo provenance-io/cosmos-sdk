@@ -101,9 +101,7 @@ func (AppModule) Name() string {
 
 // RegisterInvariants does nothing, there are no invariants to enforce for the quarantine module.
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-	// TODO[1046]: Should there be an invariant here?
-	// Example from groups module:
-	// keeper.RegisterInvariants(ir, am.keeper)
+	keeper.RegisterInvariants(ir, am.keeper)
 }
 
 // Deprecated: Route returns the message routing key for the quarantine module, empty.
