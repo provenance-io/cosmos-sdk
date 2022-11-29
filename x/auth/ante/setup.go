@@ -18,6 +18,7 @@ type GasTx interface {
 
 type GasLimit struct {
 	Limit         uint64
+	LimitFn       sdk.GasLimitHandler
 	OverrideGasTx bool
 }
 
@@ -43,7 +44,11 @@ func (sud SetUpContextDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate
 	}
 
 	if sud.gasLimit.OverrideGasTx {
-		newCtx = SetGasMeter(simulate, ctx, sud.gasLimit.Limit)
+		actualGasLimit, errFromGasLimitFn := sud.gasLimit.LimitFn(ctx, sud.gasLimit.Limit)
+		if errFromGasLimitFn != nil {
+			return ctx, errFromGasLimitFn
+		}
+		newCtx = SetGasMeter(simulate, ctx, actualGasLimit)
 	} else {
 		newCtx = SetGasMeter(simulate, ctx, gasTx.GetGas())
 	}
