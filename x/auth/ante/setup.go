@@ -44,7 +44,7 @@ func (sud SetUpContextDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate
 	}
 
 	if sud.gasLimit.OverrideGasTx {
-		actualGasLimit, errFromGasLimitFn := sud.gasLimit.LimitFn(ctx, sud.gasLimit.Limit)
+		actualGasLimit, errFromGasLimitFn := sud.gasLimit.LimitFn(ctx, tx, sud.gasLimit.Limit)
 		if errFromGasLimitFn != nil {
 			return ctx, errFromGasLimitFn
 		}
