@@ -30,7 +30,7 @@ type AccountKeeper interface {
 // QuarantineKeeper defines the quarantine functionality needed from within the bank module.
 type QuarantineKeeper interface {
 	IsQuarantinedAddr(ctx sdk.Context, toAddr sdk.AccAddress) bool
-	IsAutoAccept(ctx sdk.Context, toAddr sdk.AccAddress, fromAddr ...sdk.AccAddress) bool
+	IsAutoAccept(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) bool
 	GetFundsHolder() sdk.AccAddress
 	AddQuarantinedCoins(ctx sdk.Context, coins sdk.Coins, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) error
 }
