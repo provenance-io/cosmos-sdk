@@ -15,8 +15,7 @@ func NewDecodeStore(cdc codec.Codec) func(kvA, kvB kv.Pair) string {
 	return func(kvA, kvB kv.Pair) string {
 		switch {
 		case bytes.HasPrefix(kvA.Key, quarantine.OptInPrefix):
-			// The values are all supposed to be [0x00]. So just output the raw byte slice.
-			return fmt.Sprintf("AddrA: %v\nAddrB: %v", kvA.Value, kvA.Value)
+			return fmt.Sprintf("%v\n%v", kvA.Value, kvB.Value)
 
 		case bytes.HasPrefix(kvA.Key, quarantine.AutoResponsePrefix):
 			respA := quarantine.ToAutoResponse(kvA.Value)
