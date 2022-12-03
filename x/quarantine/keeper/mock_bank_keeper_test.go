@@ -62,3 +62,7 @@ func (k *MockBankKeeper) SendCoinsBypassQuarantine(_ sdk.Context, fromAddr sdk.A
 	})
 	return nil
 }
+
+func (k *MockBankKeeper) SpendableCoins(_ sdk.Context, addr sdk.AccAddress) sdk.Coins {
+	return k.AllBalances[string(addr)]
+}
