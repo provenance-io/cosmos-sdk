@@ -2,7 +2,6 @@ package simulation
 
 import (
 	"bytes"
-	"errors"
 	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -142,8 +141,7 @@ func SimulateMsgOptOut(ak quarantine.AccountKeeper, bk quarantine.BankKeeper, k 
 			}
 			acctInd := findAccount(accs, addr)
 			if acctInd < 0 {
-				err := errors.New("account not found in list provided")
-				return simtypes.NoOpMsg(quarantine.ModuleName, msgType, "account not found for quarantined address"), nil, err
+				return simtypes.NoOpMsg(msgType, msgType, "account not found for quarantined address"), nil, nil
 			}
 			acct = accs[acctInd]
 			msg.ToAddress = addr.String()
@@ -213,8 +211,7 @@ func SimulateMsgAccept(ak quarantine.AccountKeeper, bk quarantine.BankKeeper, k 
 			}
 			acctInd := findAccount(accs, addr)
 			if acctInd < 0 {
-				err = errors.New("account not found in list provided")
-				return simtypes.NoOpMsg(quarantine.ModuleName, msgType, "account not found for to address"), nil, err
+				return simtypes.NoOpMsg(msgType, msgType, "account not found for to address"), nil, nil
 			}
 			acct = accs[acctInd]
 		}
@@ -287,8 +284,7 @@ func SimulateMsgDecline(ak quarantine.AccountKeeper, bk quarantine.BankKeeper, k
 			}
 			acctInd := findAccount(accs, addr)
 			if acctInd < 0 {
-				err = errors.New("account not found in list provided")
-				return simtypes.NoOpMsg(quarantine.ModuleName, msgType, "account not found for to address"), nil, err
+				return simtypes.NoOpMsg(quarantine.ModuleName, msgType, "account not found for to address"), nil, nil
 			}
 			acct = accs[acctInd]
 		}
@@ -355,8 +351,7 @@ func SimulateMsgUpdateAutoResponses(ak quarantine.AccountKeeper, bk quarantine.B
 			}
 			acctInd := findAccount(accs, addr)
 			if acctInd < 0 {
-				err := errors.New("account not found in list provided")
-				return simtypes.NoOpMsg(quarantine.ModuleName, msgType, "account not found for quarantined address"), nil, err
+				return simtypes.NoOpMsg(msgType, msgType, "account not found for quarantined address"), nil, nil
 			}
 			acct = accs[acctInd]
 			msg.ToAddress = addr.String()
