@@ -7,6 +7,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 )
 
@@ -16,32 +17,42 @@ const (
 	QuarantineFunds    = "quarantine-funds"
 )
 
-func RandomQuarantinedAddresses(r *rand.Rand) []string {
-	// Number of addresses:
+func RandomQuarantinedAddresses(r *rand.Rand, accounts []simtypes.Account) []string {
+	// Max number of addresses:
 	// 15% each: 1, 2, 3, 4, 5
 	// 5% each: 6, 7, 8, 9, 0
-	count := 0
-	countR := r.Intn(20)
+	// Each provided account has a 25% chance to be quarantined.
+	max := 0
+	maxR := r.Intn(20)
 	switch {
-	case countR <= 14:
-		count = countR/3 + 1
-	case countR >= 15 && countR <= 18:
-		count = countR - 9
-	case countR == 19:
-		count = 0
+	case maxR <= 14:
+		max = maxR/3 + 1
+	case maxR >= 15 && maxR <= 18:
+		max = maxR - 9
+	case maxR == 19:
+		max = 0
 	default:
-		panic(sdkerrors.ErrLogic.Wrapf("address count random number case %d not present in switch", countR))
+		panic(sdkerrors.ErrLogic.Wrapf("address max count random number case %d not present in switch", maxR))
 	}
 
-	if count == 0 {
+	if max == 0 {
 		return nil
 	}
 
-	accts := simtypes.RandomAccounts(r, count)
-	rv := make([]string, count)
-	for i, acct := range accts {
-		rv[i] = acct.Address.String()
+	rv := make([]string, 0)
+	for _, acct := range accounts {
+		if r.Intn(4) == 0 {
+			rv = append(rv, acct.Address.String())
+		}
+		if len(rv) >= max {
+			break
+		}
 	}
+
+	if len(rv) == 0 {
+		return nil
+	}
+
 	return rv
 }
 
@@ -133,17 +144,11 @@ func RandomQuarantineAutoResponses(r *rand.Rand, quarantinedAddrs []string) []*q
 
 func RandomQuarantinedFunds(r *rand.Rand, quarantinedAddrs []string) []*quarantine.QuarantinedFunds {
 	addrs := make([]string, 0)
-	// First, identify the address that will have some funds.
 	// Each quarantined address has a 75% chance of having entries.
 	for _, addr := range quarantinedAddrs {
 		if r.Intn(4) != 0 {
 			addrs = append(addrs, addr)
 		}
-	}
-
-	// Then, maybe add some new ones. 25% each for 0, 1, 2, or 3 more.
-	for _, acct := range simtypes.RandomAccounts(r, r.Intn(4)) {
-		addrs = append(addrs, acct.Address.String())
 	}
 
 	if len(addrs) == 0 {
@@ -205,13 +210,13 @@ func RandomQuarantinedFunds(r *rand.Rand, quarantinedAddrs []string) []*quaranti
 }
 
 // RandomizedGenState generates a random GenesisState for the quarantine module.
-func RandomizedGenState(simState *module.SimulationState) {
+func RandomizedGenState(simState *module.SimulationState, fundsHolder sdk.AccAddress) {
 	gen := &quarantine.GenesisState{}
 
 	// QuarantinedAddresses
 	simState.AppParams.GetOrGenerate(
 		simState.Cdc, QuarantineOptIn, &gen.QuarantinedAddresses, simState.Rand,
-		func(r *rand.Rand) { gen.QuarantinedAddresses = RandomQuarantinedAddresses(r) },
+		func(r *rand.Rand) { gen.QuarantinedAddresses = RandomQuarantinedAddresses(r, simState.Accounts) },
 	)
 
 	// AutoResponses
@@ -227,4 +232,22 @@ func RandomizedGenState(simState *module.SimulationState) {
 	)
 
 	simState.GenState[quarantine.ModuleName] = simState.Cdc.MustMarshalJSON(gen)
+
+	totalQuarantined := sdk.Coins{}
+	for _, qf := range gen.QuarantinedFunds {
+		totalQuarantined = totalQuarantined.Add(qf.Coins...)
+	}
+
+	if !totalQuarantined.IsZero() {
+		bankGenRaw := simState.GenState[banktypes.ModuleName]
+		bankGen := banktypes.GenesisState{}
+		simState.Cdc.MustUnmarshalJSON(bankGenRaw, &bankGen)
+		bankGen.Balances = append(bankGen.Balances, banktypes.Balance{
+			Address: fundsHolder.String(),
+			Coins:   totalQuarantined,
+		})
+		bankGen.Supply = bankGen.Supply.Add(totalQuarantined...)
+
+		simState.GenState[banktypes.ModuleName] = simState.Cdc.MustMarshalJSON(&bankGen)
+	}
 }

@@ -10,8 +10,11 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/simapp"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 	"github.com/cosmos/cosmos-sdk/x/quarantine/simulation"
 )
@@ -25,19 +28,44 @@ func TestRandomizedGenState(t *testing.T) {
 		Cdc:          simapp.MakeTestEncodingConfig().Codec,
 		Rand:         r,
 		NumBonded:    3,
-		Accounts:     simtypes.RandomAccounts(r, 3),
+		Accounts:     simtypes.RandomAccounts(r, 10),
 		InitialStake: sdkmath.NewInt(1000),
 		GenState:     make(map[string]json.RawMessage),
 	}
 
-	simulation.RandomizedGenState(&simState)
+	var err error
+	bankGenBefore := banktypes.GenesisState{}
+	simState.GenState[banktypes.ModuleName], err = simState.Cdc.MarshalJSON(&bankGenBefore)
+	require.NoError(t, err, "MarshalJSON empty bank genesis state")
+
+	fundsHolder := authtypes.NewModuleAddress(quarantine.ModuleName)
+
+	simulation.RandomizedGenState(&simState, fundsHolder)
 	var gen quarantine.GenesisState
-	err := simState.Cdc.UnmarshalJSON(simState.GenState[quarantine.ModuleName], &gen)
+	err = simState.Cdc.UnmarshalJSON(simState.GenState[quarantine.ModuleName], &gen)
 	require.NoError(t, err, "UnmarshalJSON on quarantine genesis state")
 
-	// Since we don't have full control over r (i.e. it gets provided to some functions outside this module),
-	// and every aspect of the genesis state is based on random numbers, there's nothing that can be
-	// hard coded and checked. So there's no further testing that can be done here.
+	totalQuarantined := sdk.Coins{}
+	for _, qf := range gen.QuarantinedFunds {
+		totalQuarantined = totalQuarantined.Add(qf.Coins...)
+	}
+
+	if !totalQuarantined.IsZero() {
+		var bankGen banktypes.GenesisState
+		err = simState.Cdc.UnmarshalJSON(simState.GenState[banktypes.ModuleName], &bankGen)
+		require.NoError(t, err, "UnmarshalJSON on quarantine bank state")
+		holder := fundsHolder.String()
+		holderFound := false
+		for _, bal := range bankGen.Balances {
+			if holder == bal.Address {
+				holderFound = true
+				assert.Equal(t, totalQuarantined.String(), bal.Coins.String())
+			}
+		}
+		assert.True(t, holderFound, "no balance entry found for the funds holder")
+		_, hasNeg := bankGen.Supply.SafeSub(totalQuarantined...)
+		assert.False(t, hasNeg, "not enough supply %s to cover the total quarantined %s", bankGen.Supply.String(), totalQuarantined.String())
+	}
 }
 
 func TestRandomQuarantinedAddresses(t *testing.T) {
@@ -58,7 +86,7 @@ func TestRandomQuarantinedAddresses(t *testing.T) {
 		},
 		{
 			name:   "one",
-			seed:   1,
+			seed:   3,
 			expLen: 1,
 		},
 		{
@@ -98,7 +126,7 @@ func TestRandomQuarantinedAddresses(t *testing.T) {
 		},
 		{
 			name:   "nine",
-			seed:   30,
+			seed:   238,
 			expLen: 9,
 		},
 	}
@@ -106,8 +134,10 @@ func TestRandomQuarantinedAddresses(t *testing.T) {
 	runTest := func(t *testing.T, tc *testCase) bool {
 		t.Helper()
 		rv := true
+		// Using a separate rand to generate accounts to make it easier to predict the func being tested.
+		accounts := simtypes.RandomAccounts(rand.New(rand.NewSource(1)), tc.expLen*4)
 		r := rand.New(rand.NewSource(tc.seed))
-		actual := simulation.RandomQuarantinedAddresses(r)
+		actual := simulation.RandomQuarantinedAddresses(r, accounts)
 		if assert.Len(t, actual, tc.expLen, "QuarantinedAddresses") {
 			if tc.expLen == 0 {
 				rv = assert.Nil(t, actual, "QuarantinedAddresses") && rv
@@ -247,44 +277,38 @@ func TestRandomQuarantinedFunds(t *testing.T) {
 		seed     int64
 		qAddrs   []string
 		expAddrs []string
-		newAddrs int
 	}
 
 	tests := []*testCase{
 		{
-			name:     "no addrs in no new addrs",
-			seed:     3,
+			name:     "no addrs in",
+			seed:     0,
 			qAddrs:   nil,
 			expAddrs: nil,
-			newAddrs: 0,
-		},
-		{
-			name:     "no addrs in one new addr",
-			seed:     1,
-			qAddrs:   nil,
-			expAddrs: nil,
-			newAddrs: 1,
 		},
 		{
 			name:     "one addr in is kept",
-			seed:     4,
+			seed:     0,
 			qAddrs:   []string{"addr1"},
 			expAddrs: []string{"addr1"},
-			newAddrs: 0,
 		},
 		{
 			name:     "one addr in is not kept",
-			seed:     8,
+			seed:     3,
 			qAddrs:   []string{"addr1"},
 			expAddrs: nil,
-			newAddrs: 0,
 		},
 		{
-			name:     "two addrs in first kept new added",
-			seed:     2,
+			name:     "two addrs in first kept",
+			seed:     4,
 			qAddrs:   []string{"addr1", "addr2"},
 			expAddrs: []string{"addr1"},
-			newAddrs: 1,
+		},
+		{
+			name:     "two addrs in second kept",
+			seed:     3,
+			qAddrs:   []string{"addr1", "addr2"},
+			expAddrs: []string{"addr2"},
 		},
 	}
 
@@ -301,7 +325,7 @@ func TestRandomQuarantinedFunds(t *testing.T) {
 		for addr := range addrMap {
 			addrs = append(addrs, addr)
 		}
-		rv = assert.Len(t, addrs, len(tc.expAddrs)+tc.newAddrs, "to addresses") && rv
+		rv = assert.Len(t, addrs, len(tc.expAddrs), "to addresses") && rv
 		for _, addr := range tc.expAddrs {
 			rv = assert.Contains(t, addrs, addr, "to addresses") && rv
 		}
