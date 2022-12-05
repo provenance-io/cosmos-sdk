@@ -199,6 +199,7 @@ type StateSyncConfig struct {
 	SnapshotKeepRecent uint32 `mapstructure:"snapshot-keep-recent"`
 }
 
+// Deprecated: Use StreamingConfig instead
 type (
 	// StoreConfig defines application configuration for state streaming and other
 	// storage related operations.
@@ -221,6 +222,21 @@ type (
 	}
 )
 
+// State Streaming configuration
+type (
+	// StreamingConfig defines application configuration for external streaming services
+	StreamingConfig struct {
+		ABCI ABCIListenerConfig `mapstructure:"abci"`
+	}
+	// ABCIListenerConfig defines application configuration for ABCIListener streaming service
+	ABCIListenerConfig struct {
+		Keys          []string `mapstructure:"keys"`
+		Plugin        string   `mapstructure:"plugin"`
+		Async         bool     `mapstructure:"async"`
+		StopNodeOnErr bool     `mapstructure:"stop-node-on-err"`
+	}
+)
+
 // Config defines the server's top level configuration
 type Config struct {
 	BaseConfig `mapstructure:",squash"`
@@ -232,6 +248,7 @@ type Config struct {
 	Rosetta   RosettaConfig    `mapstructure:"rosetta"`
 	GRPCWeb   GRPCWebConfig    `mapstructure:"grpc-web"`
 	StateSync StateSyncConfig  `mapstructure:"state-sync"`
+	Streaming StreamingConfig  `mapstructure:"streamers"`
 	Store     StoreConfig      `mapstructure:"store"`
 	Streamers StreamersConfig  `mapstructure:"streamers"`
 }
@@ -321,6 +338,13 @@ func DefaultConfig() *Config {
 		Streamers: StreamersConfig{
 			File: FileStreamerConfig{
 				Keys: []string{"*"},
+			},
+		},
+		Streaming: StreamingConfig{
+			ABCI: ABCIListenerConfig{
+				Keys:          []string{"*"},
+				Async:         false,
+				StopNodeOnErr: true,
 			},
 		},
 	}
