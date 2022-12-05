@@ -235,15 +235,10 @@ func (app *BaseApp) SetInterfaceRegistry(registry types.InterfaceRegistry) {
 }
 
 // SetStreamingService is used to set a streaming service into the BaseApp hooks and load the listeners into the multistore
-func (app *BaseApp) SetStreamingService(s StreamingService) {
-	// add the listeners for each StoreKey
-	for key, lis := range s.Listeners {
-		app.cms.AddListeners(key, lis)
-	}
+func (app *BaseApp) SetStreamingService(s ABCIListener) {
 	// register the StreamingService within the BaseApp
 	// BaseApp will pass BeginBlock, DeliverTx, and EndBlock requests and responses to the streaming services to update their ABCI context
-	app.abciListener = s.ABCIListener
-	app.stopNodeOnStreamingErr = s.StopNodeOnErr
+	app.abciListeners = append(app.abciListeners, s)
 }
 
 // SetFeeHandler sets the FeeHandler which if set will change the behavior of fee handling
@@ -262,11 +257,4 @@ func (app *BaseApp) SetAggregateEventsFunc(aggregateEventsFunc func(resultEvents
 	}
 
 	app.aggregateEventsFunc = aggregateEventsFunc
-}
-
-// SetStreamingService is used to set a streaming service into the BaseApp hooks and load the listeners into the multistore
-func (app *BaseApp) SetStreamingService(s ABCIListener) {
-	// register the StreamingService within the BaseApp
-	// BaseApp will pass BeginBlock, DeliverTx, and EndBlock requests and responses to the streaming services to update their ABCI context
-	app.abciListeners = append(app.abciListeners, s)
 }
