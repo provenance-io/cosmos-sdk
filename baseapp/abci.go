@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-plugin"
 	"os"
 	"sort"
 	"strings"
@@ -200,6 +201,7 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 			if err := abciListener.ListenBeginBlock(ctx, req, res); err != nil {
 				app.logger.Error("BeginBlock listening hook failed", "height", blockHeight, "err", err)
 				if app.stopNodeOnABCIListenerErr {
+					plugin.CleanupClients()
 					os.Exit(1)
 				}
 			}
@@ -240,6 +242,7 @@ func (app *BaseApp) EndBlock(req abci.RequestEndBlock) (res abci.ResponseEndBloc
 			if err := abciListener.ListenEndBlock(ctx, req, res); err != nil {
 				app.logger.Error("EndBlock listening hook failed", "height", blockHeight, "err", err)
 				if app.stopNodeOnABCIListenerErr {
+					plugin.CleanupClients()
 					os.Exit(1)
 				}
 			}
@@ -309,6 +312,7 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliv
 				if err := abciListener.ListenDeliverTx(ctx, req, abciRes); err != nil {
 					app.logger.Error("DeliverTx listening hook failed", "height", blockHeight, "err", err)
 					if app.stopNodeOnABCIListenerErr {
+						plugin.CleanupClients()
 						os.Exit(1)
 					}
 				}
@@ -376,6 +380,7 @@ func (app *BaseApp) Commit() abci.ResponseCommit {
 			if err := abciListener.ListenCommit(ctx, res, changeSet); err != nil {
 				app.logger.Error("ListenCommit listening hook failed", "height", blockHeight, "err", err)
 				if app.stopNodeOnABCIListenerErr {
+					plugin.CleanupClients()
 					os.Exit(1)
 				}
 			}
@@ -431,6 +436,9 @@ func (app *BaseApp) halt() {
 			return
 		}
 	}
+
+	// Stop any running streaming plugins
+	plugin.CleanupClients()
 
 	// Resort to exiting immediately if the process could not be found or killed
 	// via SIGINT/SIGTERM signals.
