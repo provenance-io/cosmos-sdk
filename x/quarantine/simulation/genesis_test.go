@@ -2,6 +2,7 @@ package simulation_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"testing"
 
@@ -17,6 +18,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 	"github.com/cosmos/cosmos-sdk/x/quarantine/simulation"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 func TestRandomizedGenState(t *testing.T) {
@@ -68,9 +70,86 @@ func TestRandomizedGenState(t *testing.T) {
 	}
 }
 
+func TestRandomizedGenStateImportExport(t *testing.T) {
+	cdc := simapp.MakeTestEncodingConfig().Codec
+	accounts := simtypes.RandomAccounts(rand.New(rand.NewSource(0)), 10)
+	emptyBankGen := banktypes.GenesisState{}
+	emptyBankGenBz, err := cdc.MarshalJSON(&emptyBankGen)
+	require.NoError(t, err, "MarshalJSON empty bank genesis state")
+	fundsHolder := authtypes.NewModuleAddress(quarantine.ModuleName)
+
+	for i := int64(0); i <= 1000; i++ {
+		passed := t.Run(fmt.Sprintf("seed %d", i), func(t *testing.T) {
+			simState := module.SimulationState{
+				AppParams:    make(simtypes.AppParams),
+				Cdc:          cdc,
+				Rand:         rand.New(rand.NewSource(i)),
+				NumBonded:    3,
+				Accounts:     make([]simtypes.Account, len(accounts)),
+				InitialStake: sdkmath.NewInt(1000),
+				GenState:     make(map[string]json.RawMessage),
+			}
+			copy(simState.Accounts, accounts)
+			simState.GenState[banktypes.ModuleName] = emptyBankGenBz
+
+			simulation.RandomizedGenState(&simState, fundsHolder)
+			var expGenState quarantine.GenesisState
+			err = simState.Cdc.UnmarshalJSON(simState.GenState[quarantine.ModuleName], &expGenState)
+			require.NoError(t, err, "UnmarshalJSON on quarantine genesis state")
+
+			// The unspecified auto-responses don't get written, so we need to remove them to get the real expected.
+			expectedAutoResponses := make([]*quarantine.AutoResponseEntry, 0, len(expGenState.AutoResponses))
+			for _, entry := range expGenState.AutoResponses {
+				if entry.Response != quarantine.AUTO_RESPONSE_UNSPECIFIED {
+					expectedAutoResponses = append(expectedAutoResponses, entry)
+				}
+			}
+			expGenState.AutoResponses = expectedAutoResponses
+
+			var bankGen banktypes.GenesisState
+			err = simState.Cdc.UnmarshalJSON(simState.GenState[banktypes.ModuleName], &bankGen)
+			require.NoError(t, err, "UnmarshalJSON on bank genesis state")
+
+			app := simapp.Setup(t, false)
+			ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+
+			testBankInit := func() {
+				app.BankKeeper.InitGenesis(ctx, &bankGen)
+			}
+			require.NotPanics(t, testBankInit, "bank InitGenesis")
+
+			testInit := func() {
+				app.QuarantineKeeper.InitGenesis(ctx, cdc, simState.GenState[quarantine.ModuleName])
+			}
+			require.NotPanics(t, testInit, "quarantine InitGenesis")
+
+			var actualGenState *quarantine.GenesisState
+			testExport := func() {
+				actualGenState = app.QuarantineKeeper.ExportGenesis(ctx, cdc)
+			}
+			require.NotPanics(t, testExport, "ExportGenesis")
+
+			// Note: The contents of the genesis state is not expected to be in the same order after the init/export.
+			// I could probably go through the trouble of sorting things, but it would either be horribly inefficient or annoyingly complex (probably both).
+			// Primarily, the genesis state uses bech32 encoding for the addresses, but when exported, the entries are sorted based on their byte values.
+			// And sorting by bech32 does not equal sorting by byte values.
+			assert.ElementsMatch(t, expGenState.QuarantinedAddresses, actualGenState.QuarantinedAddresses, "QuarantinedAddresses, A = expected, B = actual")
+			assert.ElementsMatch(t, expGenState.AutoResponses, actualGenState.AutoResponses, "AutoResponses, A = expected, B = actual")
+			assert.ElementsMatch(t, expGenState.QuarantinedFunds, actualGenState.QuarantinedFunds, "QuarantinedFunds, A = expected, B = actual")
+		})
+		if !passed {
+			break
+		}
+	}
+}
+
 func TestRandomQuarantinedAddresses(t *testing.T) {
 	// Once RandomAccounts is called, we can't trust the values returned from r.
 	// So all we can do here is check the length of the returned list using seed values found through trial and error.
+	// These will probably be prone to breakage since any change in use of r will alter the outcomes.
+	// In the event that this test fails, make sure that there was a change that should alter the outcomes.
+	// If you've verified that use of r has changed, you can look at the logs of the " good seeds" test to get the
+	// new expected seed values for each entry.
 
 	type testCase struct {
 		name   string
@@ -145,6 +224,9 @@ func TestRandomQuarantinedAddresses(t *testing.T) {
 		} else {
 			rv = false
 		}
+		for i, addr := range actual {
+			assert.NotEmpty(t, addr, "QuarantinedAddress[%d]", i)
+		}
 		return rv
 	}
 
@@ -156,18 +238,28 @@ func TestRandomQuarantinedAddresses(t *testing.T) {
 	}
 
 	if !allPassed {
+		stillBad := make(map[string]bool)
+		maxAttempts := 10000
 		t.Run("find good seeds", func(t *testing.T) {
 			for _, tc := range tests {
-				for !runTest(t, tc) {
+				for i := 0; i < maxAttempts; i++ {
+					if runTest(t, tc) {
+						break
+					}
 					tc.seed += 1
 				}
 			}
 		})
-		t.Run("good seeds", func(t *testing.T) {
+		// opening space is on purpose so it gets sorted to the top.
+		t.Run(" good seeds", func(t *testing.T) {
 			for _, tc := range tests {
-				t.Logf("%d => %q", tc.seed, tc.name)
+				if stillBad[tc.name] {
+					t.Logf("%q => no passing seed found from %d to %d", tc.name, int(tc.seed)-maxAttempts, tc.seed-1)
+				} else {
+					t.Logf("%q => %d", tc.name, tc.seed)
+				}
 			}
-			t.Fail()
+			t.Fail() // Only runs if the whole test fails. Marking this subtest as failed draws attention to it.
 		})
 	}
 }
@@ -176,6 +268,10 @@ func TestRandomQuarantineAutoResponses(t *testing.T) {
 	// Once RandomAccounts is called, we can't trust the values returned from r.
 	// In here, using seeds found through trial and error, we can check that some
 	// addrs are kept, others ignored, and some new ones added.
+	// These will probably be prone to breakage since any change in use of r will alter the outcomes.
+	// In the event that this test fails, make sure that there was a change that should alter the outcomes.
+	// If you've verified that use of r has changed, you can look at the logs of the " good seeds" test to get the
+	// new expected seed values for each entry.
 
 	type testCase struct {
 		name     string
@@ -229,8 +325,11 @@ func TestRandomQuarantineAutoResponses(t *testing.T) {
 		r := rand.New(rand.NewSource(tc.seed))
 		actual := simulation.RandomQuarantineAutoResponses(r, tc.qAddrs)
 		addrMap := make(map[string]bool)
-		for _, entry := range actual {
+		for i, entry := range actual {
 			addrMap[entry.ToAddress] = true
+			assert.NotEmpty(t, entry.ToAddress, "[%d].ToAddress", i)
+			assert.NotEmpty(t, entry.FromAddress, "[%d].FromAddress", i)
+			assert.True(t, entry.Response.IsValid(), "[%d].Response.IsValid(), Response = %s", i, entry.Response)
 		}
 		addrs := make([]string, 0, len(addrMap))
 		for addr := range addrMap {
@@ -251,18 +350,28 @@ func TestRandomQuarantineAutoResponses(t *testing.T) {
 	}
 
 	if !allPassed {
+		stillBad := make(map[string]bool)
+		maxAttempts := 10000
 		t.Run("find good seeds", func(t *testing.T) {
 			for _, tc := range tests {
-				for !runTest(t, tc) {
+				for i := 0; i < maxAttempts; i++ {
+					if runTest(t, tc) {
+						break
+					}
 					tc.seed += 1
 				}
 			}
 		})
-		t.Run("good seeds", func(t *testing.T) {
+		// opening space is on purpose so it gets sorted to the top.
+		t.Run(" good seeds", func(t *testing.T) {
 			for _, tc := range tests {
-				t.Logf("%d => %q", tc.seed, tc.name)
+				if stillBad[tc.name] {
+					t.Logf("%q => no passing seed found from %d to %d", tc.name, int(tc.seed)-maxAttempts, tc.seed-1)
+				} else {
+					t.Logf("%q => %d", tc.name, tc.seed)
+				}
 			}
-			t.Fail()
+			t.Fail() // Only runs if the whole test fails. Marking this subtest as failed draws attention to it.
 		})
 	}
 }
@@ -270,7 +379,11 @@ func TestRandomQuarantineAutoResponses(t *testing.T) {
 func TestRandomQuarantinedFunds(t *testing.T) {
 	// Once RandomAccounts is called, we can't trust the values returned from r.
 	// In here, using seeds found through trial and error, we can check that some
-	// addrs are kept, others ignored, and some new ones added.
+	// addrs are kept, others ignored.
+	// These will probably be prone to breakage since any change in use of r will alter the outcomes.
+	// In the event that this test fails, make sure that there was a change that should alter the outcomes.
+	// If you've verified that use of r has changed, you can look at the logs of the " good seeds" test to get the
+	// new expected seed values for each entry.
 
 	type testCase struct {
 		name     string
@@ -299,6 +412,12 @@ func TestRandomQuarantinedFunds(t *testing.T) {
 			expAddrs: nil,
 		},
 		{
+			name:     "two addrs in none kept",
+			seed:     8,
+			qAddrs:   []string{"addr1", "addr2"},
+			expAddrs: []string{},
+		},
+		{
 			name:     "two addrs in first kept",
 			seed:     4,
 			qAddrs:   []string{"addr1", "addr2"},
@@ -310,6 +429,12 @@ func TestRandomQuarantinedFunds(t *testing.T) {
 			qAddrs:   []string{"addr1", "addr2"},
 			expAddrs: []string{"addr2"},
 		},
+		{
+			name:     "two addrs in both kept",
+			seed:     0,
+			qAddrs:   []string{"addr1", "addr2"},
+			expAddrs: []string{"addr1", "addr2"},
+		},
 	}
 
 	runTest := func(t *testing.T, tc *testCase) bool {
@@ -318,8 +443,13 @@ func TestRandomQuarantinedFunds(t *testing.T) {
 		r := rand.New(rand.NewSource(tc.seed))
 		actual := simulation.RandomQuarantinedFunds(r, tc.qAddrs)
 		addrMap := make(map[string]bool)
-		for _, entry := range actual {
+		for i, entry := range actual {
 			addrMap[entry.ToAddress] = true
+			assert.NotEmpty(t, entry.ToAddress, "[%d].ToAddress", i)
+			for j, addr := range entry.UnacceptedFromAddresses {
+				assert.NotEmpty(t, addr, "[%d].UnacceptedFromAddresses[%d]", i, j)
+			}
+			assert.NoError(t, entry.Coins.Validate(), "[%d].Coins", i)
 		}
 		addrs := make([]string, 0, len(addrMap))
 		for addr := range addrMap {
@@ -340,18 +470,28 @@ func TestRandomQuarantinedFunds(t *testing.T) {
 	}
 
 	if !allPassed {
+		stillBad := make(map[string]bool)
+		maxAttempts := 10000
 		t.Run("find good seeds", func(t *testing.T) {
 			for _, tc := range tests {
-				for !runTest(t, tc) {
+				for i := 0; i < maxAttempts; i++ {
+					if runTest(t, tc) {
+						break
+					}
 					tc.seed += 1
 				}
 			}
 		})
-		t.Run("good seeds", func(t *testing.T) {
+		// opening space is on purpose so it gets sorted to the top.
+		t.Run(" good seeds", func(t *testing.T) {
 			for _, tc := range tests {
-				t.Logf("%d => %q", tc.seed, tc.name)
+				if stillBad[tc.name] {
+					t.Logf("%q => no passing seed found from %d to %d", tc.name, int(tc.seed)-maxAttempts, tc.seed-1)
+				} else {
+					t.Logf("%q => %d", tc.name, tc.seed)
+				}
 			}
-			t.Fail()
+			t.Fail() // Only runs if the whole test fails. Marking this subtest as failed draws attention to it.
 		})
 	}
 }
