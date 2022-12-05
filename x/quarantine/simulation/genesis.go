@@ -84,11 +84,9 @@ func RandomQuarantineAutoResponses(r *rand.Rand, quarantinedAddrs []string) []*q
 	// Each quarantined address can be used only once for a given toAddr.
 	// Once all quarantined address (other than the toAddr) get used, only brand-new addresses are used.
 	for _, toAddr := range addrs {
-		unusedQAddrs := make(map[int]string)
+		unusedQAddrs := make([]string, 0, len(quarantinedAddrs))
 		for _, qAddr := range quarantinedAddrs {
-			if toAddr != qAddr {
-				unusedQAddrs[len(unusedQAddrs)] = qAddr
-			}
+			unusedQAddrs = append(unusedQAddrs, qAddr)
 		}
 
 		entryCount := 0
@@ -130,7 +128,8 @@ func RandomQuarantineAutoResponses(r *rand.Rand, quarantinedAddrs []string) []*q
 			case 3:
 				indR := r.Intn(len(unusedQAddrs))
 				entry.FromAddress = unusedQAddrs[indR]
-				delete(unusedQAddrs, indR)
+				unusedQAddrs[indR] = unusedQAddrs[len(unusedQAddrs)-1]
+				unusedQAddrs = unusedQAddrs[:len(unusedQAddrs)-1]
 			default:
 				panic(sdkerrors.ErrLogic.Wrapf("address from random number case %d not present in switch", fromR))
 			}
