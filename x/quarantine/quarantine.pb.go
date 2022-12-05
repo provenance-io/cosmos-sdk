@@ -58,7 +58,7 @@ func (AutoResponse) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_0b055d4922680476, []int{0}
 }
 
-// QuarantineRecord defines structure that represents coins that have been quarantined.
+// QuarantinedFunds defines structure that represents coins that have been quarantined.
 type QuarantinedFunds struct {
 	// to_address is the intended recipient of the coins that have been quarantined.
 	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
