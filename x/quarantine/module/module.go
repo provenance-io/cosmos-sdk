@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
@@ -18,7 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/quarantine/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/quarantine/keeper"
 	"github.com/cosmos/cosmos-sdk/x/quarantine/simulation"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
