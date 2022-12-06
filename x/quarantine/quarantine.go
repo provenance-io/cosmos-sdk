@@ -199,11 +199,6 @@ func (r QuarantineRecord) Validate() error {
 	return r.Coins.Validate()
 }
 
-// IsZero returns true if this does not have any coins.
-func (r QuarantineRecord) IsZero() bool {
-	return r.Coins.IsZero()
-}
-
 // AddCoins adds coins to this.
 func (r *QuarantineRecord) AddCoins(coins ...sdk.Coin) {
 	r.Coins = r.Coins.Add(coins...)

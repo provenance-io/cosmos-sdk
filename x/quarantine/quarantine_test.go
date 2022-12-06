@@ -1320,7 +1320,7 @@ func TestAutoResponseValues(t *testing.T) {
 	// If these were the same, it'd be bad.
 	assert.NotEqual(t, AUTO_RESPONSE_UNSPECIFIED, AUTO_RESPONSE_ACCEPT, "AUTO_RESPONSE_UNSPECIFIED vs AUTO_RESPONSE_ACCEPT")
 	assert.NotEqual(t, AUTO_RESPONSE_UNSPECIFIED, AUTO_RESPONSE_DECLINE, "AUTO_RESPONSE_UNSPECIFIED vs AUTO_RESPONSE_DECLINE")
-	assert.NotEqual(t, AUTO_RESPONSE_ACCEPT, AutoDeclineB, "AUTO_RESPONSE_ACCEPT vs AUTO_RESPONSE_DECLINE")
+	assert.NotEqual(t, AUTO_RESPONSE_ACCEPT, AUTO_RESPONSE_DECLINE, "AUTO_RESPONSE_ACCEPT vs AUTO_RESPONSE_DECLINE")
 }
 
 func TestToAutoResponse(t *testing.T) {
@@ -1330,18 +1330,23 @@ func TestToAutoResponse(t *testing.T) {
 		expected AutoResponse
 	}{
 		{
-			name:     "accept",
+			name:     "AutoAcceptB",
 			bz:       []byte{AutoAcceptB},
 			expected: AUTO_RESPONSE_ACCEPT,
 		},
 		{
-			name:     "decline",
+			name:     "AutoDeclineB",
 			bz:       []byte{AutoDeclineB},
 			expected: AUTO_RESPONSE_DECLINE,
 		},
 		{
-			name:     "unspecified",
+			name:     "NoAutoB",
 			bz:       []byte{NoAutoB},
+			expected: AUTO_RESPONSE_UNSPECIFIED,
+		},
+		{
+			name:     "something else",
+			bz:       []byte{0x7d},
 			expected: AUTO_RESPONSE_UNSPECIFIED,
 		},
 		{
@@ -1795,80 +1800,6 @@ func TestQuarantineRecord_Validate(t *testing.T) {
 			qrOrig := MakeCopyOfQuarantineRecord(tc.qr)
 			err := tc.qr.Validate()
 			AssertErrorContents(t, err, tc.expectedInErr, "Validate")
-			assert.Equal(t, qrOrig, tc.qr, "QuarantineRecord before and after")
-		})
-	}
-}
-
-func TestQuarantineRecord_IsZero(t *testing.T) {
-	testAddr0 := MakeTestAddr("qriz", 0)
-
-	tests := []struct {
-		name     string
-		qr       *QuarantineRecord
-		expected bool
-	}{
-		{
-			name: "control",
-			qr: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
-				Coins:                   coinMakerOK(),
-				Declined:                false,
-			},
-			expected: false,
-		},
-		{
-			name: "declined",
-			qr: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
-				Coins:                   coinMakerOK(),
-				Declined:                true,
-			},
-			expected: false,
-		},
-		{
-			name: "multi coins",
-			qr: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
-				Coins:                   coinMakerMulti(),
-				Declined:                false,
-			},
-			expected: false,
-		},
-		{
-			name: "empty coins",
-			qr: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
-				Coins:                   coinMakerEmpty(),
-				Declined:                false,
-			},
-			expected: true,
-		},
-		{
-			name: "nil coins",
-			qr: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
-				Coins:                   coinMakerNil(),
-				Declined:                false,
-			},
-			expected: true,
-		},
-		{
-			name: "bad coins",
-			qr: &QuarantineRecord{
-				UnacceptedFromAddresses: []sdk.AccAddress{testAddr0},
-				Coins:                   coinMakerBad(),
-				Declined:                false,
-			},
-			expected: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			qrOrig := MakeCopyOfQuarantineRecord(tc.qr)
-			actual := tc.qr.IsZero()
-			assert.Equal(t, tc.expected, actual, "IsZero()")
 			assert.Equal(t, qrOrig, tc.qr, "QuarantineRecord before and after")
 		})
 	}
