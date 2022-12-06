@@ -69,13 +69,13 @@ func (msg MsgAccept) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
+	if len(msg.FromAddresses) == 0 {
+		return sdkerrors.ErrUnknownAddress.Wrap("at least one from address is required")
+	}
 	for i, addr := range msg.FromAddresses {
 		if _, err := sdk.AccAddressFromBech32(addr); err != nil {
 			return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address[%d]: %s", i, err)
 		}
-	}
-	if msg.Permanent && len(msg.FromAddresses) == 0 {
-		return qerrors.ErrInvalidValue.Wrap("at least one from address is required when permanent = true")
 	}
 	return nil
 }
@@ -102,13 +102,13 @@ func (msg MsgDecline) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 	}
+	if len(msg.FromAddresses) == 0 {
+		return sdkerrors.ErrUnknownAddress.Wrap("at least one from address is required")
+	}
 	for i, addr := range msg.FromAddresses {
 		if _, err := sdk.AccAddressFromBech32(addr); err != nil {
 			return sdkerrors.ErrInvalidAddress.Wrapf("invalid from address[%d]: %s", i, err)
 		}
-	}
-	if msg.Permanent && len(msg.FromAddresses) == 0 {
-		return qerrors.ErrInvalidValue.Wrap("at least one from address is required when permanent = true")
 	}
 	return nil
 }

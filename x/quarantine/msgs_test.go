@@ -337,13 +337,6 @@ func TestMsgAccept_ValidateBasic(t *testing.T) {
 			expectedInErr: nil,
 		},
 		{
-			name:          "permanent no from addresses",
-			toAddr:        testAddr2,
-			fromAddrs:     []string{},
-			permanent:     true,
-			expectedInErr: []string{"at least one from address is required when permanent = true", "invalid value"},
-		},
-		{
 			name:          "empty to address",
 			toAddr:        "",
 			fromAddrs:     []string{testAddr1},
@@ -362,14 +355,14 @@ func TestMsgAccept_ValidateBasic(t *testing.T) {
 			toAddr:        testAddr1,
 			fromAddrs:     nil,
 			permanent:     false,
-			expectedInErr: nil,
+			expectedInErr: []string{"at least one from address is required", "unknown address"},
 		},
 		{
 			name:          "empty from addresses",
 			toAddr:        testAddr1,
 			fromAddrs:     []string{},
 			permanent:     false,
-			expectedInErr: nil,
+			expectedInErr: []string{"at least one from address is required", "unknown address"},
 		},
 		{
 			name:          "bad from address",
@@ -602,13 +595,6 @@ func TestMsgDecline_ValidateBasic(t *testing.T) {
 			expectedInErr: nil,
 		},
 		{
-			name:          "permanent no from addresses",
-			toAddr:        testAddr2,
-			fromAddrs:     []string{},
-			permanent:     true,
-			expectedInErr: []string{"at least one from address is required when permanent = true", "invalid value"},
-		},
-		{
 			name:          "empty to address",
 			toAddr:        "",
 			fromAddrs:     []string{testAddr1},
@@ -627,14 +613,14 @@ func TestMsgDecline_ValidateBasic(t *testing.T) {
 			toAddr:        testAddr1,
 			fromAddrs:     nil,
 			permanent:     false,
-			expectedInErr: nil,
+			expectedInErr: []string{"at least one from address is required", "unknown address"},
 		},
 		{
 			name:          "empty from addresses",
 			toAddr:        testAddr1,
 			fromAddrs:     []string{},
 			permanent:     false,
-			expectedInErr: nil,
+			expectedInErr: []string{"at least one from address is required", "unknown address"},
 		},
 		{
 			name:          "bad from address",
