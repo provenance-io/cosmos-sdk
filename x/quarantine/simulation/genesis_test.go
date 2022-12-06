@@ -128,7 +128,7 @@ func TestRandomizedGenStateImportExport(t *testing.T) {
 
 			var actualGenState *quarantine.GenesisState
 			testExport := func() {
-				actualGenState = app.QuarantineKeeper.ExportGenesis(ctx, cdc)
+				actualGenState = app.QuarantineKeeper.ExportGenesis(ctx)
 			}
 			require.NotPanics(t, testExport, "ExportGenesis")
 

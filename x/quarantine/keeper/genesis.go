@@ -3,12 +3,11 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 )
 
-// InitGenesis conver
+// InitGenesis updates this keeper's store using the provided GenesisState.
 func (k Keeper) InitGenesis(ctx sdk.Context, genesisState *quarantine.GenesisState) {
 	for _, toAddrStr := range genesisState.QuarantinedAddresses {
 		toAddr := sdk.MustAccAddressFromBech32(toAddrStr)
@@ -40,7 +39,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genesisState *quarantine.GenesisSta
 	}
 }
 
-func (k Keeper) ExportGenesis(ctx sdk.Context, _ codec.JSONCodec) *quarantine.GenesisState {
+// ExportGenesis reads this keeper's entire state and returns it as a GenesisState.
+func (k Keeper) ExportGenesis(ctx sdk.Context) *quarantine.GenesisState {
 	qAddrs := k.GetAllQuarantinedAccounts(ctx)
 	autoResps := k.GetAllAutoResponseEntries(ctx)
 	qFunds := k.GetAllQuarantinedFunds(ctx)

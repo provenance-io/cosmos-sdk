@@ -3696,8 +3696,6 @@ func (s *TestSuite) TestInitAndExportGenesis() {
 		},
 	}
 
-	cdc := simapp.MakeTestEncodingConfig().Codec
-
 	s.Run("export while empty", func() {
 		expected := &quarantine.GenesisState{
 			QuarantinedAddresses: nil,
@@ -3706,7 +3704,7 @@ func (s *TestSuite) TestInitAndExportGenesis() {
 		}
 		var actual *quarantine.GenesisState
 		testFuncExport := func() {
-			actual = s.keeper.ExportGenesis(s.sdkCtx, cdc)
+			actual = s.keeper.ExportGenesis(s.sdkCtx)
 		}
 		s.Require().NotPanics(testFuncExport, "ExportGenesis")
 		s.Assert().Equal(expected, actual, "exported genesis state")
@@ -3742,7 +3740,7 @@ func (s *TestSuite) TestInitAndExportGenesis() {
 	s.Run("export after successful init", func() {
 		var actualGenesisState *quarantine.GenesisState
 		testFuncExport := func() {
-			actualGenesisState = s.keeper.ExportGenesis(s.sdkCtx, cdc)
+			actualGenesisState = s.keeper.ExportGenesis(s.sdkCtx)
 		}
 		s.Require().NotPanics(testFuncExport, "ExportGenesis")
 		s.Assert().Equal(expectedGenesisState, actualGenesisState, "exported genesis state")
