@@ -12,7 +12,7 @@ option go_package = "github.com/cosmos/cosmos-sdk/x/quarantine";
 service Query {
   // IsQuarantined checks if an account has opted into quarantine.
   rpc IsQuarantined(QueryIsQuarantinedRequest) returns (QueryIsQuarantinedResponse) {
-    option (google.api.http).get = "/cosmos/bank/v1beta1/quarantine/active/{to_address}";
+    option (google.api.http).get = "/cosmos/quarantine/v1beta1/active/{to_address}";
   }
 
   // QuarantinedFunds gets information about funds that have been quarantined.
@@ -23,10 +23,10 @@ service Query {
   // quarantined funds for any address will be returned. The request is invalid if only a from_address is provided.
   rpc QuarantinedFunds(QueryQuarantinedFundsRequest) returns (QueryQuarantinedFundsResponse) {
     option (google.api.http) = {
-      get: "/cosmos/bank/v1beta1/quarantine/funds"
+      get: "/cosmos/quarantine/v1beta1/funds"
       additional_bindings: [
-        {get: "/cosmos/bank/v1beta1/quarantine/funds/{to_address}"},
-        {get: "/cosmos/bank/v1beta1/quarantine/funds/{to_address}/{from_address}"}
+        {get: "/cosmos/quarantine/v1beta1/funds/{to_address}"},
+        {get: "/cosmos/quarantine/v1beta1/funds/{to_address}/{from_address}"}
       ]
     };
   }
@@ -37,8 +37,8 @@ service Query {
   // returned. If no from_address is provided, all auto-response settings for the given to_address will be returned.
   rpc AutoResponses(QueryAutoResponsesRequest) returns (QueryAutoResponsesResponse) {
     option (google.api.http) = {
-      get: "/cosmos/bank/v1beta1/quarantine/auto/{to_address}"
-      additional_bindings: [{get: "/cosmos/bank/v1beta1/quarantine/auto/{to_address}/{from_address}"}]
+      get: "/cosmos/quarantine/v1beta1/auto/{to_address}"
+      additional_bindings: [{get: "/cosmos/quarantine/v1beta1/auto/{to_address}/{from_address}"}]
     };
   }
 }
