@@ -2,9 +2,11 @@ syntax = "proto3";
 package cosmos.quarantine.v1beta1;
 
 import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/msg/v1/msg.proto";
 import "cosmos/quarantine/v1beta1/quarantine.proto";
 import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/cosmos/cosmos-sdk/x/quarantine";
 
@@ -65,7 +67,11 @@ message MsgAccept {
 }
 
 // MsgAcceptResponse defines the Msg/Accept response type.
-message MsgAcceptResponse {}
+message MsgAcceptResponse {
+  // funds_released is the amount that was quarantined but has now been released and sent to the requester.
+  repeated cosmos.base.v1beta1.Coin funds_released = 3
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
 
 // MsgDecline represents a message for declining quarantined funds.
 message MsgDecline {
