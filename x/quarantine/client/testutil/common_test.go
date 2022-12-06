@@ -100,10 +100,12 @@ func (s *IntegrationTestSuite) createAndFundAccount(index int, bondCoinAmt int64
 	return account.String()
 }
 
+// appendCommonFlagsTo adds this suite's common flags to the end of the provided arguments.
 func (s *IntegrationTestSuite) appendCommonFlagsTo(args ...string) []string {
 	return append(args, s.commonFlags...)
 }
 
+// assertErrorContents calls AssertErrorContents using this suite's t.
 func (s *IntegrationTestSuite) assertErrorContents(theError error, contains []string, msgAndArgs ...interface{}) bool {
 	return AssertErrorContents(s.T(), theError, contains, msgAndArgs...)
 }
