@@ -56,7 +56,8 @@ func (k Keeper) Accept(goCtx context.Context, msg *quarantine.MsgAccept) (*quara
 		}
 	}
 
-	err = k.AcceptQuarantinedFunds(ctx, toAddr, fromAddrs...)
+	var fundsReleased sdk.Coins
+	fundsReleased, err = k.AcceptQuarantinedFunds(ctx, toAddr, fromAddrs...)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +68,7 @@ func (k Keeper) Accept(goCtx context.Context, msg *quarantine.MsgAccept) (*quara
 		}
 	}
 
-	return &quarantine.MsgAcceptResponse{}, nil
+	return &quarantine.MsgAcceptResponse{FundsReleased: fundsReleased}, nil
 }
 
 func (k Keeper) Decline(goCtx context.Context, msg *quarantine.MsgDecline) (*quarantine.MsgDeclineResponse, error) {

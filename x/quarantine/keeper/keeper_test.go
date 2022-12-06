@@ -2393,14 +2393,21 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 				s.Require().NotPanics(testFuncAuto, "SetAutoResponse[%d]", i)
 			}
 
+			expectedFundsReleased := sdk.Coins{}
+			for _, coins := range tc.expectedSent {
+				expectedFundsReleased = expectedFundsReleased.Add(coins...)
+			}
+
 			// Setup done. Let's do this.
 			var err error
+			var fundsReleased sdk.Coins
 			ctx := s.sdkCtx.WithEventManager(sdk.NewEventManager())
 			testFuncAccept := func() {
-				err = qKeeper.AcceptQuarantinedFunds(ctx, toAddr, fromAddrs...)
+				fundsReleased, err = qKeeper.AcceptQuarantinedFunds(ctx, toAddr, fromAddrs...)
 			}
 			s.Require().NotPanics(testFuncAccept, "AcceptQuarantinedFunds")
 			s.Require().NoError(err, "AcceptQuarantinedFunds")
+			s.Assert().Equal(expectedFundsReleased, fundsReleased, "AcceptQuarantinedFunds funds released")
 
 			// And check the expected.
 			var actualRecords []*quarantine.QuarantineRecord
@@ -2485,6 +2492,9 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			},
 		}
 
+		// Since an error is being returned, funds released should be nil.
+		expectedFundsReleased := sdk.Coins(nil)
+
 		expectedEvents := sdk.Events{
 			makeEvent(s.T(), toAddr, s.cz("1addra")),
 			makeEvent(s.T(), toAddr, s.cz("2addrb")),
@@ -2509,16 +2519,20 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 
 		// Do the thing.
 		var actualErr error
+		var fundsReleased sdk.Coins
 		ctx := s.sdkCtx.WithEventManager(sdk.NewEventManager())
 		testFuncAccept := func() {
-			actualErr = qKeeper.AcceptQuarantinedFunds(ctx, toAddr, fromAddrs...)
+			fundsReleased, actualErr = qKeeper.AcceptQuarantinedFunds(ctx, toAddr, fromAddrs...)
 		}
 		s.Require().NotPanics(testFuncAccept, "AcceptQuarantinedFunds")
 
 		// Check that: 1. The error is returned by AcceptQuarantinedFunds
 		s.Assert().EqualError(actualErr, expectedErr, "AcceptQuarantinedFunds error")
 
-		// Check that: 2. The 1st and 2nd records are removed but the 3rd and 4th remain.
+		// Check that: 2. The expected funds released was returned.
+		s.Assert().Equal(expectedFundsReleased, fundsReleased, "AcceptQuarantinedFunds funds released")
+
+		// Check that: 3. The 1st and 2nd records are removed but the 3rd and 4th remain.
 		var actualRecords []*quarantine.QuarantineRecord
 		testFuncGet := func() {
 			actualRecords = qKeeper.GetQuarantineRecords(ctx, toAddr, fromAddrs...)
@@ -2527,11 +2541,11 @@ func (s *TestSuite) TestAcceptQuarantinedFunds() {
 			s.Assert().Equal(expectedRecords, actualRecords)
 		}
 
-		// Check that: 3. SendCoins was called for the 1st and 2nd records.
+		// Check that: 4. SendCoins was called for the 1st and 2nd records.
 		actualSends := bKeeper.SentCoins
 		s.Assert().Equal(expectedSends, actualSends, "sends made")
 
-		// Check that: 4. Events were emitted for the 1st and 2nd records.
+		// Check that: 5. Events were emitted for the 1st and 2nd records.
 		actualEvents := ctx.EventManager().Events()
 		s.Assert().Equal(expectedEvents, actualEvents, "events emitted")
 	})

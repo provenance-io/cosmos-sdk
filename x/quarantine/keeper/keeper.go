@@ -267,21 +267,24 @@ func (k Keeper) AddQuarantinedCoins(ctx sdk.Context, coins sdk.Coins, toAddr sdk
 
 // AcceptQuarantinedFunds looks up all quarantined funds to toAddr from any of the fromAddrs.
 // It marks and saves each as accepted and, if fully accepted, releases (sends) the funds to toAddr.
-func (k Keeper) AcceptQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) error {
+// Returns total funds released and possibly an error.
+func (k Keeper) AcceptQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, fromAddrs ...sdk.AccAddress) (sdk.Coins, error) {
+	fundsReleased := sdk.Coins{}
 	for _, record := range k.GetQuarantineRecords(ctx, toAddr, fromAddrs...) {
 		if record.AcceptFrom(fromAddrs) {
 			if record.IsFullyAccepted() {
 				err := k.bankKeeper.SendCoinsBypassQuarantine(ctx, k.fundsHolder, toAddr, record.Coins)
 				if err != nil {
-					return err
+					return nil, err
 				}
+				fundsReleased = fundsReleased.Add(record.Coins...)
 
 				err = ctx.EventManager().EmitTypedEvent(&quarantine.EventFundsReleased{
 					ToAddress: toAddr.String(),
 					Coins:     record.Coins,
 				})
 				if err != nil {
-					return err
+					return nil, err
 				}
 			} else {
 				// update declined to false unless one of the unaccepted from addresses is set to auto-decline.
@@ -291,7 +294,7 @@ func (k Keeper) AcceptQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, f
 		}
 	}
 
-	return nil
+	return fundsReleased, nil
 }
 
 // DeclineQuarantinedFunds marks as declined, all quarantined funds to toAddr where any fromAddr is a sender.
