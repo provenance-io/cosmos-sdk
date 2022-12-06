@@ -17,6 +17,7 @@ const (
 	QuarantineFunds    = "quarantine-funds"
 )
 
+// RandomQuarantinedAddresses randomly selects accounts from the ones provided to be quarantined.
 func RandomQuarantinedAddresses(r *rand.Rand, accounts []simtypes.Account) []string {
 	// Max number of addresses:
 	// 15% each: 1, 2, 3, 4, 5
@@ -56,6 +57,7 @@ func RandomQuarantinedAddresses(r *rand.Rand, accounts []simtypes.Account) []str
 	return rv
 }
 
+// RandomQuarantineAutoResponses randomly defines some auto-responses for some of the provided addresses (and maybe others).
 func RandomQuarantineAutoResponses(r *rand.Rand, quarantinedAddrs []string) []*quarantine.AutoResponseEntry {
 	addrs := make([]string, 0)
 	// First, identify the address that will have some auto-responses.
@@ -138,6 +140,7 @@ func RandomQuarantineAutoResponses(r *rand.Rand, quarantinedAddrs []string) []*q
 	return rv
 }
 
+// RandomQuarantinedFunds randomly generates some quarantined funds for some of the provided addresses.
 func RandomQuarantinedFunds(r *rand.Rand, quarantinedAddrs []string) []*quarantine.QuarantinedFunds {
 	addrs := make([]string, 0)
 	// Each quarantined address has a 75% chance of having entries.
