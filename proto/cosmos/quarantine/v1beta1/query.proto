@@ -8,7 +8,7 @@ import "cosmos_proto/cosmos.proto";
 
 option go_package = "github.com/cosmos/cosmos-sdk/x/quarantine";
 
-// Query defines the gRPC querier service.
+// Query defines the quarantine gRPC query service.
 service Query {
   // IsQuarantined checks if an account has opted into quarantine.
   rpc IsQuarantined(QueryIsQuarantinedRequest) returns (QueryIsQuarantinedResponse) {
@@ -31,7 +31,7 @@ service Query {
     };
   }
 
-  // QuarantineAutoResponses gets the auto-response settings for a quarantined account.
+  // AutoResponses gets the auto-response settings for a quarantined account.
   //
   // The to_address is required. If a from_address is provided only the auto response for that from_address will be
   // returned. If no from_address is provided, all auto-response settings for the given to_address will be returned.
@@ -62,7 +62,7 @@ message QueryQuarantinedFundsRequest {
   // from_address is the sender of the coins. If provided, a to_address must also be provided.
   string from_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
-  // pagination defines an optional pagination for the request.
+  // pagination defines optional pagination parameters for the request.
   cosmos.base.query.v1beta1.PageRequest pagination = 99;
 }
 
@@ -71,8 +71,8 @@ message QueryQuarantinedFundsResponse {
   // quarantinedFunds is info about coins sitting in quarantine.
   repeated QuarantinedFunds quarantinedFunds = 1;
 
-  // pagination defines the pagination in the response.
-  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+  // pagination defines the pagination parameters of the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 99;
 }
 
 // QueryAutoResponsesRequest defines the RPC request for getting auto-response settings for an address.
@@ -82,7 +82,7 @@ message QueryAutoResponsesRequest {
   // from_address is an optional sender address to limit results.
   string from_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
-  // pagination defines an optional pagination for the request.
+  // pagination defines optional pagination parameters for the request.
   cosmos.base.query.v1beta1.PageRequest pagination = 99;
 }
 
@@ -91,6 +91,6 @@ message QueryAutoResponsesResponse {
   // auto_responses are the auto-response entries from the provided query.
   repeated AutoResponseEntry auto_responses = 1;
 
-  // pagination defines the pagination in the response.
-  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+  // pagination defines the pagination parameters of the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 99;
 }

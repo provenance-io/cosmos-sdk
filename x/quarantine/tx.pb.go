@@ -199,13 +199,11 @@ type MsgAccept struct {
 	// to_address is the address of the quarantined account that is accepting funds.
 	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
 	// from_addresses is one or more addresses that have sent funds to the quarantined account.
-	// If none are provided, all non-declined quarantined funds for to_address are released.
-	// If one or more are provided, only quarantined funds for to_address from each from_address
-	// are marked as accepted and released if appropriate.
+	// All funds quarantined for to_address from any from_addresses are marked as accepted and released if appropriate.
+	// At least one is required.
 	FromAddresses []string `protobuf:"bytes,2,rep,name=from_addresses,json=fromAddresses,proto3" json:"from_addresses,omitempty"`
-	// permanent, if true, causes current and future sends from each from_address to to_address to be automatically
-	// accepted. If false (default), only the currently quarantined funds will be accepted. Setting it to true without any
-	// from_addresses results in an error.
+	// permanent, if true, sets up auto-accept for the to_address from each from_address.
+	// If false (default), only the currently quarantined funds will be accepted.
 	Permanent bool `protobuf:"varint,3,opt,name=permanent,proto3" json:"permanent,omitempty"`
 }
 
@@ -305,13 +303,11 @@ type MsgDecline struct {
 	// to_address is the address of the quarantined account that is accepting funds.
 	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
 	// from_addresses is one or more addresses that have sent funds to the quarantined account.
-	// If none are provided, all quarantined funds for to_address are declined.
-	// If one or more are provided, only quarantined funds for to_address from each from_address
-	// are marked as declined.
+	// All funds quarantined for to_address from any from_addresses are marked as declined.
+	// At least one is required.
 	FromAddresses []string `protobuf:"bytes,2,rep,name=from_addresses,json=fromAddresses,proto3" json:"from_addresses,omitempty"`
-	// permanent, if true, causes current and future sends from each from_address to to_address to be automatically
-	// declined. If false (default), only the currently quarantined funds will be declined. Setting it to true without any
-	// from_addresses results in an error.
+	// permanent, if true, sets up auto-decline for the to_address from each from_address.
+	// If false (default), only the currently quarantined funds will be declined.
 	Permanent bool `protobuf:"varint,3,opt,name=permanent,proto3" json:"permanent,omitempty"`
 }
 
@@ -410,7 +406,7 @@ var xxx_messageInfo_MsgDeclineResponse proto.InternalMessageInfo
 type MsgUpdateAutoResponses struct {
 	// to_address is the quarantined address that would be accepting or declining funds.
 	ToAddress string `protobuf:"bytes,1,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
-	// updates is the list of addresses and actions that should be updated for the to_address.
+	// updates is the list of addresses and auto-responses that should be updated for the to_address.
 	Updates []*AutoResponseUpdate `protobuf:"bytes,2,rep,name=updates,proto3" json:"updates,omitempty"`
 }
 

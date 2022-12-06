@@ -8,7 +8,7 @@ import "cosmos_proto/cosmos.proto";
 
 option go_package = "github.com/cosmos/cosmos-sdk/x/quarantine";
 
-// Msg defines the bank Msg service.
+// Query defines the quarantine gRPC msg service.
 service Msg {
   // OptIn defines a method for opting in to account quarantine.
   // Funds sent to a quarantined account must be approved before they can be received.
@@ -55,14 +55,12 @@ message MsgAccept {
   // to_address is the address of the quarantined account that is accepting funds.
   string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // from_addresses is one or more addresses that have sent funds to the quarantined account.
-  // If none are provided, all non-declined quarantined funds for to_address are released.
-  // If one or more are provided, only quarantined funds for to_address from each from_address
-  // are marked as accepted and released if appropriate.
+  // All funds quarantined for to_address from any from_addresses are marked as accepted and released if appropriate.
+  // At least one is required.
   repeated string from_addresses = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
-  // permanent, if true, causes current and future sends from each from_address to to_address to be automatically
-  // accepted. If false (default), only the currently quarantined funds will be accepted. Setting it to true without any
-  // from_addresses results in an error.
+  // permanent, if true, sets up auto-accept for the to_address from each from_address.
+  // If false (default), only the currently quarantined funds will be accepted.
   bool permanent = 3;
 }
 
@@ -76,14 +74,12 @@ message MsgDecline {
   // to_address is the address of the quarantined account that is accepting funds.
   string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   // from_addresses is one or more addresses that have sent funds to the quarantined account.
-  // If none are provided, all quarantined funds for to_address are declined.
-  // If one or more are provided, only quarantined funds for to_address from each from_address
-  // are marked as declined.
+  // All funds quarantined for to_address from any from_addresses are marked as declined.
+  // At least one is required.
   repeated string from_addresses = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
-  // permanent, if true, causes current and future sends from each from_address to to_address to be automatically
-  // declined. If false (default), only the currently quarantined funds will be declined. Setting it to true without any
-  // from_addresses results in an error.
+  // permanent, if true, sets up auto-decline for the to_address from each from_address.
+  // If false (default), only the currently quarantined funds will be declined.
   bool permanent = 3;
 }
 
@@ -97,7 +93,7 @@ message MsgUpdateAutoResponses {
   // to_address is the quarantined address that would be accepting or declining funds.
   string to_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
-  // updates is the list of addresses and actions that should be updated for the to_address.
+  // updates is the list of addresses and auto-responses that should be updated for the to_address.
   repeated AutoResponseUpdate updates = 2;
 }
 
