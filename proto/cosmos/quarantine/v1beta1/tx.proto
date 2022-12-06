@@ -69,7 +69,7 @@ message MsgAccept {
 // MsgAcceptResponse defines the Msg/Accept response type.
 message MsgAcceptResponse {
   // funds_released is the amount that was quarantined but has now been released and sent to the requester.
-  repeated cosmos.base.v1beta1.Coin funds_released = 3
+  repeated cosmos.base.v1beta1.Coin funds_released = 1
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
 }
 
