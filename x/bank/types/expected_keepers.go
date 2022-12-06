@@ -26,3 +26,7 @@ type AccountKeeper interface {
 	GetModuleAccount(ctx sdk.Context, moduleName string) types.ModuleAccountI
 	SetModuleAccount(ctx sdk.Context, macc types.ModuleAccountI)
 }
+
+type SanctionKeeper interface {
+	IsSanctioned(ctx sdk.Context, addr sdk.AccAddress) bool
+}
