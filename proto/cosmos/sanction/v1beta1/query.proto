@@ -1,5 +1,5 @@
 syntax = "proto3";
-package cosmos.quarantine.v1beta1;
+package cosmos.sanction.v1beta1;
 
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
@@ -9,7 +9,7 @@ option go_package = "github.com/cosmos/cosmos-sdk/x/sanction";
 
 // Query defines the gRPC querier service.
 service Query {
-  // IsSanctioned checks if an account has opted into quarantine.
+  // IsSanctioned checks if an account has been sanctioned.
   rpc IsSanctioned(QueryIsSanctionedRequest) returns (QueryIsSanctionedResponse) {
     option (google.api.http).get = "/cosmos/sanction/v1beta1/active/{address}";
   }
