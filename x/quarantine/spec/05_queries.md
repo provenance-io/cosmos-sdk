@@ -1,12 +1,13 @@
 <!--
-order: 6
+order: 5
 -->
 
 # gRPC Queries
 
 ## Query/IsQuarantined
 
-To find out if an account is quarantined, use `QueryIsQuarantinedRequest`. The query takes in a `to_address` and outputs `true` if the address is quarantined, or `false` otherwise.
+To find out if an account is quarantined, use `QueryIsQuarantinedRequest`.
+The query takes in a `to_address` and outputs `true` if the address is quarantined, or `false` otherwise.
 
 Request:
 
@@ -20,7 +21,8 @@ It is expected to fail if the `to_address` is invalid.
 
 ## Query/QuarantinedFunds
 
-To get information on quarantined funds, use `QueryQuarantinedFundsRequest`. This query takes in an optional `to_address` and optional `from_address` and outputs information on quarantined funds.
+To get information on quarantined funds, use `QueryQuarantinedFundsRequest`.
+This query takes in an optional `to_address` and optional `from_address` and outputs information on quarantined funds.
 
 Request:
 
@@ -47,7 +49,8 @@ It is expected to fail if:
 
 ## Query/AutoResponses
 
-To see the auto-response settings, use `QueryAutoResponsesRequest`. This query takes in a `to_address` and optional `from_address` and outputs information about auto-responses.
+To see the auto-response settings, use `QueryAutoResponsesRequest`.
+This query takes in a `to_address` and optional `from_address` and outputs information about auto-responses.
 
 Request:
 

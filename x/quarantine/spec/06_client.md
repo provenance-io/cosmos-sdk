@@ -4,17 +4,17 @@ order: 6
 
 # Client
 
-There are several ways to interact with the `x/quarantine` module: `gRPC`, `CLI`, or `REST`.
+A user can interact with the `x/quarantine` module using `gRPC`, `CLI`, or `REST`.
 
 ## gRPC
 
-A user can interact with and query the `x/quarantine` module using gRPC.
+A user can interact with and query the `x/quarantine` module using `gRPC`.
 
 For details see [Msg Service](03_messages.md) or [gRPC Queries](05_queries.md).
 
 ## CLI
 
-The `gRPC` transaction and query endpoints are also made available through CLI helpers.
+The `gRPC` transaction and query endpoints are made available through CLI helpers.
 
 ### Transactions
 

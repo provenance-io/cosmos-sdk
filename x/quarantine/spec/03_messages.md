@@ -25,12 +25,12 @@ It is expected to fail if the `to_address` is invalid.
 ## Msg/Accept
 
 Quarantined funds can be accepted by the intended receiver using a `MsgAccept`.
-It contains a `to_address` (receiver) and possibly one or more `from_addresses` (senders).
+It contains a `to_address` (receiver) and one or more `from_addresses` (senders).
 It also contains a flag to indicate whether auto-accept should be set up for all provided addresses.
 
 +++ https://github.com/provenance-io/cosmos-sdk/blob/prov/dwedul/1046-bank-quarantine/proto/cosmos/quarantine/v1beta1/tx.proto#L51-L67
 
-The quarantined funds for the `to_address` from each `from_address` are accepted (regardless of whether they've been previously declined).
+Any quarantined funds for the `to_address` from any `from_address` are accepted (regardless of whether they've been previously declined).
 
 For quarantined funds from multiple senders (e.g. from a `MultiSend`), all senders must be part of an `Accept` before the funds will be released,
 but they don't all have to be part of the same `Accept`.
@@ -45,12 +45,12 @@ It is expected to fail if:
 ## Msg/Decline
 
 Quarantined funds can be declined by the intended receiver using a `MsgDecline`.
-It contains a `to_address` (receiver) and possibly one or more `from_addresses` (senders).
+It contains a `to_address` (receiver) and one or more `from_addresses` (senders).
 It also contains a flag to indicate whether auto-decline should be set up for all provided addresses.
 
 +++ https://github.com/provenance-io/cosmos-sdk/blob/prov/dwedul/1046-bank-quarantine/proto/cosmos/quarantine/v1beta1/tx.proto#L72-L88
 
-The quarantined funds for the `to_address` from each `from_address` are declined.
+Any quarantined funds for the `to_address` from any `from_address` are declined.
 
 For quarantined funds from multiple senders (e.g. from a `MultiSend`), a decline from any sender involved is sufficient to decline the funds.
 Funds that have been declined can always be accepted later.
@@ -70,6 +70,8 @@ It contains a `to_address` and a list of `updates`. Each `AutoResponseUpdate` co
 +++ https://github.com/provenance-io/cosmos-sdk/blob/prov/dwedul/1046-bank-quarantine/proto/cosmos/quarantine/v1beta1/tx.proto#L93-L102
 
 Providing a `response` of `AUTO_RESPONSE_UNSPECIFIED` will cause the applicable entry to be deleted, allowing users to un-set previous auto-responses.
+
+Updating auto-responses has no effect on existing quarantined funds.
 
 It is expected to fail if:
 - The `to_address` is invalid.
