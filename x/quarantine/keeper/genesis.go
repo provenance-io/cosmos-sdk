@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -9,10 +8,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 )
 
-func (k Keeper) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
-	var genesisState quarantine.GenesisState
-	cdc.MustUnmarshalJSON(data, &genesisState)
-
+// InitGenesis conver
+func (k Keeper) InitGenesis(ctx sdk.Context, genesisState *quarantine.GenesisState) {
 	for _, toAddrStr := range genesisState.QuarantinedAddresses {
 		toAddr := sdk.MustAccAddressFromBech32(toAddrStr)
 		if err := k.SetOptIn(ctx, toAddr); err != nil {

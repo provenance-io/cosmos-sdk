@@ -19,6 +19,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 	"github.com/cosmos/cosmos-sdk/x/quarantine/simulation"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	. "github.com/cosmos/cosmos-sdk/x/quarantine/testutil"
 )
 
 func TestRandomizedGenState(t *testing.T) {
@@ -93,11 +95,12 @@ func TestRandomizedGenStateImportExport(t *testing.T) {
 			simState.GenState[banktypes.ModuleName] = emptyBankGenBz
 
 			simulation.RandomizedGenState(&simState, fundsHolder)
-			var expGenState quarantine.GenesisState
-			err = simState.Cdc.UnmarshalJSON(simState.GenState[quarantine.ModuleName], &expGenState)
+			var randomGenState quarantine.GenesisState
+			err = simState.Cdc.UnmarshalJSON(simState.GenState[quarantine.ModuleName], &randomGenState)
 			require.NoError(t, err, "UnmarshalJSON on quarantine genesis state")
 
-			// The unspecified auto-responses don't get written, so we need to remove them to get the real expected.
+			// The unspecified auto-responses don't get written, so we need to remove them to get the expected.
+			expGenState := MakeCopyOfGenesisState(&randomGenState)
 			expectedAutoResponses := make([]*quarantine.AutoResponseEntry, 0, len(expGenState.AutoResponses))
 			for _, entry := range expGenState.AutoResponses {
 				if entry.Response != quarantine.AUTO_RESPONSE_UNSPECIFIED {
@@ -119,7 +122,7 @@ func TestRandomizedGenStateImportExport(t *testing.T) {
 			require.NotPanics(t, testBankInit, "bank InitGenesis")
 
 			testInit := func() {
-				app.QuarantineKeeper.InitGenesis(ctx, cdc, simState.GenState[quarantine.ModuleName])
+				app.QuarantineKeeper.InitGenesis(ctx, &randomGenState)
 			}
 			require.NotPanics(t, testInit, "quarantine InitGenesis")
 

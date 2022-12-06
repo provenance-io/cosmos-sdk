@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"testing"
@@ -3698,8 +3697,6 @@ func (s *TestSuite) TestInitAndExportGenesis() {
 	}
 
 	cdc := simapp.MakeTestEncodingConfig().Codec
-	genStateJSON, err := json.MarshalIndent(genesisState, "", "\t")
-	s.Require().NoError(err, "json.MarshalIndent(genesisState, ...)")
 
 	s.Run("export while empty", func() {
 		expected := &quarantine.GenesisState{
@@ -3723,8 +3720,9 @@ func (s *TestSuite) TestInitAndExportGenesis() {
 		expectedErr := fmt.Sprintf("quarantine fund holder account %q does not have enough funds %q to cover quarantined funds %q",
 			s.keeper.GetFundsHolder().String(), "199999dolla,1dull,33fancy", "200000dolla,2dull,34fancy")
 
+		genStateCopy := MakeCopyOfGenesisState(genesisState)
 		testFuncInit := func() {
-			qKeeper.InitGenesis(s.sdkCtx, cdc, genStateJSON)
+			qKeeper.InitGenesis(s.sdkCtx, genStateCopy)
 		}
 		s.Require().PanicsWithError(expectedErr, testFuncInit, "InitGenesis")
 	})
@@ -3734,8 +3732,9 @@ func (s *TestSuite) TestInitAndExportGenesis() {
 		bKeeper.AllBalances[string(s.keeper.GetFundsHolder())] = s.cz("200000dolla,2dull,34fancy")
 		qKeeper := s.keeper.WithBankKeeper(bKeeper)
 
+		genStateCopy := MakeCopyOfGenesisState(genesisState)
 		testFuncInit := func() {
-			qKeeper.InitGenesis(s.sdkCtx, cdc, genStateJSON)
+			qKeeper.InitGenesis(s.sdkCtx, genStateCopy)
 		}
 		s.Require().NotPanics(testFuncInit, "InitGenesis")
 	})
