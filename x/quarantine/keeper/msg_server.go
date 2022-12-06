@@ -57,6 +57,9 @@ func (k Keeper) Accept(goCtx context.Context, msg *quarantine.MsgAccept) (*quara
 	}
 
 	err = k.AcceptQuarantinedFunds(ctx, toAddr, fromAddrs...)
+	if err != nil {
+		return nil, err
+	}
 
 	if msg.Permanent {
 		for _, fromAddr := range fromAddrs {

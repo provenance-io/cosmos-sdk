@@ -84,10 +84,7 @@ func RandomQuarantineAutoResponses(r *rand.Rand, quarantinedAddrs []string) []*q
 	// Each quarantined address can be used only once for a given toAddr.
 	// Once all quarantined address (other than the toAddr) get used, only brand-new addresses are used.
 	for _, toAddr := range addrs {
-		unusedQAddrs := make([]string, 0, len(quarantinedAddrs))
-		for _, qAddr := range quarantinedAddrs {
-			unusedQAddrs = append(unusedQAddrs, qAddr)
-		}
+		unusedQAddrs := append(make([]string, 0, len(quarantinedAddrs)), quarantinedAddrs...)
 
 		entryCount := 0
 		entryCountR := r.Intn(4)

@@ -8,8 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
-
-	. "github.com/cosmos/cosmos-sdk/x/quarantine"
+	"github.com/cosmos/cosmos-sdk/x/quarantine"
 )
 
 // This file contains some functions handy for doing unit tests.
@@ -130,8 +129,8 @@ func MakeCopyOfCoins(orig sdk.Coins) sdk.Coins {
 }
 
 // MakeCopyOfQuarantinedFunds makes a deep copy of a QuarantinedFunds.
-func MakeCopyOfQuarantinedFunds(orig *QuarantinedFunds) *QuarantinedFunds {
-	return &QuarantinedFunds{
+func MakeCopyOfQuarantinedFunds(orig *quarantine.QuarantinedFunds) *quarantine.QuarantinedFunds {
+	return &quarantine.QuarantinedFunds{
 		ToAddress:               orig.ToAddress,
 		UnacceptedFromAddresses: MakeCopyOfStringSlice(orig.UnacceptedFromAddresses),
 		Coins:                   MakeCopyOfCoins(orig.Coins),
@@ -140,11 +139,11 @@ func MakeCopyOfQuarantinedFunds(orig *QuarantinedFunds) *QuarantinedFunds {
 }
 
 // MakeCopyOfQuarantinedFundsSlice makes a deep copy of a slice of QuarantinedFunds.
-func MakeCopyOfQuarantinedFundsSlice(orig []*QuarantinedFunds) []*QuarantinedFunds {
+func MakeCopyOfQuarantinedFundsSlice(orig []*quarantine.QuarantinedFunds) []*quarantine.QuarantinedFunds {
 	if orig == nil {
 		return orig
 	}
-	rv := make([]*QuarantinedFunds, len(orig))
+	rv := make([]*quarantine.QuarantinedFunds, len(orig))
 	for i, qf := range orig {
 		rv[i] = MakeCopyOfQuarantinedFunds(qf)
 	}
@@ -162,8 +161,8 @@ func MakeCopyOfStringSlice(orig []string) []string {
 }
 
 // MakeCopyOfQuarantineRecord makes a deep copy of a QuarantineRecord.
-func MakeCopyOfQuarantineRecord(orig *QuarantineRecord) *QuarantineRecord {
-	return &QuarantineRecord{
+func MakeCopyOfQuarantineRecord(orig *quarantine.QuarantineRecord) *quarantine.QuarantineRecord {
+	return &quarantine.QuarantineRecord{
 		UnacceptedFromAddresses: MakeCopyOfAccAddresses(orig.UnacceptedFromAddresses),
 		AcceptedFromAddresses:   MakeCopyOfAccAddresses(orig.AcceptedFromAddresses),
 		Coins:                   MakeCopyOfCoins(orig.Coins),
@@ -216,11 +215,11 @@ func MakeCopyOfByteSliceSlice(orig [][]byte) [][]byte {
 }
 
 // MakeCopyOfGenesisState makes a deep copy of a GenesisState.
-func MakeCopyOfGenesisState(orig *GenesisState) *GenesisState {
+func MakeCopyOfGenesisState(orig *quarantine.GenesisState) *quarantine.GenesisState {
 	if orig == nil {
 		return nil
 	}
-	return &GenesisState{
+	return &quarantine.GenesisState{
 		QuarantinedAddresses: MakeCopyOfStringSlice(orig.QuarantinedAddresses),
 		AutoResponses:        MakeCopyOfAutoResponseEntries(orig.AutoResponses),
 		QuarantinedFunds:     MakeCopyOfQuarantinedFundsSlice(orig.QuarantinedFunds),
@@ -228,11 +227,11 @@ func MakeCopyOfGenesisState(orig *GenesisState) *GenesisState {
 }
 
 // MakeCopyOfAutoResponseEntries makes a deep copy of a slice of AutoResponseEntries.
-func MakeCopyOfAutoResponseEntries(orig []*AutoResponseEntry) []*AutoResponseEntry {
+func MakeCopyOfAutoResponseEntries(orig []*quarantine.AutoResponseEntry) []*quarantine.AutoResponseEntry {
 	if orig == nil {
 		return nil
 	}
-	rv := make([]*AutoResponseEntry, len(orig))
+	rv := make([]*quarantine.AutoResponseEntry, len(orig))
 	for i, entry := range orig {
 		rv[i] = MakeCopyOfAutoResponseEntry(entry)
 	}
@@ -240,11 +239,11 @@ func MakeCopyOfAutoResponseEntries(orig []*AutoResponseEntry) []*AutoResponseEnt
 }
 
 // MakeCopyOfAutoResponseEntry makes a deep copy of an AutoResponseEntry.
-func MakeCopyOfAutoResponseEntry(orig *AutoResponseEntry) *AutoResponseEntry {
+func MakeCopyOfAutoResponseEntry(orig *quarantine.AutoResponseEntry) *quarantine.AutoResponseEntry {
 	if orig == nil {
 		return nil
 	}
-	return &AutoResponseEntry{
+	return &quarantine.AutoResponseEntry{
 		ToAddress:   orig.ToAddress,
 		FromAddress: orig.FromAddress,
 		Response:    orig.Response,
@@ -252,11 +251,11 @@ func MakeCopyOfAutoResponseEntry(orig *AutoResponseEntry) *AutoResponseEntry {
 }
 
 // MakeCopyOfQuarantineRecordSuffixIndex makes a deep copy of a QuarantineRecordSuffixIndex
-func MakeCopyOfQuarantineRecordSuffixIndex(orig *QuarantineRecordSuffixIndex) *QuarantineRecordSuffixIndex {
+func MakeCopyOfQuarantineRecordSuffixIndex(orig *quarantine.QuarantineRecordSuffixIndex) *quarantine.QuarantineRecordSuffixIndex {
 	if orig == nil {
 		return nil
 	}
-	return &QuarantineRecordSuffixIndex{
+	return &quarantine.QuarantineRecordSuffixIndex{
 		RecordSuffixes: MakeCopyOfByteSliceSlice(orig.RecordSuffixes),
 	}
 }

@@ -58,7 +58,7 @@ func fundsHolderBalanceInvariantHelper(ctx sdk.Context, keeper Keeper) (string, 
 	}
 
 	if fundsHolderBalance.IsZero() {
-		msg += fmt.Sprintf(", have: zero balance")
+		msg += ", have: zero balance"
 	} else {
 		msg += fmt.Sprintf(", have: %s", fundsHolderBalance)
 	}
