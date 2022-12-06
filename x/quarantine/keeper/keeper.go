@@ -284,6 +284,7 @@ func (k Keeper) AcceptQuarantinedFunds(ctx sdk.Context, toAddr sdk.AccAddress, f
 					return err
 				}
 			} else {
+				// update declined to false unless one of the unaccepted from addresses is set to auto-decline.
 				record.Declined = k.IsAutoDecline(ctx, toAddr, record.UnacceptedFromAddresses...)
 			}
 			k.SetQuarantineRecord(ctx, toAddr, record)
