@@ -1,0 +1,23 @@
+syntax = "proto3";
+package cosmos.sanction.v1beta1;
+
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/sanction";
+
+// SanctionImmediateParams defines the sanction module's params for deposits on immediate sanction or unsanction
+// messages.
+message SanctionImmediateParams {
+  // Minimum deposit for an immediate sanction message.
+  repeated cosmos.base.v1beta1.Coin min_deposit_sanction = 1 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.jsontag)      = "min_deposit_sanction,omitempty"
+  ];
+
+  // Minimum deposit for an immediate unsanction message.
+  repeated cosmos.base.v1beta1.Coin min_deposit_unsanction = 2 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.jsontag)      = "min_deposit_unsanction,omitempty"
+  ];
+}

@@ -1,0 +1,22 @@
+syntax = "proto3";
+package cosmos.sanction.v1beta1;
+
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/sanction";
+
+message EventAddressSanctioned {
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+message EventAddressUnsanctioned {
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+message EventTempAddressSanctioned {
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+message EventTempAddressUnsanctioned {
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
