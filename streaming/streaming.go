@@ -43,7 +43,8 @@ func NewStreamingPlugin(name string, logLevel string) (interface{}, error) {
 		Cmd:             exec.Command("sh", "-c", env),
 		Logger:          logger,
 		AllowedProtocols: []plugin.Protocol{
-			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
+			plugin.ProtocolNetRPC, plugin.ProtocolGRPC,
+		},
 	})
 
 	// Connect via RPC
