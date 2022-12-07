@@ -206,7 +206,7 @@ func (k BaseSendKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAd
 // returned if the resulting balance is negative or the initial amount is invalid.
 // A coin_spent event is emitted after.
 func (k BaseSendKeeper) subUnlockedCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) error {
-	if k.sk != nil && k.sk.IsSanctioned(ctx, addr) {
+	if k.sk != nil && k.sk.IsSanctionedAddr(ctx, addr) {
 		return types.ErrSanctionedAccount.Wrap(addr.String())
 	}
 	if !amt.IsValid() {

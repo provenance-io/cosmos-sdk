@@ -28,5 +28,5 @@ type AccountKeeper interface {
 }
 
 type SanctionKeeper interface {
-	IsSanctioned(ctx sdk.Context, addr sdk.AccAddress) bool
+	IsSanctionedAddr(ctx sdk.Context, addr sdk.AccAddress) bool
 }
