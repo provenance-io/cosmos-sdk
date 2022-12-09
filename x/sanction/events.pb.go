@@ -23,6 +23,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// EventAddressSanctioned is an event emitted when an address is sanctioned.
 type EventAddressSanctioned struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
@@ -67,6 +68,7 @@ func (m *EventAddressSanctioned) GetAddress() string {
 	return ""
 }
 
+// EventAddressUnsanctioned is an event emitted when an address is sanctioned.
 type EventAddressUnsanctioned struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
@@ -111,6 +113,7 @@ func (m *EventAddressUnsanctioned) GetAddress() string {
 	return ""
 }
 
+// EventTempAddressSanctioned is an event emitted when an address is temporarily sanctioned.
 type EventTempAddressSanctioned struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
@@ -155,6 +158,7 @@ func (m *EventTempAddressSanctioned) GetAddress() string {
 	return ""
 }
 
+// EventTempAddressUnsanctioned is an event emitted when an address is temporarily unsanctioned.
 type EventTempAddressUnsanctioned struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
@@ -199,11 +203,49 @@ func (m *EventTempAddressUnsanctioned) GetAddress() string {
 	return ""
 }
 
+// EventParamsUpdated is an event emitted when the sanction module params are updated.
+type EventParamsUpdated struct {
+}
+
+func (m *EventParamsUpdated) Reset()         { *m = EventParamsUpdated{} }
+func (m *EventParamsUpdated) String() string { return proto.CompactTextString(m) }
+func (*EventParamsUpdated) ProtoMessage()    {}
+func (*EventParamsUpdated) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ae9bc0752677962a, []int{4}
+}
+func (m *EventParamsUpdated) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *EventParamsUpdated) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_EventParamsUpdated.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *EventParamsUpdated) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EventParamsUpdated.Merge(m, src)
+}
+func (m *EventParamsUpdated) XXX_Size() int {
+	return m.Size()
+}
+func (m *EventParamsUpdated) XXX_DiscardUnknown() {
+	xxx_messageInfo_EventParamsUpdated.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EventParamsUpdated proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*EventAddressSanctioned)(nil), "cosmos.sanction.v1beta1.EventAddressSanctioned")
 	proto.RegisterType((*EventAddressUnsanctioned)(nil), "cosmos.sanction.v1beta1.EventAddressUnsanctioned")
 	proto.RegisterType((*EventTempAddressSanctioned)(nil), "cosmos.sanction.v1beta1.EventTempAddressSanctioned")
 	proto.RegisterType((*EventTempAddressUnsanctioned)(nil), "cosmos.sanction.v1beta1.EventTempAddressUnsanctioned")
+	proto.RegisterType((*EventParamsUpdated)(nil), "cosmos.sanction.v1beta1.EventParamsUpdated")
 }
 
 func init() {
@@ -211,7 +253,7 @@ func init() {
 }
 
 var fileDescriptor_ae9bc0752677962a = []byte{
-	// 223 bytes of a gzipped FileDescriptorProto
+	// 241 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x49, 0xce, 0x2f, 0xce,
 	0xcd, 0x2f, 0xd6, 0x2f, 0x4e, 0xcc, 0x4b, 0x2e, 0xc9, 0xcc, 0xcf, 0xd3, 0x2f, 0x33, 0x4c, 0x4a,
 	0x2d, 0x49, 0x34, 0xd4, 0x4f, 0x2d, 0x4b, 0xcd, 0x2b, 0x29, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9,
@@ -221,11 +263,13 @@ var fileDescriptor_ae9bc0752677962a = []byte{
 	0x12, 0x8c, 0x0a, 0x8c, 0x1a, 0x9c, 0x4e, 0x12, 0x97, 0xb6, 0xe8, 0x8a, 0x40, 0x35, 0xc3, 0x94,
 	0x97, 0x14, 0x65, 0xe6, 0xa5, 0x07, 0xc1, 0x14, 0x2a, 0xf9, 0x71, 0x49, 0x20, 0x9b, 0x16, 0x9a,
 	0x57, 0x4c, 0x99, 0x79, 0x01, 0x5c, 0x52, 0x60, 0xf3, 0x42, 0x52, 0x73, 0x0b, 0xa8, 0xe3, 0xc2,
-	0x20, 0x2e, 0x19, 0x74, 0x13, 0x29, 0x75, 0xa5, 0x93, 0xe3, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e,
-	0xc9, 0x31, 0x3e, 0x78, 0x24, 0xc7, 0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72, 0x0c, 0x37,
-	0x1e, 0xcb, 0x31, 0x44, 0xa9, 0xa7, 0x67, 0x96, 0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7, 0xe7, 0x42,
-	0x83, 0x1d, 0x4a, 0xe9, 0x16, 0xa7, 0x64, 0xeb, 0x57, 0xc0, 0xe3, 0x33, 0x89, 0x0d, 0x1c, 0x1b,
-	0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x63, 0x88, 0x4a, 0x95, 0xe9, 0x01, 0x00, 0x00,
+	0x20, 0x2e, 0x19, 0x74, 0x13, 0x29, 0x76, 0xa5, 0x08, 0x97, 0x10, 0xd8, 0xcc, 0x80, 0xc4, 0xa2,
+	0xc4, 0xdc, 0xe2, 0xd0, 0x82, 0x94, 0xc4, 0x92, 0xd4, 0x14, 0x27, 0xc7, 0x13, 0x8f, 0xe4, 0x18,
+	0x2f, 0x3c, 0x92, 0x63, 0x7c, 0xf0, 0x48, 0x8e, 0x71, 0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f, 0xe5,
+	0x18, 0x6e, 0x3c, 0x96, 0x63, 0x88, 0x52, 0x4f, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x4b, 0xce,
+	0xcf, 0x85, 0x46, 0x06, 0x94, 0xd2, 0x2d, 0x4e, 0xc9, 0xd6, 0xaf, 0x80, 0xc7, 0x72, 0x12, 0x1b,
+	0x38, 0x8e, 0x8c, 0x01, 0x01, 0x00, 0x00, 0xff, 0xff, 0xc1, 0x8f, 0x99, 0xb7, 0xff, 0x01, 0x00,
+	0x00,
 }
 
 func (m *EventAddressSanctioned) Marshal() (dAtA []byte, err error) {
@@ -348,6 +392,29 @@ func (m *EventTempAddressUnsanctioned) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
+func (m *EventParamsUpdated) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EventParamsUpdated) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EventParamsUpdated) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintEvents(dAtA []byte, offset int, v uint64) int {
 	offset -= sovEvents(v)
 	base := offset
@@ -408,6 +475,15 @@ func (m *EventTempAddressUnsanctioned) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovEvents(uint64(l))
 	}
+	return n
+}
+
+func (m *EventParamsUpdated) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
 	return n
 }
 
@@ -724,6 +800,56 @@ func (m *EventTempAddressUnsanctioned) Unmarshal(dAtA []byte) error {
 			}
 			m.Address = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipEvents(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthEvents
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EventParamsUpdated) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowEvents
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EventParamsUpdated: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EventParamsUpdated: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipEvents(dAtA[iNdEx:])

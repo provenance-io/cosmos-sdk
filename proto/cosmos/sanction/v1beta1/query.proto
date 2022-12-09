@@ -55,6 +55,6 @@ message QuerySanctionedAddressesResponse {
 message QueryParamsRequest {}
 
 message QueryParamsResponse {
-  // immediate_params are the parameters regarding immediate sanctions/unsanctions.
-  ImmediateParams immediate_params = 1;
+  // params are the sanction module parameters.
+  Params params = 1;
 }
