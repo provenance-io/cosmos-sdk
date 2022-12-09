@@ -6,18 +6,20 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/cosmos/cosmos-sdk/x/sanction";
 
-// SanctionImmediateParams defines the sanction module's params for deposits on immediate sanction or unsanction
+// ImmediateParams defines the sanction module's params for deposits on immediate sanction or unsanction
 // messages.
-message SanctionImmediateParams {
-  // Minimum deposit for an immediate sanction message.
-  repeated cosmos.base.v1beta1.Coin min_deposit_sanction = 1 [
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
-    (gogoproto.jsontag)      = "min_deposit_sanction,omitempty"
-  ];
+message ImmediateParams {
+  // Minimum deposit for an immediate sanction.
+  // If this is zero, immediate sanctioning is not available.
+  // Otherwise, if a sanction governance proposal is issued with a deposit at least this large, a temporary sanction
+  // will be immediately issued that will expire when voting ends on the governance proposal.
+  repeated cosmos.base.v1beta1.Coin min_deposit_sanction = 1
+      [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
 
   // Minimum deposit for an immediate unsanction message.
-  repeated cosmos.base.v1beta1.Coin min_deposit_unsanction = 2 [
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
-    (gogoproto.jsontag)      = "min_deposit_unsanction,omitempty"
-  ];
+  // If this is zero, immediate unsanctioning is not available.
+  // Otherwise, if an unsanction governance proposal is issued with a deposit at least this large, a temporary
+  // unsanction will be immediately issued that will expire when voting ends on the governance proposal.
+  repeated cosmos.base.v1beta1.Coin min_deposit_unsanction = 2
+      [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
 }

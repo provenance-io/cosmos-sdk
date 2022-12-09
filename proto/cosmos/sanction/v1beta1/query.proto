@@ -56,5 +56,5 @@ message QueryParamsRequest {}
 
 message QueryParamsResponse {
   // immediate_params are the parameters regarding immediate sanctions/unsanctions.
-  SanctionImmediateParams immediate_params = 1;
+  ImmediateParams immediate_params = 1;
 }

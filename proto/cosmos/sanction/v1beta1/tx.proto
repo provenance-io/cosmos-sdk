@@ -54,7 +54,7 @@ message MsgUpdateParams {
   option (cosmos.msg.v1.signer) = "authority";
 
   // immediate_params are the parameters regarding immediate sanctions/unsanctions.
-  SanctionImmediateParams immediate_params = 1;
+  ImmediateParams immediate_params = 1;
 
   // authority is the address of the account with the authority to update params (most likely the governance module
   // account).
