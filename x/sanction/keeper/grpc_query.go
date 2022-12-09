@@ -16,3 +16,8 @@ func (k Keeper) SanctionedAddresses(goCtx context.Context, req *sanction.QuerySa
 	// TODO[1046]: Implement SanctionedAddresses
 	panic("not implemented")
 }
+
+func (k Keeper) Params(goCtx context.Context, _ *sanction.QueryParamsRequest) (*sanction.QueryParamsResponse, error) {
+	// TODO[1046]: Implement Params
+	panic("not implemented")
+}

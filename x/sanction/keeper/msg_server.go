@@ -17,12 +17,7 @@ func (k Keeper) Unsanction(ctx context.Context, req *sanction.MsgUnsanction) (*s
 	panic("not implemented")
 }
 
-func (k Keeper) ImmediateSanction(ctx context.Context, req *sanction.MsgImmediateSanction) (*sanction.MsgImmediateSanctionResponse, error) {
-	// TODO[1046]: Implement ImmediateSanction
-	panic("not implemented")
-}
-
-func (k Keeper) ImmediateUnsanction(ctx context.Context, req *sanction.MsgImmediateUnsanction) (*sanction.MsgImmediateUnsanctionResponse, error) {
-	// TODO[1046]: Implement ImmediateUnsanction
+func (k Keeper) UpdateParams(ctx context.Context, req *sanction.MsgUpdateParams) (*sanction.MsgUpdateParamsResponse, error) {
+	// TODO[1046]: Implement UpdateParams
 	panic("not implemented")
 }
