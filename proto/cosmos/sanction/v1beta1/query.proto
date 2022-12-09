@@ -1,9 +1,10 @@
 syntax = "proto3";
 package cosmos.sanction.v1beta1;
 
-import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/sanction/v1beta1/sanction.proto";
 import "cosmos_proto/cosmos.proto";
+import "google/api/annotations.proto";
 
 option go_package = "github.com/cosmos/cosmos-sdk/x/sanction";
 
@@ -17,6 +18,11 @@ service Query {
   // SanctionedAddresses returns a list of sanctioned addresses.
   rpc SanctionedAddresses(QuerySanctionedAddressesRequest) returns (QuerySanctionedAddressesResponse) {
     option (google.api.http).get = "/cosmos/sanction/v1beta1/all";
+  }
+
+  // Params returns the sanction module's params.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/cosmos/sanction/v1beta1/params";
   }
 }
 
@@ -44,4 +50,11 @@ message QuerySanctionedAddressesResponse {
 
   // pagination defines the pagination in the response.
   cosmos.base.query.v1beta1.PageResponse pagination = 99;
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  // immediate_params are the parameters regarding immediate sanctions/unsanctions.
+  SanctionImmediateParams immediate_params = 1;
 }
