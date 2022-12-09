@@ -104,7 +104,7 @@ func (k Keeper) getLatestTempEntry(store sdk.KVStore, addr sdk.AccAddress) []byt
 	return nil
 }
 
-func (k Keeper) DeleteTempEntries(ctx sdk.Context, govPropId uint64, addrs ...sdk.AccAddress) {
+func (k Keeper) DeleteSpecificTempEntries(ctx sdk.Context, govPropId uint64, addrs ...sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	for _, addr := range addrs {
 		key := CreateTemporaryKey(addr, govPropId)
@@ -112,7 +112,7 @@ func (k Keeper) DeleteTempEntries(ctx sdk.Context, govPropId uint64, addrs ...sd
 	}
 }
 
-func (k Keeper) DeleteTempEntriesForAddrs(ctx sdk.Context, addrs ...sdk.AccAddress) {
+func (k Keeper) DeleteTempEntries(ctx sdk.Context, addrs ...sdk.AccAddress) {
 	if len(addrs) == 0 {
 		return
 	}
