@@ -2,6 +2,7 @@ syntax = "proto3";
 package cosmos.sanction.v1beta1;
 
 import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
 
 option go_package = "github.com/cosmos/cosmos-sdk/x/sanction";
@@ -21,4 +22,24 @@ message Params {
   // unsanction will be immediately issued that will expire when voting ends on the governance proposal.
   repeated cosmos.base.v1beta1.Coin immediate_unsanction_min_deposit = 2
       [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+
+message TemporaryEntry {
+  // address is the address of this temporary entry.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // proposal_id is the governance proposal id associated with this temporary entry.
+  uint64 proposal_id = 2;
+  // status is whether the entry is a sanction or unsanction.
+  TempStatus status = 3;
+}
+
+enum TempStatus {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // TEMP_STATUS_UNSPECIFIED represents and unspecified status value.
+  TEMP_STATUS_UNSPECIFIED = 0;
+  // TEMP_STATUS_SANCTIONED indicates a sanction is in place.
+  TEMP_STATUS_SANCTIONED = 1;
+  // TEMP_STATUS_UNSANCTIONED indicates an unsanctioned is in place.
+  TEMP_STATUS_UNSANCTIONED = 2;
 }
