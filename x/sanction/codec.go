@@ -15,16 +15,14 @@ import (
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgSanction{}, "cosmos-sdk/MsgSanction")
 	legacy.RegisterAminoMsg(cdc, &MsgUnsanction{}, "cosmos-sdk/MsgUnsanction")
-	legacy.RegisterAminoMsg(cdc, &MsgImmediateSanction{}, "cosmos-sdk/MsgImmediateSanction")
-	legacy.RegisterAminoMsg(cdc, &MsgImmediateUnsanction{}, "cosmos-sdk/MsgImmediateUnsanction")
+	legacy.RegisterAminoMsg(cdc, &MsgUpdateParams{}, "cosmos-sdk/MsgUpdateParams")
 }
 
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgSanction{},
 		&MsgUnsanction{},
-		&MsgImmediateSanction{},
-		&MsgImmediateUnsanction{},
+		&MsgUpdateParams{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)

@@ -1,12 +1,35 @@
 package sanction
 
-import sdk "github.com/cosmos/cosmos-sdk/types"
+import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/x/sanction/errors"
+)
 
 var _ sdk.Msg = &MsgSanction{}
 
+func NewMsgSanction(authority string, addrs ...sdk.AccAddress) *MsgSanction {
+	rv := &MsgSanction{
+		Authority: authority,
+	}
+	for _, addr := range addrs {
+		rv.Addresses = append(rv.Addresses, addr.String())
+	}
+	return rv
+}
+
 func (m MsgSanction) ValidateBasic() error {
-	// TODO[1046]: Implement MsgSanction.ValidateBasic
-	panic("not implemented")
+	_, err := sdk.AccAddressFromBech32(m.Authority)
+	if err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrap("authority")
+	}
+	for i, addr := range m.Addresses {
+		_, err = sdk.AccAddressFromBech32(addr)
+		if err != nil {
+			return sdkerrors.ErrInvalidAddress.Wrapf("addresses[%d]", i)
+		}
+	}
+	return nil
 }
 
 func (m MsgSanction) GetSigners() []sdk.AccAddress {
@@ -16,9 +39,27 @@ func (m MsgSanction) GetSigners() []sdk.AccAddress {
 
 var _ sdk.Msg = &MsgUnsanction{}
 
+func NewMsgUnsanction(authority string, addrs ...sdk.AccAddress) *MsgUnsanction {
+	rv := &MsgUnsanction{
+		Authority: authority,
+	}
+	for _, addr := range addrs {
+		rv.Addresses = append(rv.Addresses, addr.String())
+	}
+	return rv
+}
 func (m MsgUnsanction) ValidateBasic() error {
-	// TODO[1046]: Implement MsgUnsanction.ValidateBasic
-	panic("not implemented")
+	_, err := sdk.AccAddressFromBech32(m.Authority)
+	if err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrap("authority")
+	}
+	for i, addr := range m.Addresses {
+		_, err = sdk.AccAddressFromBech32(addr)
+		if err != nil {
+			return sdkerrors.ErrInvalidAddress.Wrapf("addresses[%d]", i)
+		}
+	}
+	return nil
 }
 
 func (m MsgUnsanction) GetSigners() []sdk.AccAddress {
@@ -26,26 +67,37 @@ func (m MsgUnsanction) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{addr}
 }
 
-var _ sdk.Msg = &MsgImmediateSanction{}
+var _ sdk.Msg = &MsgUpdateParams{}
 
-func (m MsgImmediateSanction) ValidateBasic() error {
-	// TODO[1046]: Implement MsgImmediateSanction.ValidateBasic
-	panic("not implemented")
+func NewMsgUpdateParams(authority string, minDepSanction, minDepUnsanction sdk.Coins) *MsgUpdateParams {
+	rv := &MsgUpdateParams{
+		Authority: authority,
+	}
+	if !minDepSanction.IsZero() {
+		rv.ImmediateParams.MinDepositSanction = minDepSanction
+	}
+	if !minDepUnsanction.IsZero() {
+		rv.ImmediateParams.MinDepositUnsanction = minDepUnsanction
+	}
+	return rv
 }
 
-func (m MsgImmediateSanction) GetSigners() []sdk.AccAddress {
-	addr := sdk.MustAccAddressFromBech32(m.Proposer)
-	return []sdk.AccAddress{addr}
+func (m MsgUpdateParams) ValidateBasic() error {
+	_, err := sdk.AccAddressFromBech32(m.Authority)
+	if err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrap("authority")
+	}
+	if m.ImmediateParams == nil {
+		return errors.ErrInvalidImmediateParams.Wrap("params cannot be nil")
+	}
+	err = m.ImmediateParams.ValidateBasic()
+	if err != nil {
+		return errors.ErrInvalidImmediateParams.Wrap(err.Error())
+	}
+	return nil
 }
 
-var _ sdk.Msg = &MsgImmediateUnsanction{}
-
-func (m MsgImmediateUnsanction) ValidateBasic() error {
-	// TODO[1046]: Implement MsgImmediateUnsanction.ValidateBasic
-	panic("not implemented")
-}
-
-func (m MsgImmediateUnsanction) GetSigners() []sdk.AccAddress {
-	addr := sdk.MustAccAddressFromBech32(m.Proposer)
+func (m MsgUpdateParams) GetSigners() []sdk.AccAddress {
+	addr := sdk.MustAccAddressFromBech32(m.Authority)
 	return []sdk.AccAddress{addr}
 }
