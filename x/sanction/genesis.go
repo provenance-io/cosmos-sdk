@@ -1,26 +1,26 @@
 package sanction
 
 import (
-	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/x/sanction/errors"
 )
 
-func NewGenesisState(params *ImmediateParams, addrs []string) *GenesisState {
+func NewGenesisState(params *Params, addrs []string) *GenesisState {
 	return &GenesisState{
-		ImmediateParams:     params,
+		Params:              params,
 		SanctionedAddresses: addrs,
 	}
 }
 
 func DefaultGenesisState() *GenesisState {
-	return NewGenesisState(DefaultImmediateParams(), nil)
+	return NewGenesisState(DefaultParams(), nil)
 }
 
 func (g GenesisState) Validate() error {
-	if g.ImmediateParams != nil {
-		if err := g.ImmediateParams.ValidateBasic(); err != nil {
-			return errorsmod.Wrap(err, "invalid immediate params")
+	if g.Params != nil {
+		if err := g.Params.ValidateBasic(); err != nil {
+			return errors.ErrInvalidParams.Wrap(err.Error())
 		}
 	}
 	for i, addr := range g.SanctionedAddresses {

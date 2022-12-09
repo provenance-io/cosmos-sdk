@@ -72,12 +72,10 @@ var _ sdk.Msg = &MsgUpdateParams{}
 func NewMsgUpdateParams(authority string, minDepSanction, minDepUnsanction sdk.Coins) *MsgUpdateParams {
 	rv := &MsgUpdateParams{
 		Authority: authority,
-	}
-	if !minDepSanction.IsZero() {
-		rv.ImmediateParams.MinDepositSanction = minDepSanction
-	}
-	if !minDepUnsanction.IsZero() {
-		rv.ImmediateParams.MinDepositUnsanction = minDepUnsanction
+		Params: &Params{
+			ImmediateSanctionMinDeposit:   minDepSanction,
+			ImmediateUnsanctionMinDeposit: minDepUnsanction,
+		},
 	}
 	return rv
 }
@@ -87,12 +85,11 @@ func (m MsgUpdateParams) ValidateBasic() error {
 	if err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrap("authority")
 	}
-	if m.ImmediateParams == nil {
-		return errors.ErrInvalidImmediateParams.Wrap("params cannot be nil")
-	}
-	err = m.ImmediateParams.ValidateBasic()
-	if err != nil {
-		return errors.ErrInvalidImmediateParams.Wrap(err.Error())
+	if m.Params != nil {
+		err = m.Params.ValidateBasic()
+		if err != nil {
+			return errors.ErrInvalidParams.Wrap(err.Error())
+		}
 	}
 	return nil
 }

@@ -18,6 +18,9 @@ func NewDecodeStore(cdc codec.Codec) func(kvA, kvB kv.Pair) string {
 		case bytes.HasPrefix(kvA.Key, keeper.TemporaryPrefix):
 			return fmt.Sprintf("%v\n%v", kvA.Value, kvB.Value)
 
+		case bytes.HasPrefix(kvA.Key, keeper.ParamsPrefix):
+			return fmt.Sprintf("%s\n%s", string(kvA.Value), string(kvB.Value))
+
 		default:
 			panic(fmt.Sprintf("invalid sanction key %X", kvA.Key))
 		}

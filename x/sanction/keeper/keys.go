@@ -14,9 +14,17 @@ import (
 // - 0x01<addr len (1 byte)><addr><gov prop id> -> 0x01
 // Temporarily unsanctioned addresses:
 // - 0x01<addr len (1 byte)><addr><gov prop id> -> 0x00
+// Params entry:
+// - 0x02<name> -> <value>
 var (
 	SanctionedPrefix = []byte{0x00}
 	TemporaryPrefix  = []byte{0x01}
+	ParamsPrefix     = []byte{0x02}
+)
+
+const (
+	ParamNameImmediateSanctionMinDeposit   = "immediate_sanction_min_deposit"
+	ParamNameImmediateUnsanctionMinDeposit = "immediate_unsanction_min_deposit"
 )
 
 // ConcatBz creates a single byte slice consisting of the two provided byte slices.
@@ -87,4 +95,12 @@ func IsTempSanctionBz(bz []byte) bool {
 // IsTempUnsanctionBz returns true if the provided byte slice indicates a temporary unsanction.
 func IsTempUnsanctionBz(bz []byte) bool {
 	return len(bz) == 1 && bz[0] == TempUnsanctionB
+}
+
+func CreateParamKey(name string) []byte {
+	return ConcatBz(ParamsPrefix, []byte(name))
+}
+
+func ParseParamKey(bz []byte) string {
+	return string(bz[1:])
 }

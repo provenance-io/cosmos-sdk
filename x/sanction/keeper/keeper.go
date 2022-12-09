@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -174,4 +176,111 @@ func (k Keeper) IterateTemporaryEntries(ctx sdk.Context, addr sdk.AccAddress, cb
 // I.e. returns true if it can be sanctioned.
 func (k Keeper) IsSanctionableAddr(addr string) bool {
 	return !k.unsanctionableAddrs[addr]
+}
+
+// GetParams gets the sanction module's params.
+func (k Keeper) GetParams(ctx sdk.Context) *sanction.Params {
+	rv := sanction.DefaultParams()
+
+	k.IterateParams(ctx, func(name, value string) bool {
+		switch name {
+		case ParamNameImmediateSanctionMinDeposit:
+			rv.ImmediateSanctionMinDeposit = toCoinsOrDefault(value, rv.ImmediateSanctionMinDeposit)
+		case ParamNameImmediateUnsanctionMinDeposit:
+			rv.ImmediateUnsanctionMinDeposit = toCoinsOrDefault(value, rv.ImmediateUnsanctionMinDeposit)
+		default:
+			panic(fmt.Errorf("unknown param key: %q", name))
+		}
+		return false
+	})
+
+	return rv
+}
+
+// SetParams sets the sanction module's params.
+// Providing a nil params will cause all params to be deleted (so that defaults are used).
+func (k Keeper) SetParams(ctx sdk.Context, params *sanction.Params) {
+	store := ctx.KVStore(k.storeKey)
+	if params == nil {
+		k.deleteParam(store, ParamNameImmediateSanctionMinDeposit)
+		k.deleteParam(store, ParamNameImmediateUnsanctionMinDeposit)
+	} else {
+		k.setParam(store, ParamNameImmediateSanctionMinDeposit, params.ImmediateSanctionMinDeposit.String())
+		k.setParam(store, ParamNameImmediateUnsanctionMinDeposit, params.ImmediateUnsanctionMinDeposit.String())
+	}
+}
+
+// IterateParams iterates over all params entries.
+// The callback takes in the name and value, and should return whether to stop iteration (true = stop, false = keep going).
+func (k Keeper) IterateParams(ctx sdk.Context, cb func(name, value string) (stop bool)) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), ParamsPrefix)
+
+	iter := store.Iterator(nil, nil)
+	defer iter.Close()
+
+	for ; iter.Valid(); iter.Next() {
+		if cb(string(iter.Key()), string(iter.Value())) {
+			break
+		}
+	}
+}
+
+// GetImmediateSanctionMinDeposit gets the minimum deposit for a sanction to happen immediately.
+func (k Keeper) GetImmediateSanctionMinDeposit(ctx sdk.Context) sdk.Coins {
+	return k.getParamAsCoinsOrDefault(
+		ctx,
+		ParamNameImmediateSanctionMinDeposit,
+		sanction.DefaultImmediateSanctionMinDeposit,
+	)
+}
+
+// GetImmediateUnsanctionMinDeposit gets the minimum deposit for an unsanction to happen immediately.
+func (k Keeper) GetImmediateUnsanctionMinDeposit(ctx sdk.Context) sdk.Coins {
+	return k.getParamAsCoinsOrDefault(
+		ctx,
+		ParamNameImmediateUnsanctionMinDeposit,
+		sanction.DefaultImmediateUnsanctionMinDeposit,
+	)
+}
+
+// getParam returns a param value and wether it existed.
+func (k Keeper) getParam(store sdk.KVStore, name string) (string, bool) {
+	key := CreateParamKey(name)
+	if store.Has(key) {
+		return string(store.Get(key)), true
+	}
+	return "", false
+}
+
+// setParam sets a param value.
+func (k Keeper) setParam(store sdk.KVStore, name, value string) {
+	key := CreateParamKey(name)
+	val := []byte(value)
+	store.Set(key, val)
+}
+
+// deleteParam deletes a param value.
+func (k Keeper) deleteParam(store sdk.KVStore, name string) {
+	key := CreateParamKey(name)
+	store.Delete(key)
+}
+
+// getParamAsCoinsOrDefault gets a param value and converts it to a coins if possible.
+// If the param doesn't exist, the default is returned.
+// If the param's value cannot be converted to a Coins, the default is returned.
+func (k Keeper) getParamAsCoinsOrDefault(ctx sdk.Context, name string, dflt sdk.Coins) sdk.Coins {
+	coins, has := k.getParam(ctx.KVStore(k.storeKey), name)
+	if !has {
+		return dflt
+	}
+	return toCoinsOrDefault(coins, dflt)
+}
+
+// toCoinsOrDefault converts a string to coins if possible or else returns the provided default.
+func toCoinsOrDefault(coins string, dflt sdk.Coins) sdk.Coins {
+	rv, err := sdk.ParseCoinsNormalized(coins)
+	if err != nil {
+		return dflt
+	}
+	return rv
 }
