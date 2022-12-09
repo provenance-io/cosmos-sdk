@@ -7,10 +7,7 @@ import (
 	context "context"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
-	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
@@ -129,7 +126,7 @@ var xxx_messageInfo_MsgSanctionResponse proto.InternalMessageInfo
 type MsgUnsanction struct {
 	// addresses are the addresses to unsanction.
 	Addresses []string `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
-	// authority is the address of the account with the authority to enact sanctions (most likely the governance module
+	// authority is the address of the account with the authority to retract sanctions (most likely the governance module
 	// account).
 	Authority string `protobuf:"bytes,2,opt,name=authority,proto3" json:"authority,omitempty"`
 }
@@ -218,31 +215,27 @@ func (m *MsgUnsanctionResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgUnsanctionResponse proto.InternalMessageInfo
 
-// MsgImmediateSanction represents a message for immediately sanctioning addresses and submitting a governance proposal
-// to make it permanent.
-type MsgImmediateSanction struct {
-	// addresses are the addresses to sanction.
-	Addresses []string `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
-	// initial_deposit is the initial deposit to send with the Sanction governance proposal.
-	// It must be at least as much as the SanctionImmediateParams.min_deposit_sanction amount or this message will be
-	// rejected.
-	InitialDeposit github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,2,rep,name=initial_deposit,json=initialDeposit,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"initial_deposit"`
-	// proposer is the address of the account making the proposal.
-	Proposer string `protobuf:"bytes,3,opt,name=proposer,proto3" json:"proposer,omitempty"`
+// MsgUpdateParams represents a message for the governance operation of updating the sanction module params.
+type MsgUpdateParams struct {
+	// immediate_params are the parameters regarding immediate sanctions/unsanctions.
+	ImmediateParams *SanctionImmediateParams `protobuf:"bytes,1,opt,name=immediate_params,json=immediateParams,proto3" json:"immediate_params,omitempty"`
+	// authority is the address of the account with the authority to update params (most likely the governance module
+	// account).
+	Authority string `protobuf:"bytes,2,opt,name=authority,proto3" json:"authority,omitempty"`
 }
 
-func (m *MsgImmediateSanction) Reset()         { *m = MsgImmediateSanction{} }
-func (m *MsgImmediateSanction) String() string { return proto.CompactTextString(m) }
-func (*MsgImmediateSanction) ProtoMessage()    {}
-func (*MsgImmediateSanction) Descriptor() ([]byte, []int) {
+func (m *MsgUpdateParams) Reset()         { *m = MsgUpdateParams{} }
+func (m *MsgUpdateParams) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdateParams) ProtoMessage()    {}
+func (*MsgUpdateParams) Descriptor() ([]byte, []int) {
 	return fileDescriptor_7db49afb1d08944d, []int{4}
 }
-func (m *MsgImmediateSanction) XXX_Unmarshal(b []byte) error {
+func (m *MsgUpdateParams) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgImmediateSanction) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgUpdateParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgImmediateSanction.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgUpdateParams.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -252,57 +245,48 @@ func (m *MsgImmediateSanction) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (m *MsgImmediateSanction) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgImmediateSanction.Merge(m, src)
+func (m *MsgUpdateParams) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdateParams.Merge(m, src)
 }
-func (m *MsgImmediateSanction) XXX_Size() int {
+func (m *MsgUpdateParams) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgImmediateSanction) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgImmediateSanction.DiscardUnknown(m)
+func (m *MsgUpdateParams) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdateParams.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgImmediateSanction proto.InternalMessageInfo
+var xxx_messageInfo_MsgUpdateParams proto.InternalMessageInfo
 
-func (m *MsgImmediateSanction) GetAddresses() []string {
+func (m *MsgUpdateParams) GetImmediateParams() *SanctionImmediateParams {
 	if m != nil {
-		return m.Addresses
+		return m.ImmediateParams
 	}
 	return nil
 }
 
-func (m *MsgImmediateSanction) GetInitialDeposit() github_com_cosmos_cosmos_sdk_types.Coins {
+func (m *MsgUpdateParams) GetAuthority() string {
 	if m != nil {
-		return m.InitialDeposit
-	}
-	return nil
-}
-
-func (m *MsgImmediateSanction) GetProposer() string {
-	if m != nil {
-		return m.Proposer
+		return m.Authority
 	}
 	return ""
 }
 
-// MsgOptInResponse defines the Msg/ImmediateSanction response type.
-type MsgImmediateSanctionResponse struct {
-	// proposal_id is the id of the Sanction governance proposal that was submitted.
-	ProposalId uint64 `protobuf:"varint,1,opt,name=proposal_id,json=proposalId,proto3" json:"proposal_id,omitempty"`
+// MsgUpdateParamsResponse defined the Msg/UpdateParams response type.
+type MsgUpdateParamsResponse struct {
 }
 
-func (m *MsgImmediateSanctionResponse) Reset()         { *m = MsgImmediateSanctionResponse{} }
-func (m *MsgImmediateSanctionResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgImmediateSanctionResponse) ProtoMessage()    {}
-func (*MsgImmediateSanctionResponse) Descriptor() ([]byte, []int) {
+func (m *MsgUpdateParamsResponse) Reset()         { *m = MsgUpdateParamsResponse{} }
+func (m *MsgUpdateParamsResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgUpdateParamsResponse) ProtoMessage()    {}
+func (*MsgUpdateParamsResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_7db49afb1d08944d, []int{5}
 }
-func (m *MsgImmediateSanctionResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgUpdateParamsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgImmediateSanctionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgUpdateParamsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgImmediateSanctionResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgUpdateParamsResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -312,188 +296,57 @@ func (m *MsgImmediateSanctionResponse) XXX_Marshal(b []byte, deterministic bool)
 		return b[:n], nil
 	}
 }
-func (m *MsgImmediateSanctionResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgImmediateSanctionResponse.Merge(m, src)
+func (m *MsgUpdateParamsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgUpdateParamsResponse.Merge(m, src)
 }
-func (m *MsgImmediateSanctionResponse) XXX_Size() int {
+func (m *MsgUpdateParamsResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgImmediateSanctionResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgImmediateSanctionResponse.DiscardUnknown(m)
+func (m *MsgUpdateParamsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgUpdateParamsResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgImmediateSanctionResponse proto.InternalMessageInfo
-
-func (m *MsgImmediateSanctionResponse) GetProposalId() uint64 {
-	if m != nil {
-		return m.ProposalId
-	}
-	return 0
-}
-
-// MsgImmediateSanction represents a message for immediately unsanctioning addresses and submitting a governance
-// proposal to make it permanent.
-type MsgImmediateUnsanction struct {
-	// addresses are the addresses to unsanction.
-	Addresses []string `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
-	// initial_deposit is the initial deposit to send with the Unsanction governance proposal.
-	// It must be at least as much as the SanctionImmediateParams.min_deposit_unsanction amount or this message will be
-	// rejected.
-	InitialDeposit github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,2,rep,name=initial_deposit,json=initialDeposit,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"initial_deposit"`
-	// proposer is the address of the account making the proposal.
-	Proposer string `protobuf:"bytes,3,opt,name=proposer,proto3" json:"proposer,omitempty"`
-}
-
-func (m *MsgImmediateUnsanction) Reset()         { *m = MsgImmediateUnsanction{} }
-func (m *MsgImmediateUnsanction) String() string { return proto.CompactTextString(m) }
-func (*MsgImmediateUnsanction) ProtoMessage()    {}
-func (*MsgImmediateUnsanction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7db49afb1d08944d, []int{6}
-}
-func (m *MsgImmediateUnsanction) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgImmediateUnsanction) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgImmediateUnsanction.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgImmediateUnsanction) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgImmediateUnsanction.Merge(m, src)
-}
-func (m *MsgImmediateUnsanction) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgImmediateUnsanction) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgImmediateUnsanction.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgImmediateUnsanction proto.InternalMessageInfo
-
-func (m *MsgImmediateUnsanction) GetAddresses() []string {
-	if m != nil {
-		return m.Addresses
-	}
-	return nil
-}
-
-func (m *MsgImmediateUnsanction) GetInitialDeposit() github_com_cosmos_cosmos_sdk_types.Coins {
-	if m != nil {
-		return m.InitialDeposit
-	}
-	return nil
-}
-
-func (m *MsgImmediateUnsanction) GetProposer() string {
-	if m != nil {
-		return m.Proposer
-	}
-	return ""
-}
-
-// MsgOptInResponse defines the Msg/ImmediateUnsanction response type.
-type MsgImmediateUnsanctionResponse struct {
-	// proposal_id is the id of the Unsanction governance proposal that was submitted.
-	ProposalId uint64 `protobuf:"varint,1,opt,name=proposal_id,json=proposalId,proto3" json:"proposal_id"`
-}
-
-func (m *MsgImmediateUnsanctionResponse) Reset()         { *m = MsgImmediateUnsanctionResponse{} }
-func (m *MsgImmediateUnsanctionResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgImmediateUnsanctionResponse) ProtoMessage()    {}
-func (*MsgImmediateUnsanctionResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7db49afb1d08944d, []int{7}
-}
-func (m *MsgImmediateUnsanctionResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgImmediateUnsanctionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgImmediateUnsanctionResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgImmediateUnsanctionResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgImmediateUnsanctionResponse.Merge(m, src)
-}
-func (m *MsgImmediateUnsanctionResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgImmediateUnsanctionResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgImmediateUnsanctionResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgImmediateUnsanctionResponse proto.InternalMessageInfo
-
-func (m *MsgImmediateUnsanctionResponse) GetProposalId() uint64 {
-	if m != nil {
-		return m.ProposalId
-	}
-	return 0
-}
+var xxx_messageInfo_MsgUpdateParamsResponse proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*MsgSanction)(nil), "cosmos.sanction.v1beta1.MsgSanction")
 	proto.RegisterType((*MsgSanctionResponse)(nil), "cosmos.sanction.v1beta1.MsgSanctionResponse")
 	proto.RegisterType((*MsgUnsanction)(nil), "cosmos.sanction.v1beta1.MsgUnsanction")
 	proto.RegisterType((*MsgUnsanctionResponse)(nil), "cosmos.sanction.v1beta1.MsgUnsanctionResponse")
-	proto.RegisterType((*MsgImmediateSanction)(nil), "cosmos.sanction.v1beta1.MsgImmediateSanction")
-	proto.RegisterType((*MsgImmediateSanctionResponse)(nil), "cosmos.sanction.v1beta1.MsgImmediateSanctionResponse")
-	proto.RegisterType((*MsgImmediateUnsanction)(nil), "cosmos.sanction.v1beta1.MsgImmediateUnsanction")
-	proto.RegisterType((*MsgImmediateUnsanctionResponse)(nil), "cosmos.sanction.v1beta1.MsgImmediateUnsanctionResponse")
+	proto.RegisterType((*MsgUpdateParams)(nil), "cosmos.sanction.v1beta1.MsgUpdateParams")
+	proto.RegisterType((*MsgUpdateParamsResponse)(nil), "cosmos.sanction.v1beta1.MsgUpdateParamsResponse")
 }
 
 func init() { proto.RegisterFile("cosmos/sanction/v1beta1/tx.proto", fileDescriptor_7db49afb1d08944d) }
 
 var fileDescriptor_7db49afb1d08944d = []byte{
-	// 545 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x55, 0xbf, 0x6f, 0xd3, 0x40,
-	0x14, 0x8e, 0x63, 0x84, 0xda, 0x57, 0xb5, 0x15, 0x6e, 0x4a, 0x5d, 0x0b, 0x39, 0x96, 0x85, 0x20,
-	0x42, 0xc4, 0x6e, 0xca, 0x2f, 0xa9, 0x0b, 0x6a, 0x60, 0xe9, 0x90, 0xc5, 0x15, 0x0b, 0x03, 0x91,
-	0x13, 0x9f, 0xdc, 0x13, 0xb5, 0xcf, 0xf2, 0xbb, 0x56, 0xcd, 0x84, 0xc4, 0x86, 0x10, 0x82, 0xbf,
-	0x83, 0x89, 0x81, 0xff, 0x81, 0x8e, 0x15, 0x13, 0x53, 0x41, 0xc9, 0x80, 0xc4, 0x5f, 0x81, 0x12,
-	0x9f, 0x2f, 0x46, 0x0d, 0x69, 0x2a, 0x18, 0x60, 0x3a, 0xdf, 0x7b, 0xdf, 0xf7, 0xde, 0xf3, 0xe7,
-	0xef, 0x7c, 0x60, 0x75, 0x19, 0x46, 0x0c, 0x5d, 0xf4, 0xe3, 0x2e, 0xa7, 0x2c, 0x76, 0x0f, 0x1b,
-	0x1d, 0xc2, 0xfd, 0x86, 0xcb, 0x8f, 0x9c, 0x24, 0x65, 0x9c, 0x69, 0x6b, 0x19, 0xc2, 0xc9, 0x11,
-	0x8e, 0x40, 0x18, 0xa6, 0xa0, 0x76, 0x7c, 0x24, 0x92, 0xd6, 0x65, 0x34, 0xce, 0x88, 0x86, 0x20,
-	0xba, 0x11, 0x86, 0xee, 0x61, 0x63, 0xb8, 0x88, 0xc4, 0x7a, 0x96, 0x68, 0x8f, 0x76, 0xae, 0x28,
-	0x9f, 0xa5, 0x2a, 0x21, 0x0b, 0x59, 0x16, 0x1f, 0x3e, 0x65, 0x51, 0xfb, 0x8d, 0x02, 0x0b, 0x2d,
-	0x0c, 0x77, 0xc5, 0x04, 0xda, 0x7d, 0x98, 0xf7, 0x83, 0x20, 0x25, 0x88, 0x04, 0x75, 0xc5, 0x52,
-	0x6b, 0xf3, 0x4d, 0xfd, 0xf3, 0xc7, 0x7a, 0x45, 0x94, 0xda, 0xce, 0x72, 0xbb, 0x3c, 0xa5, 0x71,
-	0xe8, 0x8d, 0xa1, 0x23, 0xde, 0x01, 0xdf, 0x63, 0x29, 0xe5, 0x3d, 0xbd, 0x6c, 0x29, 0xe7, 0xf0,
-	0x72, 0xe8, 0xd6, 0xd2, 0xcb, 0xef, 0x1f, 0x6e, 0x8d, 0xf7, 0xf6, 0x2a, 0xac, 0x14, 0xc6, 0xf1,
-	0x08, 0x26, 0x2c, 0x46, 0x62, 0xbf, 0x55, 0x60, 0xb1, 0x85, 0xe1, 0x93, 0x18, 0xff, 0x95, 0x41,
-	0xd7, 0x60, 0xf5, 0x97, 0x81, 0xe4, 0xa8, 0xaf, 0xca, 0x50, 0x69, 0x61, 0xb8, 0x13, 0x45, 0x24,
-	0xa0, 0x3e, 0x27, 0x7f, 0x2c, 0x2d, 0x87, 0x65, 0x1a, 0x53, 0x4e, 0xfd, 0xfd, 0x76, 0x40, 0x12,
-	0x86, 0x94, 0xeb, 0x65, 0x4b, 0xad, 0x2d, 0x6c, 0xae, 0x3b, 0x82, 0x3a, 0xb4, 0x49, 0xee, 0x1d,
-	0xe7, 0x11, 0xa3, 0x71, 0x73, 0xe3, 0xf8, 0xb4, 0x5a, 0x7a, 0xff, 0xb5, 0x5a, 0x0b, 0x29, 0xdf,
-	0x3b, 0xe8, 0x38, 0x5d, 0x16, 0x09, 0x37, 0x88, 0xa5, 0x8e, 0xc1, 0x73, 0x97, 0xf7, 0x12, 0x82,
-	0x23, 0x02, 0x7a, 0x4b, 0xa2, 0xc7, 0xe3, 0xac, 0x85, 0x76, 0x17, 0xe6, 0x92, 0x94, 0x25, 0x0c,
-	0x49, 0xaa, 0xab, 0xe7, 0xc8, 0x24, 0x91, 0x5b, 0x8b, 0x43, 0x95, 0xe4, 0xd6, 0x7e, 0x08, 0xd7,
-	0x26, 0x49, 0x91, 0x6b, 0xa5, 0x55, 0x61, 0x21, 0xc3, 0xfa, 0xfb, 0x6d, 0x1a, 0xe8, 0x8a, 0xa5,
-	0xd4, 0x2e, 0x79, 0x90, 0x87, 0x76, 0x02, 0xfb, 0x75, 0x19, 0xae, 0x16, 0x2b, 0xfc, 0x05, 0x03,
-	0xfc, 0xc7, 0x72, 0x7a, 0x60, 0x4e, 0x16, 0x43, 0x0a, 0xba, 0x31, 0x41, 0xd0, 0xe6, 0xf2, 0x8f,
-	0xd3, 0x6a, 0x31, 0x5c, 0x54, 0x78, 0xf3, 0x93, 0x0a, 0x6a, 0x0b, 0x43, 0xed, 0x19, 0xcc, 0x49,
-	0xa7, 0x5e, 0x77, 0x7e, 0xf3, 0x63, 0x72, 0x0a, 0x67, 0xd3, 0xb8, 0x3d, 0x0b, 0x4a, 0x4e, 0x16,
-	0x00, 0x14, 0x3e, 0xde, 0x8d, 0x69, 0xdc, 0x31, 0xce, 0x70, 0x66, 0xc3, 0xc9, 0x2e, 0x3d, 0xb8,
-	0x72, 0xf6, 0xe0, 0xd5, 0xa7, 0x15, 0x39, 0x03, 0x37, 0xee, 0x5d, 0x08, 0x2e, 0x5b, 0xbf, 0x80,
-	0x95, 0x49, 0x36, 0x75, 0x67, 0xaa, 0x56, 0x78, 0xe5, 0x07, 0x17, 0x24, 0xe4, 0x03, 0x34, 0xb7,
-	0x8f, 0xfb, 0xa6, 0x72, 0xd2, 0x37, 0x95, 0x6f, 0x7d, 0x53, 0x79, 0x37, 0x30, 0x4b, 0x27, 0x03,
-	0xb3, 0xf4, 0x65, 0x60, 0x96, 0x9e, 0xde, 0x9c, 0x6a, 0xdb, 0x23, 0x79, 0x43, 0x75, 0x2e, 0x8f,
-	0x2e, 0x85, 0x3b, 0x3f, 0x03, 0x00, 0x00, 0xff, 0xff, 0xaf, 0x15, 0x41, 0xb9, 0xbb, 0x06, 0x00,
-	0x00,
+	// 403 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x48, 0xce, 0x2f, 0xce,
+	0xcd, 0x2f, 0xd6, 0x2f, 0x4e, 0xcc, 0x4b, 0x2e, 0xc9, 0xcc, 0xcf, 0xd3, 0x2f, 0x33, 0x4c, 0x4a,
+	0x2d, 0x49, 0x34, 0xd4, 0x2f, 0xa9, 0xd0, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x87, 0xa8,
+	0xd0, 0x83, 0xa9, 0xd0, 0x83, 0xaa, 0x90, 0x82, 0x4a, 0xe8, 0xe7, 0x16, 0xa7, 0xeb, 0x97, 0x19,
+	0x82, 0x28, 0x88, 0x0e, 0x29, 0x35, 0x5c, 0x66, 0xc2, 0x8d, 0x80, 0xa8, 0x93, 0x84, 0xa8, 0x8b,
+	0x07, 0xf3, 0xf4, 0xa1, 0xd6, 0x80, 0x39, 0x4a, 0xbd, 0x8c, 0x5c, 0xdc, 0xbe, 0xc5, 0xe9, 0xc1,
+	0x50, 0x0d, 0x42, 0x66, 0x5c, 0x9c, 0x89, 0x29, 0x29, 0x45, 0xa9, 0xc5, 0xc5, 0xa9, 0xc5, 0x12,
+	0x8c, 0x0a, 0xcc, 0x1a, 0x9c, 0x4e, 0x12, 0x97, 0xb6, 0xe8, 0x8a, 0x40, 0x35, 0x39, 0x42, 0xe4,
+	0x82, 0x4b, 0x8a, 0x32, 0xf3, 0xd2, 0x83, 0x10, 0x4a, 0xc1, 0xfa, 0x4a, 0x4b, 0x32, 0xf2, 0x8b,
+	0x32, 0x4b, 0x2a, 0x25, 0x98, 0x14, 0x18, 0x09, 0xe8, 0x83, 0x29, 0xb5, 0xe2, 0x6b, 0x7a, 0xbe,
+	0x41, 0x0b, 0xc1, 0x57, 0x12, 0xe5, 0x12, 0x46, 0x72, 0x4e, 0x50, 0x6a, 0x71, 0x41, 0x7e, 0x5e,
+	0x71, 0xaa, 0x52, 0x3f, 0x23, 0x17, 0xaf, 0x6f, 0x71, 0x7a, 0x68, 0x5e, 0xf1, 0x60, 0x71, 0xa8,
+	0x38, 0x97, 0x28, 0x8a, 0x83, 0xe0, 0x4e, 0xdd, 0xc6, 0xc8, 0xc5, 0x0f, 0x92, 0x29, 0x48, 0x49,
+	0x2c, 0x49, 0x0d, 0x48, 0x2c, 0x4a, 0xcc, 0x2d, 0x16, 0x8a, 0xe6, 0x12, 0xc8, 0xcc, 0xcd, 0x4d,
+	0x4d, 0xc9, 0x4c, 0x2c, 0x49, 0x8d, 0x2f, 0x00, 0x8b, 0x49, 0x30, 0x2a, 0x30, 0x6a, 0x70, 0x1b,
+	0x19, 0xe8, 0xe1, 0x88, 0x75, 0x3d, 0x58, 0x18, 0x78, 0xc2, 0x34, 0x42, 0xcc, 0x0a, 0xe2, 0xcf,
+	0x44, 0x15, 0xa0, 0x9a, 0x8f, 0x24, 0xb9, 0xc4, 0xd1, 0xdc, 0x0d, 0xf3, 0x93, 0xd1, 0x76, 0x26,
+	0x2e, 0x66, 0xdf, 0xe2, 0x74, 0xa1, 0x38, 0x2e, 0x0e, 0x78, 0x4a, 0x51, 0xc1, 0xe9, 0x72, 0xa4,
+	0x08, 0x94, 0xd2, 0x21, 0x46, 0x15, 0xcc, 0x1e, 0xa1, 0x14, 0x2e, 0x2e, 0xa4, 0x28, 0x56, 0xc3,
+	0xa7, 0x17, 0xa1, 0x4e, 0x4a, 0x8f, 0x38, 0x75, 0x70, 0x5b, 0xb2, 0xb8, 0x78, 0x50, 0x62, 0x47,
+	0x03, 0xaf, 0x7e, 0x24, 0x95, 0x52, 0x06, 0xc4, 0xaa, 0x84, 0xd9, 0xe5, 0xe4, 0x78, 0xe2, 0x91,
+	0x1c, 0xe3, 0x85, 0x47, 0x72, 0x8c, 0x0f, 0x1e, 0xc9, 0x31, 0x4e, 0x78, 0x2c, 0xc7, 0x70, 0xe1,
+	0xb1, 0x1c, 0xc3, 0x8d, 0xc7, 0x72, 0x0c, 0x51, 0xea, 0xe9, 0x99, 0x25, 0x19, 0xa5, 0x49, 0x7a,
+	0xc9, 0xf9, 0xb9, 0xd0, 0x2c, 0x09, 0xa5, 0x74, 0x8b, 0x53, 0xb2, 0xf5, 0x2b, 0xe0, 0x79, 0x38,
+	0x89, 0x0d, 0x9c, 0x53, 0x8d, 0x01, 0x01, 0x00, 0x00, 0xff, 0xff, 0x5a, 0xcd, 0xa3, 0xdb, 0x42,
+	0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -512,12 +365,8 @@ type MsgClient interface {
 	Sanction(ctx context.Context, in *MsgSanction, opts ...grpc.CallOption) (*MsgSanctionResponse, error)
 	// Unsanction is a governance operation for unsanctioning addresses.
 	Unsanction(ctx context.Context, in *MsgUnsanction, opts ...grpc.CallOption) (*MsgUnsanctionResponse, error)
-	// ImmediateSanction defines a method for immediately (and temporarily) sanctioning addresses.
-	// This method also submits a Sanction governance proposal on the signer's behalf.
-	ImmediateSanction(ctx context.Context, in *MsgImmediateSanction, opts ...grpc.CallOption) (*MsgImmediateSanctionResponse, error)
-	// ImmediateUnsanction defines a method for immediately (and temporarily) unsanctioning addresses.
-	// This method also submits an Unsanction governance proposal on the signer's behalf.
-	ImmediateUnsanction(ctx context.Context, in *MsgImmediateUnsanction, opts ...grpc.CallOption) (*MsgImmediateUnsanctionResponse, error)
+	// UpdateParams is a governance operation for updating the sanction module params.
+	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
 
 type msgClient struct {
@@ -546,18 +395,9 @@ func (c *msgClient) Unsanction(ctx context.Context, in *MsgUnsanction, opts ...g
 	return out, nil
 }
 
-func (c *msgClient) ImmediateSanction(ctx context.Context, in *MsgImmediateSanction, opts ...grpc.CallOption) (*MsgImmediateSanctionResponse, error) {
-	out := new(MsgImmediateSanctionResponse)
-	err := c.cc.Invoke(ctx, "/cosmos.sanction.v1beta1.Msg/ImmediateSanction", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *msgClient) ImmediateUnsanction(ctx context.Context, in *MsgImmediateUnsanction, opts ...grpc.CallOption) (*MsgImmediateUnsanctionResponse, error) {
-	out := new(MsgImmediateUnsanctionResponse)
-	err := c.cc.Invoke(ctx, "/cosmos.sanction.v1beta1.Msg/ImmediateUnsanction", in, out, opts...)
+func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error) {
+	out := new(MsgUpdateParamsResponse)
+	err := c.cc.Invoke(ctx, "/cosmos.sanction.v1beta1.Msg/UpdateParams", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -570,12 +410,8 @@ type MsgServer interface {
 	Sanction(context.Context, *MsgSanction) (*MsgSanctionResponse, error)
 	// Unsanction is a governance operation for unsanctioning addresses.
 	Unsanction(context.Context, *MsgUnsanction) (*MsgUnsanctionResponse, error)
-	// ImmediateSanction defines a method for immediately (and temporarily) sanctioning addresses.
-	// This method also submits a Sanction governance proposal on the signer's behalf.
-	ImmediateSanction(context.Context, *MsgImmediateSanction) (*MsgImmediateSanctionResponse, error)
-	// ImmediateUnsanction defines a method for immediately (and temporarily) unsanctioning addresses.
-	// This method also submits an Unsanction governance proposal on the signer's behalf.
-	ImmediateUnsanction(context.Context, *MsgImmediateUnsanction) (*MsgImmediateUnsanctionResponse, error)
+	// UpdateParams is a governance operation for updating the sanction module params.
+	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -588,11 +424,8 @@ func (*UnimplementedMsgServer) Sanction(ctx context.Context, req *MsgSanction) (
 func (*UnimplementedMsgServer) Unsanction(ctx context.Context, req *MsgUnsanction) (*MsgUnsanctionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Unsanction not implemented")
 }
-func (*UnimplementedMsgServer) ImmediateSanction(ctx context.Context, req *MsgImmediateSanction) (*MsgImmediateSanctionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ImmediateSanction not implemented")
-}
-func (*UnimplementedMsgServer) ImmediateUnsanction(ctx context.Context, req *MsgImmediateUnsanction) (*MsgImmediateUnsanctionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ImmediateUnsanction not implemented")
+func (*UnimplementedMsgServer) UpdateParams(ctx context.Context, req *MsgUpdateParams) (*MsgUpdateParamsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateParams not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -635,38 +468,20 @@ func _Msg_Unsanction_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_ImmediateSanction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgImmediateSanction)
+func _Msg_UpdateParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgUpdateParams)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).ImmediateSanction(ctx, in)
+		return srv.(MsgServer).UpdateParams(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/cosmos.sanction.v1beta1.Msg/ImmediateSanction",
+		FullMethod: "/cosmos.sanction.v1beta1.Msg/UpdateParams",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).ImmediateSanction(ctx, req.(*MsgImmediateSanction))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Msg_ImmediateUnsanction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgImmediateUnsanction)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MsgServer).ImmediateUnsanction(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/cosmos.sanction.v1beta1.Msg/ImmediateUnsanction",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).ImmediateUnsanction(ctx, req.(*MsgImmediateUnsanction))
+		return srv.(MsgServer).UpdateParams(ctx, req.(*MsgUpdateParams))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -684,12 +499,8 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Msg_Unsanction_Handler,
 		},
 		{
-			MethodName: "ImmediateSanction",
-			Handler:    _Msg_ImmediateSanction_Handler,
-		},
-		{
-			MethodName: "ImmediateUnsanction",
-			Handler:    _Msg_ImmediateUnsanction_Handler,
+			MethodName: "UpdateParams",
+			Handler:    _Msg_UpdateParams_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -820,7 +631,7 @@ func (m *MsgUnsanctionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgImmediateSanction) Marshal() (dAtA []byte, err error) {
+func (m *MsgUpdateParams) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -830,50 +641,39 @@ func (m *MsgImmediateSanction) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgImmediateSanction) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgUpdateParams) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgImmediateSanction) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgUpdateParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Proposer) > 0 {
-		i -= len(m.Proposer)
-		copy(dAtA[i:], m.Proposer)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Proposer)))
+	if len(m.Authority) > 0 {
+		i -= len(m.Authority)
+		copy(dAtA[i:], m.Authority)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Authority)))
 		i--
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x12
 	}
-	if len(m.InitialDeposit) > 0 {
-		for iNdEx := len(m.InitialDeposit) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.InitialDeposit[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintTx(dAtA, i, uint64(size))
+	if m.ImmediateParams != nil {
+		{
+			size, err := m.ImmediateParams.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
 			}
-			i--
-			dAtA[i] = 0x12
+			i -= size
+			i = encodeVarintTx(dAtA, i, uint64(size))
 		}
-	}
-	if len(m.Addresses) > 0 {
-		for iNdEx := len(m.Addresses) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Addresses[iNdEx])
-			copy(dAtA[i:], m.Addresses[iNdEx])
-			i = encodeVarintTx(dAtA, i, uint64(len(m.Addresses[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-		}
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgImmediateSanctionResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgUpdateParamsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -883,102 +683,16 @@ func (m *MsgImmediateSanctionResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgImmediateSanctionResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgUpdateParamsResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgImmediateSanctionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgUpdateParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.ProposalId != 0 {
-		i = encodeVarintTx(dAtA, i, uint64(m.ProposalId))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *MsgImmediateUnsanction) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgImmediateUnsanction) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgImmediateUnsanction) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Proposer) > 0 {
-		i -= len(m.Proposer)
-		copy(dAtA[i:], m.Proposer)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Proposer)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.InitialDeposit) > 0 {
-		for iNdEx := len(m.InitialDeposit) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.InitialDeposit[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintTx(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	if len(m.Addresses) > 0 {
-		for iNdEx := len(m.Addresses) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Addresses[iNdEx])
-			copy(dAtA[i:], m.Addresses[iNdEx])
-			i = encodeVarintTx(dAtA, i, uint64(len(m.Addresses[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *MsgImmediateUnsanctionResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgImmediateUnsanctionResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgImmediateUnsanctionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.ProposalId != 0 {
-		i = encodeVarintTx(dAtA, i, uint64(m.ProposalId))
-		i--
-		dAtA[i] = 0x8
-	}
 	return len(dAtA) - i, nil
 }
 
@@ -1049,77 +763,29 @@ func (m *MsgUnsanctionResponse) Size() (n int) {
 	return n
 }
 
-func (m *MsgImmediateSanction) Size() (n int) {
+func (m *MsgUpdateParams) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.Addresses) > 0 {
-		for _, s := range m.Addresses {
-			l = len(s)
-			n += 1 + l + sovTx(uint64(l))
-		}
+	if m.ImmediateParams != nil {
+		l = m.ImmediateParams.Size()
+		n += 1 + l + sovTx(uint64(l))
 	}
-	if len(m.InitialDeposit) > 0 {
-		for _, e := range m.InitialDeposit {
-			l = e.Size()
-			n += 1 + l + sovTx(uint64(l))
-		}
-	}
-	l = len(m.Proposer)
+	l = len(m.Authority)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
 }
 
-func (m *MsgImmediateSanctionResponse) Size() (n int) {
+func (m *MsgUpdateParamsResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.ProposalId != 0 {
-		n += 1 + sovTx(uint64(m.ProposalId))
-	}
-	return n
-}
-
-func (m *MsgImmediateUnsanction) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Addresses) > 0 {
-		for _, s := range m.Addresses {
-			l = len(s)
-			n += 1 + l + sovTx(uint64(l))
-		}
-	}
-	if len(m.InitialDeposit) > 0 {
-		for _, e := range m.InitialDeposit {
-			l = e.Size()
-			n += 1 + l + sovTx(uint64(l))
-		}
-	}
-	l = len(m.Proposer)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	return n
-}
-
-func (m *MsgImmediateUnsanctionResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ProposalId != 0 {
-		n += 1 + sovTx(uint64(m.ProposalId))
-	}
 	return n
 }
 
@@ -1457,7 +1123,7 @@ func (m *MsgUnsanctionResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgImmediateSanction) Unmarshal(dAtA []byte) error {
+func (m *MsgUpdateParams) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1480,47 +1146,15 @@ func (m *MsgImmediateSanction) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgImmediateSanction: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgUpdateParams: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgImmediateSanction: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgUpdateParams: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Addresses", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Addresses = append(m.Addresses, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field InitialDeposit", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ImmediateParams", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1547,231 +1181,16 @@ func (m *MsgImmediateSanction) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.InitialDeposit = append(m.InitialDeposit, types.Coin{})
-			if err := m.InitialDeposit[len(m.InitialDeposit)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if m.ImmediateParams == nil {
+				m.ImmediateParams = &SanctionImmediateParams{}
+			}
+			if err := m.ImmediateParams.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Proposer", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Proposer = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgImmediateSanctionResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgImmediateSanctionResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgImmediateSanctionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProposalId", wireType)
-			}
-			m.ProposalId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ProposalId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgImmediateUnsanction) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgImmediateUnsanction: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgImmediateUnsanction: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Addresses", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Addresses = append(m.Addresses, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field InitialDeposit", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.InitialDeposit = append(m.InitialDeposit, types.Coin{})
-			if err := m.InitialDeposit[len(m.InitialDeposit)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Proposer", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Authority", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1799,7 +1218,7 @@ func (m *MsgImmediateUnsanction) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Proposer = string(dAtA[iNdEx:postIndex])
+			m.Authority = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1822,7 +1241,7 @@ func (m *MsgImmediateUnsanction) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgImmediateUnsanctionResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgUpdateParamsResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1845,31 +1264,12 @@ func (m *MsgImmediateUnsanctionResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgImmediateUnsanctionResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgUpdateParamsResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgImmediateUnsanctionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgUpdateParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProposalId", wireType)
-			}
-			m.ProposalId = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ProposalId |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])
