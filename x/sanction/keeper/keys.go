@@ -1,9 +1,12 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/cosmos/cosmos-sdk/x/sanction"
+	"github.com/gogo/protobuf/proto"
 )
 
 // Keys for store prefixes
@@ -109,6 +112,18 @@ func ToTempStatus(bz []byte) sanction.TempStatus {
 		}
 	}
 	return sanction.TEMP_STATUS_UNSPECIFIED
+}
+
+// NewTempEvent creates the temp event for the given type val (e.g. TempSanctionB or TempUnsanctionB) with the given address.
+func NewTempEvent(typeVal byte, addr sdk.AccAddress) proto.Message {
+	switch typeVal {
+	case TempSanctionB:
+		return sanction.NewEventTempAddressSanctioned(addr)
+	case TempUnsanctionB:
+		return sanction.NewEventTempAddressUnsanctioned(addr)
+	default:
+		panic(fmt.Errorf("unknown temp value byte: %x", typeVal))
+	}
 }
 
 // CreateParamKey creates the key to use for a param with the given name.

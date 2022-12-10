@@ -22,7 +22,10 @@ func (k Keeper) Sanction(goCtx context.Context, req *sanction.MsgSanction) (*san
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	k.SanctionAddresses(ctx, toSanction...)
+	err = k.SanctionAddresses(ctx, toSanction...)
+	if err != nil {
+		return nil, err
+	}
 
 	return &sanction.MsgSanctionResponse{}, nil
 }
@@ -38,7 +41,10 @@ func (k Keeper) Unsanction(goCtx context.Context, req *sanction.MsgUnsanction) (
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	k.UnsanctionAddresses(ctx, toUnsanction...)
+	err = k.UnsanctionAddresses(ctx, toUnsanction...)
+	if err != nil {
+		return nil, err
+	}
 
 	return &sanction.MsgUnsanctionResponse{}, nil
 }
@@ -56,7 +62,10 @@ func (k Keeper) UpdateParams(goCtx context.Context, req *sanction.MsgUpdateParam
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	k.SetParams(ctx, req.Params)
+	err := k.SetParams(ctx, req.Params)
+	if err != nil {
+		return nil, err
+	}
 
 	return &sanction.MsgUpdateParamsResponse{}, nil
 }

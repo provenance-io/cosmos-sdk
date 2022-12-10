@@ -6,14 +6,21 @@ import (
 )
 
 // InitGenesis updates this keeper's store using the provided GenesisState.
-func (k Keeper) InitGenesis(ctx sdk.Context, genState *sanction.GenesisState) {
-	k.SetParams(ctx, genState.Params)
+func (k Keeper) InitGenesis(origCtx sdk.Context, genState *sanction.GenesisState) {
+	// We don't want the events from this, so use a context with a throw-away event manager.
+	ctx := origCtx.WithEventManager(sdk.NewEventManager())
+	if err := k.SetParams(ctx, genState.Params); err != nil {
+		panic(err)
+	}
 
 	toSanction, err := toAccAddrs(genState.SanctionedAddresses)
 	if err != nil {
 		panic(err)
 	}
-	k.SanctionAddresses(ctx, toSanction...)
+	err = k.SanctionAddresses(ctx, toSanction...)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // ExportGenesis reads this keeper's entire state and returns it as a GenesisState.

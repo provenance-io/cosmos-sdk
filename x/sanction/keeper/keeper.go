@@ -56,42 +56,54 @@ func (k Keeper) IsSanctionedAddr(ctx sdk.Context, addr sdk.AccAddress) bool {
 }
 
 // SanctionAddresses creates sanctioned address entries for each of the provided addresses.
-func (k Keeper) SanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) {
+func (k Keeper) SanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) error {
 	store := ctx.KVStore(k.storeKey)
 	val := []byte{0x00}
 	for _, addr := range addrs {
 		key := CreateSanctionedAddrKey(addr)
 		store.Set(key, val)
+		if err := ctx.EventManager().EmitTypedEvent(sanction.NewEventAddressSanctioned(addr)); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // UnsanctionAddresses deletes any sanctioned address entries for each provided address.
-func (k Keeper) UnsanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) {
+func (k Keeper) UnsanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) error {
 	store := ctx.KVStore(k.storeKey)
 	for _, addr := range addrs {
 		key := CreateSanctionedAddrKey(addr)
 		store.Delete(key)
+		if err := ctx.EventManager().EmitTypedEvent(sanction.NewEventAddressUnsanctioned(addr)); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // AddTemporarySanction adds a temporary sanction with the given gov prop id for each of the provided addresses.
-func (k Keeper) AddTemporarySanction(ctx sdk.Context, govPropId uint64, addrs ...sdk.AccAddress) {
-	k.addTempEntries(ctx, TempSanctionB, govPropId, addrs)
+func (k Keeper) AddTemporarySanction(ctx sdk.Context, govPropId uint64, addrs ...sdk.AccAddress) error {
+	return k.addTempEntries(ctx, TempSanctionB, govPropId, addrs)
 }
 
 // AddTemporaryUnsanction adds a temporary unsanction with the given gov prop id for each of the provided addresses.
-func (k Keeper) AddTemporaryUnsanction(ctx sdk.Context, govPropId uint64, addrs ...sdk.AccAddress) {
-	k.addTempEntries(ctx, TempUnsanctionB, govPropId, addrs)
+func (k Keeper) AddTemporaryUnsanction(ctx sdk.Context, govPropId uint64, addrs ...sdk.AccAddress) error {
+	return k.addTempEntries(ctx, TempUnsanctionB, govPropId, addrs)
 }
 
 // addTempEntries adds a temporary entry with the given value and gov prop id for each address given.
-func (k Keeper) addTempEntries(ctx sdk.Context, value byte, govPropId uint64, addrs []sdk.AccAddress) {
+func (k Keeper) addTempEntries(ctx sdk.Context, value byte, govPropId uint64, addrs []sdk.AccAddress) error {
 	store := ctx.KVStore(k.storeKey)
 	val := []byte{value}
 	for _, addr := range addrs {
 		key := CreateTemporaryKey(addr, govPropId)
 		store.Set(key, val)
+		if err := ctx.EventManager().EmitTypedEvent(NewTempEvent(value, addr)); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // getLatestTempEntry gets the most recent temporary entry for the given address.
@@ -213,7 +225,7 @@ func (k Keeper) GetParams(ctx sdk.Context) *sanction.Params {
 
 // SetParams sets the sanction module's params.
 // Providing a nil params will cause all params to be deleted (so that defaults are used).
-func (k Keeper) SetParams(ctx sdk.Context, params *sanction.Params) {
+func (k Keeper) SetParams(ctx sdk.Context, params *sanction.Params) error {
 	store := ctx.KVStore(k.storeKey)
 	if params == nil {
 		k.deleteParam(store, ParamNameImmediateSanctionMinDeposit)
@@ -222,6 +234,7 @@ func (k Keeper) SetParams(ctx sdk.Context, params *sanction.Params) {
 		k.setParam(store, ParamNameImmediateSanctionMinDeposit, params.ImmediateSanctionMinDeposit.String())
 		k.setParam(store, ParamNameImmediateUnsanctionMinDeposit, params.ImmediateUnsanctionMinDeposit.String())
 	}
+	return ctx.EventManager().EmitTypedEvent(&sanction.EventParamsUpdated{})
 }
 
 // IterateParams iterates over all params entries.
