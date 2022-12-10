@@ -400,7 +400,7 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_IsSanctioned_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"cosmos", "sanction", "v1beta1", "active", "address"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_IsSanctioned_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"cosmos", "sanction", "v1beta1", "check", "address"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_SanctionedAddresses_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"cosmos", "sanction", "v1beta1", "all"}, "", runtime.AssumeColonVerbOpt(false)))
 
