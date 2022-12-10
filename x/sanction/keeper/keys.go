@@ -3,6 +3,7 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
+	"github.com/cosmos/cosmos-sdk/x/sanction"
 )
 
 // Keys for store prefixes
@@ -97,10 +98,27 @@ func IsTempUnsanctionBz(bz []byte) bool {
 	return len(bz) == 1 && bz[0] == TempUnsanctionB
 }
 
+// ToTempStatus converts a temporary entry value byte slice into a TempStatus value.
+func ToTempStatus(bz []byte) sanction.TempStatus {
+	if len(bz) == 1 {
+		switch bz[0] {
+		case TempSanctionB:
+			return sanction.TEMP_STATUS_SANCTIONED
+		case TempUnsanctionB:
+			return sanction.TEMP_STATUS_UNSANCTIONED
+		}
+	}
+	return sanction.TEMP_STATUS_UNSPECIFIED
+}
+
+// CreateParamKey creates the key to use for a param with the given name.
+//
+// - 0x02<name> -> <value>
 func CreateParamKey(name string) []byte {
 	return ConcatBz(ParamsPrefix, []byte(name))
 }
 
+// ParseParamKey extracts the param name from the provided key.
 func ParseParamKey(bz []byte) string {
 	return string(bz[1:])
 }

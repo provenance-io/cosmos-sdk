@@ -106,6 +106,7 @@ func (k Keeper) getLatestTempEntry(store sdk.KVStore, addr sdk.AccAddress) []byt
 	return nil
 }
 
+// DeleteSpecificTempEntries deletes the temporary entries with the given addresses for a specific governance proposal id.
 func (k Keeper) DeleteSpecificTempEntries(ctx sdk.Context, govPropId uint64, addrs ...sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	for _, addr := range addrs {
@@ -114,6 +115,7 @@ func (k Keeper) DeleteSpecificTempEntries(ctx sdk.Context, govPropId uint64, add
 	}
 }
 
+// DeleteTempEntries deletes all temporary entries for each given address.
 func (k Keeper) DeleteTempEntries(ctx sdk.Context, addrs ...sdk.AccAddress) {
 	if len(addrs) == 0 {
 		return
@@ -134,10 +136,15 @@ func (k Keeper) DeleteTempEntries(ctx sdk.Context, addrs ...sdk.AccAddress) {
 	}
 }
 
+// getSanctionedAddressPrefixStore returns a kv store prefixed for sanctioned addresses, and the prefix bytes.
+func (k Keeper) getSanctionedAddressPrefixStore(ctx sdk.Context) (sdk.KVStore, []byte) {
+	return prefix.NewStore(ctx.KVStore(k.storeKey), SanctionedPrefix), SanctionedPrefix
+}
+
 // IterateSanctionedAddresses iterates over all of the permanently sanctioned addresses.
 // The callback takes in the sanctioned address and should return whether to stop iteration (true = stop, false = keep going).
 func (k Keeper) IterateSanctionedAddresses(ctx sdk.Context, cb func(addr sdk.AccAddress) (stop bool)) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), SanctionedPrefix)
+	store, _ := k.getSanctionedAddressPrefixStore(ctx)
 
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
@@ -150,14 +157,21 @@ func (k Keeper) IterateSanctionedAddresses(ctx sdk.Context, cb func(addr sdk.Acc
 	}
 }
 
+// getTemporaryEntryPrefixStore returns a kv store prefixed for temporary sanction/unsanction entries, and the prefix bytes used.
+// If an addr is provided, the store is prefixed for just the given address.
+// If addr is empty, it will be prefixed for all temporary entries.
+func (k Keeper) getTemporaryEntryPrefixStore(ctx sdk.Context, addr sdk.AccAddress) (sdk.KVStore, []byte) {
+	pre := CreateTemporaryAddrPrefix(addr)
+	return prefix.NewStore(ctx.KVStore(k.storeKey), pre), pre
+}
+
 // IterateTemporaryEntries iterates over each of the temporary entries.
 // If an address is provided, only the temporary entries for that address are iterated,
 // otherwise all entries are iterated.
 // The callback takes in the address in question, the governance proposal associated with it, and whether it's a sanction (true) or unsanction (false).
 // The callback should return whether to stop iteration (true = stop, false = keep going).
 func (k Keeper) IterateTemporaryEntries(ctx sdk.Context, addr sdk.AccAddress, cb func(addr sdk.AccAddress, govPropId uint64, isSanction bool) (stop bool)) {
-	pre := CreateTemporaryAddrPrefix(addr)
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), pre)
+	store, pre := k.getTemporaryEntryPrefixStore(ctx, addr)
 
 	iter := store.Iterator(nil, nil)
 	defer iter.Close()
