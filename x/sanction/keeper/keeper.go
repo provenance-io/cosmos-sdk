@@ -298,3 +298,17 @@ func toCoinsOrDefault(coins string, dflt sdk.Coins) sdk.Coins {
 	}
 	return rv
 }
+
+// toAccAddrs converts the provided strings into a slice of sdk.AccAddress.
+// If any fail to convert, an error is returned.
+func toAccAddrs(addrs []string) ([]sdk.AccAddress, error) {
+	var err error
+	rv := make([]sdk.AccAddress, len(addrs))
+	for i, addr := range addrs {
+		rv[i], err = sdk.AccAddressFromBech32(addr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid address[%d]: %w", i, err)
+		}
+	}
+	return rv, nil
+}

@@ -9,9 +9,9 @@ import (
 func (k Keeper) InitGenesis(ctx sdk.Context, genState *sanction.GenesisState) {
 	k.SetParams(ctx, genState.Params)
 
-	var toSanction []sdk.AccAddress
-	for _, addr := range genState.SanctionedAddresses {
-		toSanction = append(toSanction, sdk.MustAccAddressFromBech32(addr))
+	toSanction, err := toAccAddrs(genState.SanctionedAddresses)
+	if err != nil {
+		panic(err)
 	}
 	k.SanctionAddresses(ctx, toSanction...)
 }

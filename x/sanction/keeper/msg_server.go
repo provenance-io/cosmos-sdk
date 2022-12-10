@@ -2,22 +2,61 @@ package keeper
 
 import (
 	"context"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	gov "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/sanction"
+	"github.com/cosmos/cosmos-sdk/x/sanction/errors"
 )
 
 var _ sanction.MsgServer = Keeper{}
 
-func (k Keeper) Sanction(ctx context.Context, req *sanction.MsgSanction) (*sanction.MsgSanctionResponse, error) {
-	// TODO[1046]: Implement Sanction
-	panic("not implemented")
+func (k Keeper) Sanction(goCtx context.Context, req *sanction.MsgSanction) (*sanction.MsgSanctionResponse, error) {
+	if req.Authority != k.authority {
+		return nil, gov.ErrInvalidSigner.Wrapf("expected %s got %s", k.authority, req.Authority)
+	}
+
+	toSanction, err := toAccAddrs(req.Addresses)
+	if err != nil {
+		return nil, sdkerrors.ErrInvalidAddress.Wrap(err.Error())
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	k.SanctionAddresses(ctx, toSanction...)
+
+	return &sanction.MsgSanctionResponse{}, nil
 }
 
-func (k Keeper) Unsanction(ctx context.Context, req *sanction.MsgUnsanction) (*sanction.MsgUnsanctionResponse, error) {
-	// TODO[1046]: Implement Unsanction
-	panic("not implemented")
+func (k Keeper) Unsanction(goCtx context.Context, req *sanction.MsgUnsanction) (*sanction.MsgUnsanctionResponse, error) {
+	if req.Authority != k.authority {
+		return nil, gov.ErrInvalidSigner.Wrapf("expected %s got %s", k.authority, req.Authority)
+	}
+
+	toUnsanction, err := toAccAddrs(req.Addresses)
+	if err != nil {
+		return nil, sdkerrors.ErrInvalidAddress.Wrap(err.Error())
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	k.UnsanctionAddresses(ctx, toUnsanction...)
+
+	return &sanction.MsgUnsanctionResponse{}, nil
 }
 
-func (k Keeper) UpdateParams(ctx context.Context, req *sanction.MsgUpdateParams) (*sanction.MsgUpdateParamsResponse, error) {
-	// TODO[1046]: Implement UpdateParams
-	panic("not implemented")
+func (k Keeper) UpdateParams(goCtx context.Context, req *sanction.MsgUpdateParams) (*sanction.MsgUpdateParamsResponse, error) {
+	if req.Authority != k.authority {
+		return nil, gov.ErrInvalidSigner.Wrapf("expected %s got %s", k.authority, req.Authority)
+	}
+
+	if req.Params != nil {
+		err := req.Params.ValidateBasic()
+		if err != nil {
+			return nil, errors.ErrInvalidParams
+		}
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	k.SetParams(ctx, req.Params)
+
+	return &sanction.MsgUpdateParamsResponse{}, nil
 }
