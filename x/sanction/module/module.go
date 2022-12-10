@@ -75,7 +75,7 @@ func (a AppModuleBasic) GetQueryCmd() *cobra.Command {
 
 // GetTxCmd returns the transaction commands for the sanction module
 func (a AppModuleBasic) GetTxCmd() *cobra.Command {
-	return cli.TxCmd()
+	return nil
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the sanction module.
