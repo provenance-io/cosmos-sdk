@@ -15,17 +15,26 @@ type Keeper struct {
 	storeKey storetypes.StoreKey
 
 	bankKeeper sanction.BankKeeper
+	govKeeper  sanction.GovKeeper
 
 	authority string
 
 	unsanctionableAddrs map[string]bool
 }
 
-func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey, bankKeeper sanction.BankKeeper, authority string, unsanctionableAddrs []sdk.AccAddress) Keeper {
+func NewKeeper(
+	cdc codec.BinaryCodec,
+	storeKey storetypes.StoreKey,
+	bankKeeper sanction.BankKeeper,
+	govKeeper sanction.GovKeeper,
+	authority string,
+	unsanctionableAddrs []sdk.AccAddress,
+) Keeper {
 	rv := Keeper{
 		cdc:                 cdc,
 		storeKey:            storeKey,
 		bankKeeper:          bankKeeper,
+		govKeeper:           govKeeper,
 		authority:           authority,
 		unsanctionableAddrs: make(map[string]bool),
 	}
