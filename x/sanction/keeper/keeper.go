@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/sanction"
 )
 
@@ -21,8 +22,9 @@ type Keeper struct {
 
 	unsanctionableAddrs map[string]bool
 
-	msgSanctionTypeURL   string
-	msgUnsanctionTypeURL string
+	msgSanctionTypeURL          string
+	msgUnsanctionTypeURL        string
+	msgExecLegacyContentTypeURL string
 }
 
 func NewKeeper(
@@ -34,14 +36,15 @@ func NewKeeper(
 	unsanctionableAddrs []sdk.AccAddress,
 ) Keeper {
 	rv := Keeper{
-		cdc:                  cdc,
-		storeKey:             storeKey,
-		bankKeeper:           bankKeeper,
-		govKeeper:            govKeeper,
-		authority:            authority,
-		unsanctionableAddrs:  make(map[string]bool),
-		msgSanctionTypeURL:   sdk.MsgTypeURL(&sanction.MsgSanction{}),
-		msgUnsanctionTypeURL: sdk.MsgTypeURL(&sanction.MsgUnsanction{}),
+		cdc:                         cdc,
+		storeKey:                    storeKey,
+		bankKeeper:                  bankKeeper,
+		govKeeper:                   govKeeper,
+		authority:                   authority,
+		unsanctionableAddrs:         make(map[string]bool),
+		msgSanctionTypeURL:          sdk.MsgTypeURL(&sanction.MsgSanction{}),
+		msgUnsanctionTypeURL:        sdk.MsgTypeURL(&sanction.MsgUnsanction{}),
+		msgExecLegacyContentTypeURL: sdk.MsgTypeURL(&govv1.MsgExecLegacyContent{}),
 	}
 	for _, addr := range unsanctionableAddrs {
 		rv.unsanctionableAddrs[addr.String()] = true

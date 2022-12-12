@@ -15,13 +15,13 @@ var _ govtypes.GovHooks = Keeper{}
 // AfterProposalSubmission is called after proposal is submitted.
 // If there's enough deposit, temporary entries are created.
 func (k Keeper) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
-	k.handleProposal(ctx, proposalID)
+	k.proposalGovHook(ctx, proposalID)
 }
 
 // AfterProposalDeposit is called after a deposit is made.
 // If there's enough deposit, temporary entries are created.
 func (k Keeper) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, _ sdk.AccAddress) {
-	k.handleProposal(ctx, proposalID)
+	k.proposalGovHook(ctx, proposalID)
 }
 
 // AfterProposalVote is called after a vote on a proposal is cast. This one does nothing.
@@ -30,13 +30,13 @@ func (k Keeper) AfterProposalVote(_ sdk.Context, _ uint64, _ sdk.AccAddress) {}
 // AfterProposalFailedMinDeposit is called when proposal fails to reach min deposit.
 // Cleans up any possible temporary entries.
 func (k Keeper) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {
-	k.handleProposal(ctx, proposalID)
+	k.proposalGovHook(ctx, proposalID)
 }
 
 // AfterProposalVotingPeriodEnded is called when proposal's finishes it's voting period.
 // Cleans up temporary entries.
 func (k Keeper) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID uint64) {
-	k.handleProposal(ctx, proposalID)
+	k.proposalGovHook(ctx, proposalID)
 }
 
 const (
@@ -44,10 +44,10 @@ const (
 	propStatusNotFound = govv1.ProposalStatus(-100)
 )
 
-// handleProposal does what needs to be done in here with the proposal in question.
+// proposalGovHook does what needs to be done in here with the proposal in question.
 // What needs to be done always depends on the status of the proposal.
 // So while some hooks are probably only called when a proposal has a certain status, it's safer to just always do this.
-func (k Keeper) handleProposal(ctx sdk.Context, proposalID uint64) {
+func (k Keeper) proposalGovHook(ctx sdk.Context, proposalID uint64) {
 	// A proposal can sometimes be deleted if it failed in a certain way.
 	// So if the proposal can't be found, treat it as failed.
 	propStatus := propStatusNotFound
@@ -56,8 +56,8 @@ func (k Keeper) handleProposal(ctx sdk.Context, proposalID uint64) {
 		propStatus = proposal.Status
 	}
 
-	// TODO[1046]: Refactor this to handle the msg being wrapped in a "/cosmos.gov.v1.MsgExecLegacyContent".
-	for _, msg := range proposal.Messages {
+	for _, propMsg := range proposal.Messages {
+		msg := k.unwrapLegacyGovPropMsg(propMsg)
 		if k.isModuleGovHooksMsgURL(msg.TypeUrl) {
 			switch propStatus {
 			case govv1.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD, govv1.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD:
@@ -94,6 +94,20 @@ func (k Keeper) handleProposal(ctx sdk.Context, proposalID uint64) {
 			}
 		}
 	}
+}
+
+// unwrapLegacyGovPropMsg checks if the provided msg is a /cosmos.gov.v1.MsgExecLegacyContent.
+// If it isn't, it's returned.
+// If it is, it's unpacked, and it's .Content is returned.
+func (k Keeper) unwrapLegacyGovPropMsg(msg *codectypes.Any) *codectypes.Any {
+	if msg.TypeUrl != k.msgExecLegacyContentTypeURL {
+		return msg
+	}
+	var newMsg govv1.MsgExecLegacyContent
+	if err := k.cdc.UnpackAny(msg, &newMsg); err != nil {
+		panic(err)
+	}
+	return newMsg.Content
 }
 
 // isModuleGovHooksMsgURL returns true if the provided URL is one that these gov hooks care about.
