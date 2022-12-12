@@ -26,7 +26,7 @@ func (g GenesisState) Validate() error {
 	for i, addr := range g.SanctionedAddresses {
 		_, err := sdk.AccAddressFromBech32(addr)
 		if err != nil {
-			return sdkerrors.ErrInvalidAddress.Wrapf("sanctioned addresses[%d]", i)
+			return sdkerrors.ErrInvalidAddress.Wrapf("sanctioned addresses[%d], %q: %v", i, addr, err)
 		}
 	}
 	return nil
