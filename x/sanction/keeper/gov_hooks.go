@@ -12,13 +12,6 @@ import (
 
 var _ govtypes.GovHooks = Keeper{}
 
-var msgSanctionTypeURL = sdk.MsgTypeURL(&sanction.MsgSanction{})
-var msgUnsanctionTypeURL = sdk.MsgTypeURL(&sanction.MsgUnsanction{})
-
-func IsModuleMsgURL(url string) bool {
-	return url == msgSanctionTypeURL || url == msgUnsanctionTypeURL
-}
-
 // AfterProposalSubmission is called after proposal is submitted.
 // If there's enough deposit, temporary entries are created.
 func (k Keeper) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
@@ -27,15 +20,18 @@ func (k Keeper) AfterProposalSubmission(ctx sdk.Context, proposalID uint64) {
 
 // AfterProposalDeposit is called after a deposit is made.
 // If there's enough deposit, temporary entries are created.
-func (k Keeper) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress) {
+func (k Keeper) AfterProposalDeposit(ctx sdk.Context, proposalID uint64, _ sdk.AccAddress) {
 	k.handleProposal(ctx, proposalID)
 }
 
 // AfterProposalVote is called after a vote on a proposal is cast. This one does nothing.
-func (k Keeper) AfterProposalVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress) {}
+func (k Keeper) AfterProposalVote(_ sdk.Context, _ uint64, _ sdk.AccAddress) {}
 
-// AfterProposalFailedMinDeposit is called when proposal fails to reach min deposit. This one does nothing.
-func (k Keeper) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {}
+// AfterProposalFailedMinDeposit is called when proposal fails to reach min deposit.
+// Cleans up any possible temporary entries.
+func (k Keeper) AfterProposalFailedMinDeposit(ctx sdk.Context, proposalID uint64) {
+	k.handleProposal(ctx, proposalID)
+}
 
 // AfterProposalVotingPeriodEnded is called when proposal's finishes it's voting period.
 // Cleans up temporary entries.
@@ -43,45 +39,56 @@ func (k Keeper) AfterProposalVotingPeriodEnded(ctx sdk.Context, proposalID uint6
 	k.handleProposal(ctx, proposalID)
 }
 
+const (
+	// propStatusNotFound is a governance module ProposalStatus (an enum) used in here to indicate that a proposal wasn't found.
+	propStatusNotFound = govv1.ProposalStatus(-100)
+)
+
 // handleProposal does what needs to be done in here with the proposal in question.
+// What needs to be done always depends on the status of the proposal.
+// So while some hooks are probably only called when a proposal has a certain status, it's safer to just always do this.
 func (k Keeper) handleProposal(ctx sdk.Context, proposalID uint64) {
+	// A proposal can sometimes be deleted if it failed in a certain way.
+	// So if the proposal can't be found, treat it as failed.
+	propStatus := propStatusNotFound
 	proposal, found := k.govKeeper.GetProposal(ctx, proposalID)
-	if !found {
-		panic(fmt.Errorf("governance proposal not found with id %d", proposalID))
+	if found {
+		propStatus = proposal.Status
 	}
 
-	// TODO[1046]: Refactor this to account for proposals being deleted with they fail in some cases.
+	// TODO[1046]: Refactor this to handle the msg being wrapped in a "/cosmos.gov.v1.MsgExecLegacyContent".
 	for _, msg := range proposal.Messages {
-		if IsModuleMsgURL(msg.TypeUrl) {
-			switch proposal.Status {
+		if k.isModuleGovHooksMsgURL(msg.TypeUrl) {
+			switch propStatus {
 			case govv1.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD, govv1.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD:
-				// If the deposit is over the minimum, add temporary entries for the addrs.
-				deposit := sdk.Coins(proposal.TotalDeposit)
-				minDeposit := k.getMinDeposit(ctx, msg)
-				_, hasNeg := deposit.SafeSub(minDeposit...)
-				if !hasNeg {
+				// If the deposit is over the (non-zero) minimum, add temporary entries for the addrs.
+				makeTemps := false
+				minDeposit := k.getImmediateMinDeposit(ctx, msg)
+				if !minDeposit.IsZero() {
+					deposit := sdk.Coins(proposal.TotalDeposit)
+					_, hasNeg := deposit.SafeSub(minDeposit...)
+					if !hasNeg {
+						makeTemps = true
+					}
+				}
+				if makeTemps {
 					addrs := k.getMsgAddresses(msg)
 					var err error
 					switch msg.TypeUrl {
-					case msgSanctionTypeURL:
+					case k.msgSanctionTypeURL:
 						err = k.AddTemporarySanction(ctx, proposalID, addrs...)
-					case msgUnsanctionTypeURL:
+					case k.msgUnsanctionTypeURL:
 						err = k.AddTemporaryUnsanction(ctx, proposalID, addrs...)
 					}
 					if err != nil {
 						panic(err)
 					}
 				}
-			case govv1.StatusPassed:
-				// Delete all temporary entries for the addrs.
-				// Since it's a passed vote, that supersedes any other temporary entries for each address.
-				// The permanent updates should have happened when the message was executed at the end voting.
-				addrs := k.getMsgAddresses(msg)
-				k.DeleteTempEntries(ctx, addrs...)
-			case govv1.StatusRejected, govv1.StatusFailed:
+			case govv1.StatusRejected, govv1.StatusFailed, propStatusNotFound:
 				// Delete only the temporary entries that were associated with this proposal.
-				addrs := k.getMsgAddresses(msg)
-				k.DeleteSpecificTempEntries(ctx, proposalID, addrs...)
+				k.DeleteGovPropTempEntries(ctx, proposalID)
+			case govv1.StatusPassed:
+				// Nothing to do. The processing of the proposal message should have done everything that's needed.
 			default:
 				panic(fmt.Errorf("unknown governance proposal status: [%s]", proposal.Status))
 			}
@@ -89,9 +96,18 @@ func (k Keeper) handleProposal(ctx sdk.Context, proposalID uint64) {
 	}
 }
 
+// isModuleGovHooksMsgURL returns true if the provided URL is one that these gov hooks care about.
+// Warning, it's assumed that lazyLoadMsgTypeURLs() has been called prior to invoking this method.
+func (k Keeper) isModuleGovHooksMsgURL(url string) bool {
+	return url == k.msgSanctionTypeURL || url == k.msgUnsanctionTypeURL
+}
+
+// getMsgAddresses gets the list of addresses from the provided message if it's one we care about.
+// If it's a type we don't care about, returns nil.
+// Warning, it's assumed that lazyLoadMsgTypeURLs() has been called prior to invoking this method.
 func (k Keeper) getMsgAddresses(msg *codectypes.Any) []sdk.AccAddress {
 	switch msg.TypeUrl {
-	case msgSanctionTypeURL:
+	case k.msgSanctionTypeURL:
 		var msgSanction sanction.MsgSanction
 		if err := k.cdc.UnpackAny(msg, &msgSanction); err != nil {
 			panic(err)
@@ -101,7 +117,7 @@ func (k Keeper) getMsgAddresses(msg *codectypes.Any) []sdk.AccAddress {
 			panic(err)
 		}
 		return addrs
-	case msgUnsanctionTypeURL:
+	case k.msgUnsanctionTypeURL:
 		var msgUnsanction sanction.MsgUnsanction
 		if err := k.cdc.UnpackAny(msg, &msgUnsanction); err != nil {
 			panic(err)
@@ -115,11 +131,14 @@ func (k Keeper) getMsgAddresses(msg *codectypes.Any) []sdk.AccAddress {
 	return nil
 }
 
-func (k Keeper) getMinDeposit(ctx sdk.Context, msg *codectypes.Any) sdk.Coins {
+// getImmediateMinDeposit gets the minimum deposit for immediate action to be taken on the proposal.
+// If the msg isn't of a type we care about, returns empty coins.
+// Warning, it's assumed that lazyLoadMsgTypeURLs() has been called prior to invoking this method.
+func (k Keeper) getImmediateMinDeposit(ctx sdk.Context, msg *codectypes.Any) sdk.Coins {
 	switch msg.TypeUrl {
-	case msgSanctionTypeURL:
+	case k.msgSanctionTypeURL:
 		return k.GetImmediateSanctionMinDeposit(ctx)
-	case msgUnsanctionTypeURL:
+	case k.msgUnsanctionTypeURL:
 		return k.GetImmediateUnsanctionMinDeposit(ctx)
 	}
 	return sdk.Coins{}
