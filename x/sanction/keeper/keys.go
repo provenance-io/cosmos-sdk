@@ -12,18 +12,21 @@ import (
 // Keys for store prefixes
 // Items are stored with the following keys:
 //
-// Sanctioned addresses:
-// - 0x00<addr len (1 byte)><addr> -> 0x00
-// Temporarily sanctioned addresses:
-// - 0x01<addr len (1 byte)><addr><gov prop id> -> 0x01
-// Temporarily unsanctioned addresses:
-// - 0x01<addr len (1 byte)><addr><gov prop id> -> 0x00
 // Params entry:
-// - 0x02<name> -> <value>
+// - 0x00<name> -> <value>
+// Sanctioned addresses:
+// - 0x01<addr len (1 byte)><addr> -> 0x00
+// Temporarily sanctioned addresses:
+// - 0x02<addr len (1 byte)><addr><gov prop id (8 bytes)> -> 0x01
+// Temporarily unsanctioned addresses:
+// - 0x02<addr len (1 byte)><addr><gov prop id (8 bytes)> -> 0x00
+// Proposal id temp sanction index:
+// - 0x03<proposal id (8 bytes)><addr len (1 byte)><addr> -> 0x00
 var (
-	SanctionedPrefix = []byte{0x00}
-	TemporaryPrefix  = []byte{0x01}
-	ParamsPrefix     = []byte{0x02}
+	ParamsPrefix        = []byte{0x00}
+	SanctionedPrefix    = []byte{0x01}
+	TemporaryPrefix     = []byte{0x02}
+	ProposalIndexPrefix = []byte{0x03}
 )
 
 const (
@@ -32,10 +35,23 @@ const (
 )
 
 // ConcatBz creates a single byte slice consisting of the two provided byte slices.
+// Like append() but always returns a new slice with its own underlying array.
 func ConcatBz(bz1, bz2 []byte) []byte {
-	rv := make([]byte, len(bz1)+len(bz2))
-	copy(rv, bz1)
-	copy(rv[len(bz1):], bz2)
+	return concatBzPlusCap(bz1, bz2, 0)
+}
+
+// concatBzPlusCap creates a single byte slice consisting of the two provided byte slices with some extra capacity in the underlying array.
+// The idea is that you can append(...) to the result of this without it needed a new underlying array.
+func concatBzPlusCap(bz1, bz2 []byte, extraCap int) []byte {
+	l1 := len(bz1)
+	l2 := len(bz2)
+	rv := make([]byte, l1+l2, l1+l2+extraCap)
+	if l1 > 0 {
+		copy(rv, bz1)
+	}
+	if l2 > 0 {
+		copy(rv[l1:], bz2)
+	}
 	return rv
 }
 
@@ -50,9 +66,21 @@ func ParseLengthPrefixedBz(bz []byte) ([]byte, []byte) {
 	return addr, remainder
 }
 
+// CreateParamKey creates the key to use for a param with the given name.
+//
+// - 0x00<name> -> <value>
+func CreateParamKey(name string) []byte {
+	return ConcatBz(ParamsPrefix, []byte(name))
+}
+
+// ParseParamKey extracts the param name from the provided key.
+func ParseParamKey(bz []byte) string {
+	return string(bz[1:])
+}
+
 // CreateSanctionedAddrKey creates the sanctioned address key for the provided address.
 //
-// - 0x00<addr len (1 byte)><addr>
+// - 0x01<addr len (1 byte)><addr>
 func CreateSanctionedAddrKey(addr sdk.AccAddress) []byte {
 	return ConcatBz(SanctionedPrefix, address.MustLengthPrefix(addr))
 }
@@ -65,23 +93,26 @@ func ParseSanctionedAddrKey(key []byte) sdk.AccAddress {
 
 // CreateTemporaryAddrPrefix creates a key prefix for a temporarily sanctioned/unsanctioned address.
 //
-// - 0x01<addr len(1 byte)><addr>
+// If an address is provided:
+// - 0x02<addr len(1 byte)><addr>
+// If an address isn't provided:
+// - 0x02
 func CreateTemporaryAddrPrefix(addr sdk.AccAddress) []byte {
-	return ConcatBz(TemporaryPrefix, address.MustLengthPrefix(addr))
+	return concatBzPlusCap(TemporaryPrefix, address.MustLengthPrefix(addr), 8)
 }
 
 // CreateTemporaryKey creates a key for a temporarily sanctioned/unsanctioned address associated with the given governance proposal id.
 //
-// - 0x01<addr len (1 byte)><addr><gov prop id>
-func CreateTemporaryKey(addr sdk.AccAddress, govPropId uint64) []byte {
-	return ConcatBz(CreateTemporaryAddrPrefix(addr), sdk.Uint64ToBigEndian(govPropId))
+// - 0x02<addr len (1 byte)><addr><gov prop id (8 bytes)>
+func CreateTemporaryKey(addr sdk.AccAddress, govPropID uint64) []byte {
+	return append(CreateTemporaryAddrPrefix(addr), sdk.Uint64ToBigEndian(govPropID)...)
 }
 
 // ParseTemporaryKey extracts the address and gov prop id from the provided temporary key.
 func ParseTemporaryKey(key []byte) (sdk.AccAddress, uint64) {
-	addr, govPropIdBz := ParseLengthPrefixedBz(key[1:])
-	govPropId := sdk.BigEndianToUint64(govPropIdBz)
-	return addr, govPropId
+	addr, govPropIDBz := ParseLengthPrefixedBz(key[1:])
+	govPropID := sdk.BigEndianToUint64(govPropIDBz)
+	return addr, govPropID
 }
 
 const (
@@ -126,14 +157,30 @@ func NewTempEvent(typeVal byte, addr sdk.AccAddress) proto.Message {
 	}
 }
 
-// CreateParamKey creates the key to use for a param with the given name.
+// CreateProposalTempIndexPrefix creates a key prefix for a proposal temporary index key.
 //
-// - 0x02<name> -> <value>
-func CreateParamKey(name string) []byte {
-	return ConcatBz(ParamsPrefix, []byte(name))
+// If a govPropID is provided:
+// - 0x03<proposal id (8 bytes)>
+// If a govPropID isn't provided:
+// - 0x03
+func CreateProposalTempIndexPrefix(govPropID *uint64) []byte {
+	var govPropBz []byte
+	if govPropID != nil {
+		govPropBz = sdk.Uint64ToBigEndian(*govPropID)
+	}
+	return concatBzPlusCap(ProposalIndexPrefix, govPropBz, 33)
 }
 
-// ParseParamKey extracts the param name from the provided key.
-func ParseParamKey(bz []byte) string {
-	return string(bz[1:])
+// CreateProposalTempIndexKey creates a key for a proposal id + addr temporary index entry.
+//
+// 0x03<proposal id (8 bytes)><addr len (1 byte)><addr>
+func CreateProposalTempIndexKey(govPropID uint64, addr sdk.AccAddress) []byte {
+	return append(CreateProposalTempIndexPrefix(&govPropID), address.MustLengthPrefix(addr)...)
+}
+
+// ParseProposalTempIndexKey extracts the gov prop id and address from the provided proposal temp index key.
+func ParseProposalTempIndexKey(key []byte) (uint64, sdk.AccAddress) {
+	govPropID := sdk.BigEndianToUint64(key[1:9])
+	addr, _ := ParseLengthPrefixedBz(key[9:])
+	return govPropID, addr
 }
