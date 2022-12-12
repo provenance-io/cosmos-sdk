@@ -20,6 +20,9 @@ type Keeper struct {
 	authority string
 
 	unsanctionableAddrs map[string]bool
+
+	msgSanctionTypeURL   string
+	msgUnsanctionTypeURL string
 }
 
 func NewKeeper(
@@ -31,12 +34,14 @@ func NewKeeper(
 	unsanctionableAddrs []sdk.AccAddress,
 ) Keeper {
 	rv := Keeper{
-		cdc:                 cdc,
-		storeKey:            storeKey,
-		bankKeeper:          bankKeeper,
-		govKeeper:           govKeeper,
-		authority:           authority,
-		unsanctionableAddrs: make(map[string]bool),
+		cdc:                  cdc,
+		storeKey:             storeKey,
+		bankKeeper:           bankKeeper,
+		govKeeper:            govKeeper,
+		authority:            authority,
+		unsanctionableAddrs:  make(map[string]bool),
+		msgSanctionTypeURL:   sdk.MsgTypeURL(&sanction.MsgSanction{}),
+		msgUnsanctionTypeURL: sdk.MsgTypeURL(&sanction.MsgUnsanction{}),
 	}
 	for _, addr := range unsanctionableAddrs {
 		rv.unsanctionableAddrs[addr.String()] = true
@@ -50,7 +55,7 @@ func (k Keeper) GetAuthority() string {
 	return k.authority
 }
 
-// IsSanctionedAddr -returns true if the provided address is currently sanctioned.
+// IsSanctionedAddr returns true if the provided address is currently sanctioned (either permanently or temporarily).
 func (k Keeper) IsSanctionedAddr(ctx sdk.Context, addr sdk.AccAddress) bool {
 	store := ctx.KVStore(k.storeKey)
 	tempEntry := k.getLatestTempEntry(store, addr)
@@ -64,7 +69,8 @@ func (k Keeper) IsSanctionedAddr(ctx sdk.Context, addr sdk.AccAddress) bool {
 	return store.Has(key)
 }
 
-// SanctionAddresses creates sanctioned address entries for each of the provided addresses.
+// SanctionAddresses creates permanent sanctioned address entries for each of the provided addresses.
+// Also deletes any temporary entries for each address.
 func (k Keeper) SanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) error {
 	store := ctx.KVStore(k.storeKey)
 	val := []byte{0x00}
@@ -75,10 +81,12 @@ func (k Keeper) SanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) erro
 			return err
 		}
 	}
+	k.DeleteAddrTempEntries(ctx, addrs...)
 	return nil
 }
 
 // UnsanctionAddresses deletes any sanctioned address entries for each provided address.
+// Also deletes any temporary entries for each address.
 func (k Keeper) UnsanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) error {
 	store := ctx.KVStore(k.storeKey)
 	for _, addr := range addrs {
@@ -88,29 +96,33 @@ func (k Keeper) UnsanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) er
 			return err
 		}
 	}
+	k.DeleteAddrTempEntries(ctx, addrs...)
 	return nil
 }
 
 // AddTemporarySanction adds a temporary sanction with the given gov prop id for each of the provided addresses.
-func (k Keeper) AddTemporarySanction(ctx sdk.Context, govPropId uint64, addrs ...sdk.AccAddress) error {
-	return k.addTempEntries(ctx, TempSanctionB, govPropId, addrs)
+func (k Keeper) AddTemporarySanction(ctx sdk.Context, govPropID uint64, addrs ...sdk.AccAddress) error {
+	return k.addTempEntries(ctx, TempSanctionB, govPropID, addrs)
 }
 
 // AddTemporaryUnsanction adds a temporary unsanction with the given gov prop id for each of the provided addresses.
-func (k Keeper) AddTemporaryUnsanction(ctx sdk.Context, govPropId uint64, addrs ...sdk.AccAddress) error {
-	return k.addTempEntries(ctx, TempUnsanctionB, govPropId, addrs)
+func (k Keeper) AddTemporaryUnsanction(ctx sdk.Context, govPropID uint64, addrs ...sdk.AccAddress) error {
+	return k.addTempEntries(ctx, TempUnsanctionB, govPropID, addrs)
 }
 
 // addTempEntries adds a temporary entry with the given value and gov prop id for each address given.
-func (k Keeper) addTempEntries(ctx sdk.Context, value byte, govPropId uint64, addrs []sdk.AccAddress) error {
+func (k Keeper) addTempEntries(ctx sdk.Context, value byte, govPropID uint64, addrs []sdk.AccAddress) error {
 	store := ctx.KVStore(k.storeKey)
 	val := []byte{value}
+	indVal := []byte{0x00}
 	for _, addr := range addrs {
-		key := CreateTemporaryKey(addr, govPropId)
+		key := CreateTemporaryKey(addr, govPropID)
 		store.Set(key, val)
 		if err := ctx.EventManager().EmitTypedEvent(NewTempEvent(value, addr)); err != nil {
 			return err
 		}
+		indKey := CreateProposalTempIndexKey(govPropID, addr)
+		store.Set(indKey, indVal)
 	}
 	return nil
 }
@@ -127,23 +139,33 @@ func (k Keeper) getLatestTempEntry(store sdk.KVStore, addr sdk.AccAddress) []byt
 	return nil
 }
 
-// DeleteSpecificTempEntries deletes the temporary entries with the given addresses for a specific governance proposal id.
-func (k Keeper) DeleteSpecificTempEntries(ctx sdk.Context, govPropId uint64, addrs ...sdk.AccAddress) {
+// DeleteGovPropTempEntries deletes the temporary entries for the given proposal id.
+func (k Keeper) DeleteGovPropTempEntries(ctx sdk.Context, govPropID uint64) {
+	var addrs []sdk.AccAddress
+	k.IterateProposalIndexEntries(ctx, &govPropID, func(govPropID uint64, addr sdk.AccAddress) (stop bool) {
+		addrs = append(addrs, addr)
+		return false
+	})
 	store := ctx.KVStore(k.storeKey)
 	for _, addr := range addrs {
-		key := CreateTemporaryKey(addr, govPropId)
-		store.Delete(key)
+		key1 := CreateTemporaryKey(addr, govPropID)
+		store.Delete(key1)
+		key2 := CreateProposalTempIndexKey(govPropID, addr)
+		store.Delete(key2)
 	}
 }
 
-// DeleteTempEntries deletes all temporary entries for each given address.
-func (k Keeper) DeleteTempEntries(ctx sdk.Context, addrs ...sdk.AccAddress) {
+// DeleteAddrTempEntries deletes all temporary entries for each given address.
+func (k Keeper) DeleteAddrTempEntries(ctx sdk.Context, addrs ...sdk.AccAddress) {
 	if len(addrs) == 0 {
 		return
 	}
 	var toRemove [][]byte
 	callback := func(cbAddr sdk.AccAddress, govPropId uint64, _ bool) bool {
-		toRemove = append(toRemove, CreateTemporaryKey(cbAddr, govPropId))
+		toRemove = append(toRemove,
+			CreateTemporaryKey(cbAddr, govPropId),
+			CreateProposalTempIndexKey(govPropId, cbAddr),
+		)
 		return false
 	}
 	for _, addr := range addrs {
@@ -191,7 +213,7 @@ func (k Keeper) getTemporaryEntryPrefixStore(ctx sdk.Context, addr sdk.AccAddres
 // otherwise all entries are iterated.
 // The callback takes in the address in question, the governance proposal associated with it, and whether it's a sanction (true) or unsanction (false).
 // The callback should return whether to stop iteration (true = stop, false = keep going).
-func (k Keeper) IterateTemporaryEntries(ctx sdk.Context, addr sdk.AccAddress, cb func(addr sdk.AccAddress, govPropId uint64, isSanction bool) (stop bool)) {
+func (k Keeper) IterateTemporaryEntries(ctx sdk.Context, addr sdk.AccAddress, cb func(addr sdk.AccAddress, govPropID uint64, isSanction bool) (stop bool)) {
 	store, pre := k.getTemporaryEntryPrefixStore(ctx, addr)
 
 	iter := store.Iterator(nil, nil)
@@ -199,9 +221,29 @@ func (k Keeper) IterateTemporaryEntries(ctx sdk.Context, addr sdk.AccAddress, cb
 
 	for ; iter.Valid(); iter.Next() {
 		key := ConcatBz(pre, iter.Key())
-		kAddr, govPropId := ParseTemporaryKey(key)
+		kAddr, govPropID := ParseTemporaryKey(key)
 		isSanction := IsTempSanctionBz(iter.Value())
-		if cb(kAddr, govPropId, isSanction) {
+		if cb(kAddr, govPropID, isSanction) {
+			break
+		}
+	}
+}
+
+func (k Keeper) getProposalIndexPrefixStore(ctx sdk.Context, govPropID *uint64) (sdk.KVStore, []byte) {
+	pre := CreateProposalTempIndexPrefix(govPropID)
+	return prefix.NewStore(ctx.KVStore(k.storeKey), pre), pre
+}
+
+func (k Keeper) IterateProposalIndexEntries(ctx sdk.Context, govPropID *uint64, cb func(govPropID uint64, addr sdk.AccAddress) (stop bool)) {
+	store, pre := k.getProposalIndexPrefixStore(ctx, govPropID)
+
+	iter := store.Iterator(nil, nil)
+	defer iter.Close()
+
+	for ; iter.Valid(); iter.Next() {
+		key := ConcatBz(pre, iter.Key())
+		kPropID, kAddr := ParseProposalTempIndexKey(key)
+		if cb(kPropID, kAddr) {
 			break
 		}
 	}
