@@ -39,7 +39,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* nothing
+### Improvements
+
+* Bring in Cosmos-SDK [v0.46.7](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.7) changes [#402](https://github.com/provenance-io/cosmos-sdk/pull/402).
 
 ---
 
