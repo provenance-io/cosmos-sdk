@@ -145,14 +145,14 @@ func TestNewGenesisState(t *testing.T) {
 func TestGenesisState_Validate(t *testing.T) {
 
 	tests := []struct {
-		name  string
-		gs    *sanction.GenesisState
-		expEr []string
+		name string
+		gs   *sanction.GenesisState
+		exp  []string
 	}{
 		{
-			name:  "empty genesis state",
-			gs:    &sanction.GenesisState{},
-			expEr: nil,
+			name: "empty genesis state",
+			gs:   &sanction.GenesisState{},
+			exp:  nil,
 		},
 		{
 			name: "invalid params",
@@ -163,7 +163,7 @@ func TestGenesisState_Validate(t *testing.T) {
 				},
 				SanctionedAddresses: nil,
 			},
-			expEr: []string{"invalid params", "invalid immediate sanction min deposit", "duplicate denomination dcoin"},
+			exp: []string{"invalid params", "invalid immediate sanction min deposit", "duplicate denomination dcoin"},
 		},
 		{
 			name: "invalid first address",
@@ -177,7 +177,7 @@ func TestGenesisState_Validate(t *testing.T) {
 					sdk.AccAddress("testaddr4___________").String(),
 				},
 			},
-			expEr: []string{"invalid address", "sanctioned addresses[0]", "decoding bech32 failed", `"not1avalidaddr0"`},
+			exp: []string{"invalid address", "sanctioned addresses[0]", "decoding bech32 failed", `"not1avalidaddr0"`},
 		},
 		{
 			name: "invalid third address",
@@ -191,7 +191,7 @@ func TestGenesisState_Validate(t *testing.T) {
 					sdk.AccAddress("testaddr4___________").String(),
 				},
 			},
-			expEr: []string{"invalid address", "sanctioned addresses[2]", "decoding bech32 failed", `"not1avalidaddr2"`},
+			exp: []string{"invalid address", "sanctioned addresses[2]", "decoding bech32 failed", `"not1avalidaddr2"`},
 		},
 		{
 			name: "invalid last address",
@@ -205,7 +205,7 @@ func TestGenesisState_Validate(t *testing.T) {
 					"not1avalidaddr4",
 				},
 			},
-			expEr: []string{"invalid address", "sanctioned addresses[4]", "decoding bech32 failed", `"not1avalidaddr4"`},
+			exp: []string{"invalid address", "sanctioned addresses[4]", "decoding bech32 failed", `"not1avalidaddr4"`},
 		},
 	}
 
@@ -216,7 +216,7 @@ func TestGenesisState_Validate(t *testing.T) {
 				err = tc.gs.Validate()
 			}
 			require.NotPanics(t, testFunc, "GenesisState.Validate()")
-			testutil.AssertErrorContents(t, err, tc.expEr, ".Validate result")
+			testutil.AssertErrorContents(t, err, tc.exp, ".Validate result")
 		})
 	}
 }
