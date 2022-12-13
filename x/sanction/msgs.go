@@ -21,12 +21,12 @@ func NewMsgSanction(authority string, addrs ...sdk.AccAddress) *MsgSanction {
 func (m MsgSanction) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(m.Authority)
 	if err != nil {
-		return sdkerrors.ErrInvalidAddress.Wrap("authority")
+		return sdkerrors.ErrInvalidAddress.Wrapf("authority, %q: %v", m.Authority, err)
 	}
 	for i, addr := range m.Addresses {
 		_, err = sdk.AccAddressFromBech32(addr)
 		if err != nil {
-			return sdkerrors.ErrInvalidAddress.Wrapf("addresses[%d]", i)
+			return sdkerrors.ErrInvalidAddress.Wrapf("addresses[%d], %q: %v", i, addr, err)
 		}
 	}
 	return nil
@@ -48,15 +48,16 @@ func NewMsgUnsanction(authority string, addrs ...sdk.AccAddress) *MsgUnsanction 
 	}
 	return rv
 }
+
 func (m MsgUnsanction) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(m.Authority)
 	if err != nil {
-		return sdkerrors.ErrInvalidAddress.Wrap("authority")
+		return sdkerrors.ErrInvalidAddress.Wrapf("authority, %q: %v", m.Authority, err)
 	}
 	for i, addr := range m.Addresses {
 		_, err = sdk.AccAddressFromBech32(addr)
 		if err != nil {
-			return sdkerrors.ErrInvalidAddress.Wrapf("addresses[%d]", i)
+			return sdkerrors.ErrInvalidAddress.Wrapf("addresses[%d], %q: %v", i, addr, err)
 		}
 	}
 	return nil
@@ -83,7 +84,7 @@ func NewMsgUpdateParams(authority string, minDepSanction, minDepUnsanction sdk.C
 func (m MsgUpdateParams) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(m.Authority)
 	if err != nil {
-		return sdkerrors.ErrInvalidAddress.Wrap("authority")
+		return sdkerrors.ErrInvalidAddress.Wrapf("authority, %q: %v", m.Authority, err)
 	}
 	if m.Params != nil {
 		err = m.Params.ValidateBasic()
