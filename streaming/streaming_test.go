@@ -2,7 +2,6 @@ package streaming
 
 import (
 	"fmt"
-	store "github.com/cosmos/cosmos-sdk/store/types"
 	types "github.com/cosmos/cosmos-sdk/store/v2alpha1"
 	"os"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/stretchr/testify/assert"
