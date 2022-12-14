@@ -76,6 +76,18 @@ func TestParseStreaming(t *testing.T) {
 	require.Contains(t, actual, expectedStopNodeOnErr, "config file contents")
 }
 
+func TestReadConfig(t *testing.T) {
+	cfg := DefaultConfig()
+	tmpFile := filepath.Join(t.TempDir(), "config")
+	WriteConfigFile(tmpFile, cfg)
+
+	v := viper.New()
+	otherCfg, err := GetConfig(v)
+	require.NoError(t, err)
+
+	require.Equal(t, *cfg, otherCfg)
+}
+
 func TestIndexEventsWriteRead(t *testing.T) {
 	expected := []string{"key3", "key4"}
 

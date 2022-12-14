@@ -297,7 +297,6 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliv
 	gInfo := sdk.GasInfo{}
 	resultStr := "successful"
 
-	var abciRes abci.ResponseDeliverTx
 	defer func() {
 		// call the streaming service hook with the EndBlock messages
 		for _, abciListener := range app.abciListeners {
@@ -308,9 +307,9 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliv
 					if err := abciListener.ListenDeliverTx(ctx, req, res); err != nil {
 						app.logger.Error("DeliverTx listening hook failed", "height", blockHeight, "err", err)
 					}
-				}(req, abciRes)
+				}(req, res)
 			} else {
-				if err := abciListener.ListenDeliverTx(ctx, req, abciRes); err != nil {
+				if err := abciListener.ListenDeliverTx(ctx, req, res); err != nil {
 					app.logger.Error("DeliverTx listening hook failed", "height", blockHeight, "err", err)
 					if app.stopNodeOnABCIListenerErr {
 						plugin.CleanupClients()
@@ -674,7 +673,13 @@ func (app *BaseApp) createQueryContext(height int64, prove bool) (sdk.Context, e
 		return sdk.Context{}, err
 	}
 
-	lastBlockHeight := app.LastBlockHeight()
+	// use custom query multistore if provided
+	qms := app.qms
+	if qms == nil {
+		qms = sdk.MultiStore(app.cms)
+	}
+
+	lastBlockHeight := qms.LatestVersion()
 	if height > lastBlockHeight {
 		return sdk.Context{},
 			sdkerrors.Wrap(
@@ -696,7 +701,7 @@ func (app *BaseApp) createQueryContext(height int64, prove bool) (sdk.Context, e
 			)
 	}
 
-	cacheMS, err := app.cms.CacheMultiStoreWithVersion(height)
+	cacheMS, err := qms.CacheMultiStoreWithVersion(height)
 	if err != nil {
 		return sdk.Context{},
 			sdkerrors.Wrapf(
