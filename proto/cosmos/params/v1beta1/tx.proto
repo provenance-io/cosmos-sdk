@@ -1,0 +1,16 @@
+syntax = "proto3";
+package cosmos.params.v1beta1;
+
+import "cosmos/params/v1beta1/params.proto";
+import "cosmos/msg/v1/msg.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/params/types/proposal";
+
+// Msg defines the params Msg service.
+service Msg {
+  // ParamChange defines a method for updating an individual param.
+  rpc ParamChange(ParameterChangeProposal) returns (ParamChangeResponse);
+}
+
+// ParamChangeResponse defines the Msg/ParamChange response type.
+message ParamChangeResponse {}
