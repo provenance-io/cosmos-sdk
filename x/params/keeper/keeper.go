@@ -4,10 +4,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/tendermint/tendermint/libs/log"
 )
+
+// TODO: name fix
+type Keeper1 interface {
+	GetAuthority() string
+}
 
 // Keeper of the global paramstore
 type Keeper struct {
@@ -16,6 +23,7 @@ type Keeper struct {
 	key         storetypes.StoreKey
 	tkey        storetypes.StoreKey
 	spaces      map[string]*types.Subspace
+	authority   string
 }
 
 // NewKeeper constructs a params keeper
@@ -26,6 +34,7 @@ func NewKeeper(cdc codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, tkey 
 		key:         key,
 		tkey:        tkey,
 		spaces:      make(map[string]*types.Subspace),
+		authority:   authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	}
 }
 
@@ -70,4 +79,8 @@ func (k Keeper) GetSubspaces() []types.Subspace {
 	}
 
 	return spaces
+}
+
+func (k Keeper) GetAuthority() string {
+	return k.authority
 }

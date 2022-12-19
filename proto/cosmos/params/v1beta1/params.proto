@@ -7,6 +7,12 @@ option (gogoproto.equal_all) = true;
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 
+service Msg {
+  // ParamChange defines a method for updating an individual param.
+  rpc ParamChange(ParameterChangeProposal) returns (ParamChangeResponse);
+}
+
+
 // ParameterChangeProposal defines a proposal to change one or more parameters.
 message ParameterChangeProposal {
   option (gogoproto.goproto_getters)         = false;
@@ -27,3 +33,6 @@ message ParamChange {
   string key      = 2;
   string value    = 3;
 }
+
+// ParamChangeResponse defines the Msg/ParamChange response type.
+message ParamChangeResponse {}
