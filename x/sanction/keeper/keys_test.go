@@ -2,13 +2,16 @@ package keeper_test
 
 import (
 	"fmt"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
-	"github.com/cosmos/cosmos-sdk/x/sanction/keeper"
-	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
+	"github.com/cosmos/cosmos-sdk/x/sanction"
+	"github.com/cosmos/cosmos-sdk/x/sanction/keeper"
+	"github.com/cosmos/cosmos-sdk/x/sanction/testutil"
 )
 
 func TestPrefixValues(t *testing.T) {
@@ -447,3 +450,204 @@ func TestParseParamKey(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateSanctionedAddrKey(t *testing.T) {
+	tests := []struct {
+		name string
+		addr sdk.AccAddress
+		exp  []byte
+	}{
+		{
+			name: "nil addr",
+			addr: nil,
+			exp:  []byte{keeper.SanctionedPrefix[0]},
+		},
+		{
+			name: "4 byte address",
+			addr: sdk.AccAddress("test"),
+			exp:  append([]byte{keeper.SanctionedPrefix[0], 4}, "test"...),
+		},
+		{
+			name: "20 byte address",
+			addr: sdk.AccAddress("test_20_byte_address"),
+			exp:  append([]byte{keeper.SanctionedPrefix[0], 20}, "test_20_byte_address"...),
+		},
+		{
+			name: "32 byte address",
+			addr: sdk.AccAddress("test_____32_____byte_____address"),
+			exp:  append([]byte{keeper.SanctionedPrefix[0], 32}, "test_____32_____byte_____address"...),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual []byte
+			testFunc := func() {
+				actual = keeper.CreateSanctionedAddrKey(tc.addr)
+			}
+			require.NotPanics(t, testFunc, "CreateSanctionedAddrKey")
+			assert.Equal(t, tc.exp, actual, "CreateSanctionedAddrKey result")
+		})
+	}
+}
+
+func TestParseSanctionedAddrKey(t *testing.T) {
+	tests := []struct {
+		name     string
+		key      []byte
+		exp      sdk.AccAddress
+		expPanic string
+	}{
+		{
+			name:     "nil",
+			key:      nil,
+			expPanic: "runtime error: slice bounds out of range [1:0]",
+		},
+		{
+			name:     "empty",
+			key:      []byte{},
+			expPanic: "runtime error: slice bounds out of range [1:0]",
+		},
+		{
+			name:     "just one byte",
+			key:      []byte{'f'}, // doesn't matter what that byte is.
+			expPanic: "expected key of length at least 1, got 0",
+		},
+		{
+			name: "empty addr",
+			key:  []byte{'g', 0},
+			exp:  sdk.AccAddress{},
+		},
+		{
+			name: "4 byte addr",
+			key:  []byte{'P', 4, 't', 'e', 's', 't'},
+			exp:  sdk.AccAddress("test"),
+		},
+		{
+			name: "20 byte addr",
+			key:  keeper.CreateSanctionedAddrKey(sdk.AccAddress("this_test_addr_is_20")),
+			exp:  sdk.AccAddress("this_test_addr_is_20"),
+		},
+		{
+			name: "32 byte addr",
+			key:  keeper.CreateSanctionedAddrKey(sdk.AccAddress("this_test_addr_is_longer_with_32")),
+			exp:  sdk.AccAddress("this_test_addr_is_longer_with_32"),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual sdk.AccAddress
+			testFunc := func() {
+				actual = keeper.ParseSanctionedAddrKey(tc.key)
+			}
+			if len(tc.expPanic) > 0 {
+				testutil.RequirePanicsWithMessage(t, tc.expPanic, testFunc, "ParseSanctionedAddrKey")
+			} else {
+				require.NotPanics(t, testFunc, "ParseSanctionedAddrKey")
+				assert.Equal(t, tc.exp, actual, "ParseSanctionedAddrKey result")
+			}
+		})
+	}
+}
+
+// TODO[1046]: CreateTemporaryAddrPrefix
+// TODO[1046]: CreateTemporaryKey
+// TODO[1046]: ParseTemporaryKey
+
+func TestTempBValues(t *testing.T) {
+	// If these were the same, it'd be bad.
+	assert.NotEqual(t, keeper.TempSanctionB, keeper.TempUnsanctionB, "TempSanctionB vs TempUnsanctionB")
+}
+
+func TestIsTempSanctionBz(t *testing.T) {
+	tests := []struct {
+		name string
+		bz   []byte
+		exp  bool
+	}{
+		{name: "nil", bz: nil, exp: false},
+		{name: "empty", bz: []byte{}, exp: false},
+		{name: "TempSanctionB and 0", bz: []byte{keeper.TempSanctionB, 0}, exp: false},
+		{name: "TempUnsanctionB and 0", bz: []byte{keeper.TempUnsanctionB, 0}, exp: false},
+		{name: "0 and TempSanctionB", bz: []byte{0, keeper.TempSanctionB}, exp: false},
+		{name: "0 and TempUnsanctionB", bz: []byte{0, keeper.TempUnsanctionB}, exp: false},
+		{name: "the letter f", bz: []byte{'f'}, exp: false},
+		{name: "TempSanctionB", bz: []byte{keeper.TempSanctionB}, exp: true},
+		{name: "TempUnsanctionB", bz: []byte{keeper.TempUnsanctionB}, exp: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual bool
+			testFunc := func() {
+				actual = keeper.IsTempSanctionBz(tc.bz)
+			}
+			require.NotPanics(t, testFunc, "IsTempSanctionBz")
+			assert.Equal(t, tc.exp, actual, "IsTempSanctionBz result")
+		})
+	}
+}
+
+func TestIsTempUnsanctionBz(t *testing.T) {
+	tests := []struct {
+		name string
+		bz   []byte
+		exp  bool
+	}{
+		{name: "nil", bz: nil, exp: false},
+		{name: "empty", bz: []byte{}, exp: false},
+		{name: "TempSanctionB and 0", bz: []byte{keeper.TempSanctionB, 0}, exp: false},
+		{name: "TempUnsanctionB and 0", bz: []byte{keeper.TempUnsanctionB, 0}, exp: false},
+		{name: "0 and TempSanctionB", bz: []byte{0, keeper.TempSanctionB}, exp: false},
+		{name: "0 and TempUnsanctionB", bz: []byte{0, keeper.TempUnsanctionB}, exp: false},
+		{name: "the letter f", bz: []byte{'f'}, exp: false},
+		{name: "TempSanctionB", bz: []byte{keeper.TempSanctionB}, exp: false},
+		{name: "TempUnsanctionB", bz: []byte{keeper.TempUnsanctionB}, exp: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual bool
+			testFunc := func() {
+				actual = keeper.IsTempUnsanctionBz(tc.bz)
+			}
+			require.NotPanics(t, testFunc, "IsTempUnsanctionBz")
+			assert.Equal(t, tc.exp, actual, "IsTempUnsanctionBz result")
+		})
+	}
+}
+
+func TestToTempStatus(t *testing.T) {
+	tests := []struct {
+		name string
+		bz   []byte
+		exp  sanction.TempStatus
+	}{
+		{name: "nil", bz: nil, exp: sanction.TEMP_STATUS_UNSPECIFIED},
+		{name: "empty", bz: []byte{}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
+		{name: "TempSanctionB and 0", bz: []byte{keeper.TempSanctionB, 0}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
+		{name: "TempUnsanctionB and 0", bz: []byte{keeper.TempUnsanctionB, 0}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
+		{name: "0 and TempSanctionB", bz: []byte{0, keeper.TempSanctionB}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
+		{name: "0 and TempUnsanctionB", bz: []byte{0, keeper.TempUnsanctionB}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
+		{name: "the letter f", bz: []byte{'f'}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
+		{name: "TempSanctionB", bz: []byte{keeper.TempSanctionB}, exp: sanction.TEMP_STATUS_SANCTIONED},
+		{name: "TempUnsanctionB", bz: []byte{keeper.TempUnsanctionB}, exp: sanction.TEMP_STATUS_UNSANCTIONED},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual sanction.TempStatus
+			testFunc := func() {
+				actual = keeper.ToTempStatus(tc.bz)
+			}
+			require.NotPanics(t, testFunc, "ToTempStatus")
+			assert.Equal(t, tc.exp, actual, "ToTempStatus result")
+		})
+	}
+}
+
+// TODO[1046]: NewTempEvent
+// TODO[1046]: CreateProposalTempIndexPrefix
+// TODO[1046]: CreateProposalTempIndexKey
+// TODO[1046]: ParseProposalTempIndexKey
