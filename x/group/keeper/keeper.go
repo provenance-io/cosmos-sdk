@@ -393,7 +393,8 @@ func (k Keeper) TallyProposalsAtVPEnd(ctx sdk.Context) error {
 			return sdkerrors.Wrap(err, "group")
 		}
 
-		if proposal.Status == group.PROPOSAL_STATUS_ABORTED || proposal.Status == group.PROPOSAL_STATUS_WITHDRAWN {
+		switch proposal.Status {
+		case group.PROPOSAL_STATUS_ABORTED, group.PROPOSAL_STATUS_WITHDRAWN:
 			proposalID := proposal.Id
 			if err := k.pruneProposal(ctx, proposalID); err != nil {
 				return err
@@ -401,8 +402,22 @@ func (k Keeper) TallyProposalsAtVPEnd(ctx sdk.Context) error {
 			if err := k.pruneVotes(ctx, proposalID); err != nil {
 				return err
 			}
-		} else if proposal.Status == group.PROPOSAL_STATUS_SUBMITTED {
+		case group.PROPOSAL_STATUS_SUBMITTED:
 			if err := k.doTallyAndUpdate(ctx, &proposal, electorate, policyInfo); err != nil {
+				return sdkerrors.Wrap(err, "doTallyAndUpdate")
+			}
+
+			if err := k.proposalTable.Update(ctx.KVStore(k.key), proposal.Id, &proposal); err != nil { //nolint:gosec // implicit memory aliasing in for loop
+				return sdkerrors.Wrap(err, "proposal update")
+			}
+		default:
+			// Should only be Accepted, Rejected, or Unspecified.
+			// Should really do nothing here, but for state compatibility, we still need to
+			// attempt this. We'll just ignore the specific error in question.
+			if err := k.doTallyAndUpdate(ctx, &proposal, electorate, policyInfo); err != nil {
+				if err.Error() == "policy allow: result negative during non-negative subtraction" {
+					continue
+				}
 				return sdkerrors.Wrap(err, "doTallyAndUpdate")
 			}
 
