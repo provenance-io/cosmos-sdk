@@ -98,6 +98,9 @@ func ParseSanctionedAddrKey(key []byte) sdk.AccAddress {
 // If an address isn't provided:
 // - 0x02
 func CreateTemporaryAddrPrefix(addr sdk.AccAddress) []byte {
+	if len(addr) == 0 {
+		return ConcatBz(TemporaryPrefix, []byte{})
+	}
 	return concatBzPlusCap(TemporaryPrefix, address.MustLengthPrefix(addr), 8)
 }
 
@@ -105,7 +108,12 @@ func CreateTemporaryAddrPrefix(addr sdk.AccAddress) []byte {
 //
 // - 0x02<addr len (1 byte)><addr><gov prop id (8 bytes)>
 func CreateTemporaryKey(addr sdk.AccAddress, govPropID uint64) []byte {
-	return append(CreateTemporaryAddrPrefix(addr), sdk.Uint64ToBigEndian(govPropID)...)
+	pre := CreateTemporaryAddrPrefix(addr)
+	idBz := sdk.Uint64ToBigEndian(govPropID)
+	if len(pre)+8 == cap(pre) {
+		return append(CreateTemporaryAddrPrefix(addr), idBz...)
+	}
+	return ConcatBz(pre, idBz)
 }
 
 // ParseTemporaryKey extracts the address and gov prop id from the provided temporary key.
@@ -164,11 +172,10 @@ func NewTempEvent(typeVal byte, addr sdk.AccAddress) proto.Message {
 // If a govPropID isn't provided:
 // - 0x03
 func CreateProposalTempIndexPrefix(govPropID *uint64) []byte {
-	var govPropBz []byte
-	if govPropID != nil {
-		govPropBz = sdk.Uint64ToBigEndian(*govPropID)
+	if govPropID == nil {
+		return ConcatBz(ProposalIndexPrefix, []byte{})
 	}
-	return concatBzPlusCap(ProposalIndexPrefix, govPropBz, 33)
+	return concatBzPlusCap(ProposalIndexPrefix, sdk.Uint64ToBigEndian(*govPropID), 33)
 }
 
 // CreateProposalTempIndexKey creates a key for a proposal id + addr temporary index entry.
