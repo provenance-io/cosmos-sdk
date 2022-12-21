@@ -9,14 +9,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/sanction"
+	"github.com/cosmos/cosmos-sdk/x/sanction/errors"
 )
 
 type Keeper struct {
 	cdc      codec.BinaryCodec
 	storeKey storetypes.StoreKey
 
-	bankKeeper sanction.BankKeeper
-	govKeeper  sanction.GovKeeper
+	govKeeper sanction.GovKeeper
 
 	authority string
 
@@ -38,7 +38,6 @@ func NewKeeper(
 	rv := Keeper{
 		cdc:                         cdc,
 		storeKey:                    storeKey,
-		bankKeeper:                  bankKeeper,
 		govKeeper:                   govKeeper,
 		authority:                   authority,
 		unsanctionableAddrs:         make(map[string]bool),
@@ -47,7 +46,8 @@ func NewKeeper(
 		msgExecLegacyContentTypeURL: sdk.MsgTypeURL(&govv1.MsgExecLegacyContent{}),
 	}
 	for _, addr := range unsanctionableAddrs {
-		rv.unsanctionableAddrs[addr.String()] = true
+		// using string(addr) here instead of addr.String() to cut down on the need to bech32 encode things.
+		rv.unsanctionableAddrs[string(addr)] = true
 	}
 	bankKeeper.SetSanctionKeeper(rv)
 	return rv
@@ -78,6 +78,9 @@ func (k Keeper) SanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) erro
 	store := ctx.KVStore(k.storeKey)
 	val := []byte{0x00}
 	for _, addr := range addrs {
+		if !k.IsSanctionableAddr(addr) {
+			return errors.ErrUnsanctionableAddr.Wrap(addr.String())
+		}
 		key := CreateSanctionedAddrKey(addr)
 		store.Set(key, val)
 		if err := ctx.EventManager().EmitTypedEvent(sanction.NewEventAddressSanctioned(addr)); err != nil {
@@ -105,6 +108,11 @@ func (k Keeper) UnsanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) er
 
 // AddTemporarySanction adds a temporary sanction with the given gov prop id for each of the provided addresses.
 func (k Keeper) AddTemporarySanction(ctx sdk.Context, govPropID uint64, addrs ...sdk.AccAddress) error {
+	for _, addr := range addrs {
+		if !k.IsSanctionableAddr(addr) {
+			return errors.ErrUnsanctionableAddr.Wrap(addr.String())
+		}
+	}
 	return k.addTempEntries(ctx, TempSanctionB, govPropID, addrs)
 }
 
@@ -254,8 +262,8 @@ func (k Keeper) IterateProposalIndexEntries(ctx sdk.Context, govPropID *uint64, 
 
 // IsSanctionableAddr returns true if the provided address is not one of the ones that cannot be sanctioned.
 // I.e. returns true if it can be sanctioned.
-func (k Keeper) IsSanctionableAddr(addr string) bool {
-	return !k.unsanctionableAddrs[addr]
+func (k Keeper) IsSanctionableAddr(addr sdk.AccAddress) bool {
+	return !k.unsanctionableAddrs[string(addr)]
 }
 
 // GetParams gets the sanction module's params.
@@ -324,7 +332,7 @@ func (k Keeper) GetImmediateUnsanctionMinDeposit(ctx sdk.Context) sdk.Coins {
 	)
 }
 
-// getParam returns a param value and wether it existed.
+// getParam returns a param value and whether it existed.
 func (k Keeper) getParam(store sdk.KVStore, name string) (string, bool) {
 	key := CreateParamKey(name)
 	if store.Has(key) {
