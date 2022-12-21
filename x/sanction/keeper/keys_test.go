@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -551,9 +552,187 @@ func TestParseSanctionedAddrKey(t *testing.T) {
 	}
 }
 
-// TODO[1046]: CreateTemporaryAddrPrefix
-// TODO[1046]: CreateTemporaryKey
-// TODO[1046]: ParseTemporaryKey
+func TestCreateTemporaryAddrPrefix(t *testing.T) {
+	tests := []struct {
+		name   string
+		addr   sdk.AccAddress
+		exp    []byte
+		expCap int
+	}{
+		{
+			name:   "nil addr",
+			addr:   nil,
+			exp:    []byte{keeper.TemporaryPrefix[0]},
+			expCap: 1,
+		},
+		{
+			name:   "4 byte address",
+			addr:   sdk.AccAddress("test"),
+			exp:    append([]byte{keeper.TemporaryPrefix[0], 4}, "test"...),
+			expCap: 14,
+		},
+		{
+			name:   "20 byte address",
+			addr:   sdk.AccAddress("test_20_byte_address"),
+			exp:    append([]byte{keeper.TemporaryPrefix[0], 20}, "test_20_byte_address"...),
+			expCap: 30,
+		},
+		{
+			name:   "32 byte address",
+			addr:   sdk.AccAddress("test_____32_____byte_____address"),
+			exp:    append([]byte{keeper.TemporaryPrefix[0], 32}, "test_____32_____byte_____address"...),
+			expCap: 42,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual []byte
+			testFunc := func() {
+				actual = keeper.CreateTemporaryAddrPrefix(tc.addr)
+			}
+			require.NotPanics(t, testFunc, "CreateSanctionedAddrKey")
+			assert.Equal(t, tc.exp, actual, "CreateSanctionedAddrKey result")
+			assert.Equal(t, tc.expCap, cap(actual), "CreateSanctionedAddrKey result capacity")
+		})
+	}
+}
+
+func TestCreateTemporaryKey(t *testing.T) {
+	tests := []struct {
+		name   string
+		addr   sdk.AccAddress
+		govId  uint64
+		exp    []byte
+		expCap int
+	}{
+		{
+			name:   "nil addr id 0",
+			addr:   nil,
+			govId:  0,
+			exp:    []byte{keeper.TemporaryPrefix[0], 0, 0, 0, 0, 0, 0, 0, 0},
+			expCap: 9,
+		},
+		{
+			name:   "4 byte address id 1",
+			addr:   sdk.AccAddress("test"),
+			govId:  1,
+			exp:    append([]byte{keeper.TemporaryPrefix[0], 4}, append([]byte("test"), 0, 0, 0, 0, 0, 0, 0, 1)...),
+			expCap: 14,
+		},
+		{
+			name:   "20 byte address id 2",
+			addr:   sdk.AccAddress("test_20_byte_address"),
+			govId:  2,
+			exp:    append([]byte{keeper.TemporaryPrefix[0], 20}, append([]byte("test_20_byte_address"), 0, 0, 0, 0, 0, 0, 0, 2)...),
+			expCap: 30,
+		},
+		{
+			name:   "32 byte address id 3",
+			addr:   sdk.AccAddress("test_____32_____byte_____address"),
+			govId:  3,
+			exp:    append([]byte{keeper.TemporaryPrefix[0], 32}, append([]byte("test_____32_____byte_____address"), 0, 0, 0, 0, 0, 0, 0, 3)...),
+			expCap: 42,
+		},
+		{
+			name:   "20 byte address id 1000",
+			addr:   sdk.AccAddress("test_20_byte_address"),
+			govId:  1000,
+			exp:    append([]byte{keeper.TemporaryPrefix[0], 20}, append([]byte("test_20_byte_address"), 0, 0, 0, 0, 0, 0, 3, 232)...),
+			expCap: 30,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual []byte
+			testFunc := func() {
+				actual = keeper.CreateTemporaryKey(tc.addr, tc.govId)
+			}
+			require.NotPanics(t, testFunc, "CreateTemporaryKey")
+			assert.Equal(t, tc.exp, actual, "CreateTemporaryKey result")
+			assert.Equal(t, tc.expCap, cap(actual), "CreateTemporaryKey result capacity")
+		})
+	}
+}
+
+func TestParseTemporaryKey(t *testing.T) {
+	tests := []struct {
+		name     string
+		key      []byte
+		expAddr  sdk.AccAddress
+		expId    uint64
+		expPanic string
+	}{
+		{
+			name:     "nil",
+			key:      nil,
+			expPanic: "runtime error: slice bounds out of range [1:0]",
+		},
+		{
+			name:     "empty",
+			key:      []byte{},
+			expPanic: "runtime error: slice bounds out of range [1:0]",
+		},
+		{
+			name:     "just one byte",
+			key:      []byte{'f'}, // doesn't matter what that byte is.
+			expPanic: "expected key of length at least 1, got 0",
+		},
+		{
+			name:     "empty addr only 7 id bytes",
+			key:      []byte{'g', 0, 0, 0, 0, 0, 0, 0, 77},
+			expPanic: "runtime error: index out of range [7] with length 7",
+		},
+		{
+			name:    "empty addr id 1",
+			key:     []byte{'g', 0, 0, 0, 0, 0, 0, 0, 0, 1},
+			expAddr: sdk.AccAddress{},
+			expId:   1,
+		},
+		{
+			name:    "4 byte addr id 2",
+			key:     []byte{'P', 4, 't', 'e', 's', 't', 0, 0, 0, 0, 0, 0, 0, 2},
+			expAddr: sdk.AccAddress("test"),
+			expId:   2,
+		},
+		{
+			name:    "20 byte addr id 3",
+			key:     keeper.CreateTemporaryKey(sdk.AccAddress("this_test_addr_is_20"), 3),
+			expAddr: sdk.AccAddress("this_test_addr_is_20"),
+			expId:   3,
+		},
+		{
+			name:    "32 byte addr id 4",
+			key:     keeper.CreateTemporaryKey(sdk.AccAddress("this_test_addr_is_longer_with_32"), 4),
+			expAddr: sdk.AccAddress("this_test_addr_is_longer_with_32"),
+			expId:   4,
+		},
+		{
+			name:    "20 byte addr id 1000",
+			key:     keeper.CreateTemporaryKey(sdk.AccAddress("this_test_addr_is_20"), 1000),
+			expAddr: sdk.AccAddress("this_test_addr_is_20"),
+			expId:   1000,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var addr sdk.AccAddress
+			var id uint64
+			testFunc := func() {
+				addr, id = keeper.ParseTemporaryKey(tc.key)
+			}
+			if len(tc.expPanic) > 0 {
+				testutil.RequirePanicsWithMessage(t, tc.expPanic, testFunc, "ParseTemporaryKey")
+			} else {
+				require.NotPanics(t, testFunc, "ParseTemporaryKey")
+				assert.Equal(t, tc.expAddr, addr, "ParseTemporaryKey address")
+				assert.Equal(t, tc.expId, id, "ParseTemporaryKey gov prop id")
+			}
+		})
+	}
+}
 
 func TestTempBValues(t *testing.T) {
 	// If these were the same, it'd be bad.
@@ -647,7 +826,267 @@ func TestToTempStatus(t *testing.T) {
 	}
 }
 
-// TODO[1046]: NewTempEvent
-// TODO[1046]: CreateProposalTempIndexPrefix
-// TODO[1046]: CreateProposalTempIndexKey
-// TODO[1046]: ParseProposalTempIndexKey
+func TestNewTempEvent(t *testing.T) {
+	tests := []struct {
+		name     string
+		typeVal  byte
+		addr     sdk.AccAddress
+		exp      proto.Message
+		expPanic string
+	}{
+		{
+			name:    "TempSanctionB nil addr",
+			typeVal: keeper.TempSanctionB,
+			addr:    nil,
+			exp:     &sanction.EventTempAddressSanctioned{Address: ""},
+		},
+		{
+			name:    "TempSanctionB empty addr",
+			typeVal: keeper.TempSanctionB,
+			addr:    sdk.AccAddress{},
+			exp:     &sanction.EventTempAddressSanctioned{Address: ""},
+		},
+		{
+			name:    "TempSanctionB 20 byte addr",
+			typeVal: keeper.TempSanctionB,
+			addr:    sdk.AccAddress("this_is_a_short_addr"),
+			exp:     &sanction.EventTempAddressSanctioned{Address: sdk.AccAddress("this_is_a_short_addr").String()},
+		},
+		{
+			name:    "TempSanctionB 32 byte addr",
+			typeVal: keeper.TempSanctionB,
+			addr:    sdk.AccAddress("this_is_a_longer_addr_for_tests_"),
+			exp:     &sanction.EventTempAddressSanctioned{Address: sdk.AccAddress("this_is_a_longer_addr_for_tests_").String()},
+		},
+		{
+			name:    "TempUnsanctionB nil addr",
+			typeVal: keeper.TempUnsanctionB,
+			addr:    nil,
+			exp:     &sanction.EventTempAddressUnsanctioned{Address: ""},
+		},
+		{
+			name:    "TempUnsanctionB empty addr",
+			typeVal: keeper.TempUnsanctionB,
+			addr:    sdk.AccAddress{},
+			exp:     &sanction.EventTempAddressUnsanctioned{Address: ""},
+		},
+		{
+			name:    "TempUnsanctionB 20 byte addr",
+			typeVal: keeper.TempUnsanctionB,
+			addr:    sdk.AccAddress("this_is_a_short_addr"),
+			exp:     &sanction.EventTempAddressUnsanctioned{Address: sdk.AccAddress("this_is_a_short_addr").String()},
+		},
+		{
+			name:    "TempUnsanctionB 32 byte addr",
+			typeVal: keeper.TempUnsanctionB,
+			addr:    sdk.AccAddress("this_is_a_longer_addr_for_tests_"),
+			exp:     &sanction.EventTempAddressUnsanctioned{Address: sdk.AccAddress("this_is_a_longer_addr_for_tests_").String()},
+		},
+		{
+			name:     "unknown type byte",
+			typeVal:  42,
+			addr:     sdk.AccAddress("does_not_matter"),
+			expPanic: "unknown temp value byte: 2a",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual proto.Message
+			testFunc := func() {
+				actual = keeper.NewTempEvent(tc.typeVal, tc.addr)
+			}
+			if len(tc.expPanic) > 0 {
+				testutil.RequirePanicsWithMessage(t, tc.expPanic, testFunc, "NewTempEvent")
+			} else {
+				require.NotPanics(t, testFunc, "NewTempEvent")
+				assert.Equal(t, tc.exp, actual, "NewTempEvent result")
+			}
+		})
+	}
+}
+
+func TestCreateProposalTempIndexPrefix(t *testing.T) {
+	uint64p := func(v uint64) *uint64 {
+		return &v
+	}
+	tests := []struct {
+		name   string
+		id     *uint64
+		exp    []byte
+		expCap int
+	}{
+		{
+			name:   "nil id",
+			id:     nil,
+			exp:    []byte{keeper.ProposalIndexPrefix[0]},
+			expCap: 1,
+		},
+		{
+			name:   "id 0",
+			id:     uint64p(0),
+			exp:    []byte{keeper.ProposalIndexPrefix[0], 0, 0, 0, 0, 0, 0, 0, 0},
+			expCap: 42,
+		},
+		{
+			name:   "id 1",
+			id:     uint64p(1),
+			exp:    []byte{keeper.ProposalIndexPrefix[0], 0, 0, 0, 0, 0, 0, 0, 1},
+			expCap: 42,
+		},
+		{
+			name:   "id 100",
+			id:     uint64p(100),
+			exp:    []byte{keeper.ProposalIndexPrefix[0], 0, 0, 0, 0, 0, 0, 0, 100},
+			expCap: 42,
+		},
+		{
+			name:   "id 1000",
+			id:     uint64p(1000),
+			exp:    []byte{keeper.ProposalIndexPrefix[0], 0, 0, 0, 0, 0, 0, 3, 232},
+			expCap: 42,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual []byte
+			testFunc := func() {
+				actual = keeper.CreateProposalTempIndexPrefix(tc.id)
+			}
+			require.NotPanics(t, testFunc, "CreateProposalTempIndexPrefix")
+			require.Equal(t, tc.exp, actual, "CreateProposalTempIndexPrefix result")
+			require.Equal(t, tc.expCap, cap(actual), "CreateProposalTempIndexPrefix result capacity")
+		})
+	}
+}
+
+func TestCreateProposalTempIndexKey(t *testing.T) {
+	tests := []struct {
+		name  string
+		addr  sdk.AccAddress
+		govId uint64
+		exp   []byte
+	}{
+		{
+			name:  "nil addr id 0",
+			addr:  nil,
+			govId: 0,
+			exp:   []byte{keeper.ProposalIndexPrefix[0], 0, 0, 0, 0, 0, 0, 0, 0},
+		},
+		{
+			name:  "4 byte address id 1",
+			addr:  sdk.AccAddress("test"),
+			govId: 1,
+			exp:   append([]byte{keeper.ProposalIndexPrefix[0], 0, 0, 0, 0, 0, 0, 0, 1, 4}, "test"...),
+		},
+		{
+			name:  "20 byte address id 2",
+			addr:  sdk.AccAddress("test_20_byte_address"),
+			govId: 2,
+			exp:   append([]byte{keeper.ProposalIndexPrefix[0], 0, 0, 0, 0, 0, 0, 0, 2, 20}, "test_20_byte_address"...),
+		},
+		{
+			name:  "32 byte address id 3",
+			addr:  sdk.AccAddress("test_____32_____byte_____address"),
+			govId: 3,
+			exp:   append([]byte{keeper.ProposalIndexPrefix[0], 0, 0, 0, 0, 0, 0, 0, 3, 32}, "test_____32_____byte_____address"...),
+		},
+		{
+			name:  "20 byte address id 1000",
+			addr:  sdk.AccAddress("test_20_byte_address"),
+			govId: 1000,
+			exp:   append([]byte{keeper.ProposalIndexPrefix[0], 0, 0, 0, 0, 0, 0, 3, 232, 20}, "test_20_byte_address"...),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var actual []byte
+			testFunc := func() {
+				actual = keeper.CreateProposalTempIndexKey(tc.govId, tc.addr)
+			}
+			require.NotPanics(t, testFunc, "CreateProposalTempIndexKey")
+			assert.Equal(t, tc.exp, actual, "CreateProposalTempIndexKey result")
+			assert.Equal(t, 42, cap(actual), "CreateProposalTempIndexKey result capacity")
+		})
+	}
+}
+
+func TestParseProposalTempIndexKey(t *testing.T) {
+	tests := []struct {
+		name     string
+		key      []byte
+		expAddr  sdk.AccAddress
+		expPanic string
+		expId    uint64
+	}{
+		{
+			name:     "nil",
+			key:      nil,
+			expPanic: "runtime error: slice bounds out of range [:9] with capacity 0",
+		},
+		{
+			name:     "empty",
+			key:      []byte{},
+			expPanic: "runtime error: slice bounds out of range [:9] with capacity 0",
+		},
+		{
+			name:     "just one byte",
+			key:      []byte{'f'}, // doesn't matter what that byte is.
+			expPanic: "runtime error: slice bounds out of range [:9] with capacity 1",
+		},
+		{
+			name:     "only 7 id bytes empty addr",
+			key:      []byte{'g', 0, 0, 0, 0, 0, 0, 77},
+			expPanic: "runtime error: slice bounds out of range [:9] with capacity 8",
+		},
+		{
+			name:    "id 1 empty addr",
+			key:     []byte{'g', 0, 0, 0, 0, 0, 0, 0, 1, 0},
+			expId:   1,
+			expAddr: sdk.AccAddress{},
+		},
+		{
+			name:    "id 2 4 byte addr",
+			key:     []byte{'P', 0, 0, 0, 0, 0, 0, 0, 2, 4, 't', 'e', 's', 't'},
+			expId:   2,
+			expAddr: sdk.AccAddress("test"),
+		},
+		{
+			name:    "id 3 20 byte addr",
+			key:     keeper.CreateProposalTempIndexKey(3, sdk.AccAddress("this_test_addr_is_20")),
+			expId:   3,
+			expAddr: sdk.AccAddress("this_test_addr_is_20"),
+		},
+		{
+			name:    "id 4 32 byte addr",
+			key:     keeper.CreateProposalTempIndexKey(4, sdk.AccAddress("this_test_addr_is_longer_with_32")),
+			expId:   4,
+			expAddr: sdk.AccAddress("this_test_addr_is_longer_with_32"),
+		},
+		{
+			name:    "id 1000 20 byte addr",
+			key:     keeper.CreateProposalTempIndexKey(1000, sdk.AccAddress("this_test_addr_is_20")),
+			expId:   1000,
+			expAddr: sdk.AccAddress("this_test_addr_is_20"),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var addr sdk.AccAddress
+			var id uint64
+			testFunc := func() {
+				id, addr = keeper.ParseProposalTempIndexKey(tc.key)
+			}
+			if len(tc.expPanic) > 0 {
+				testutil.RequirePanicsWithMessage(t, tc.expPanic, testFunc, "ParseProposalTempIndexKey")
+			} else {
+				require.NotPanics(t, testFunc, "ParseProposalTempIndexKey")
+				assert.Equal(t, tc.expId, id, "ParseProposalTempIndexKey gov prop id")
+				assert.Equal(t, tc.expAddr, addr, "ParseProposalTempIndexKey address")
+			}
+		})
+	}
+}
