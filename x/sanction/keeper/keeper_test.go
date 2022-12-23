@@ -70,7 +70,128 @@ func (s *TestSuite) TestKeeper_GetAuthority() {
 	}
 }
 
-// TODO[1046]: IsSanctionedAddr(ctx sdk.Context, addr sdk.AccAddress) bool
+func (s *TestSuite) TestIsSanctionedAddr() {
+	// Setup:
+	// addr1 will be sanctioned.
+	// addr2 will be sanctioned, but have a temp unsanction.
+	// addr3 will have a temp sanction.
+	// addr4 will have a temp sanction then temp unsanction.
+	// addr5 will be sanctioned and have a temp unsanction then a temp sanction.
+	var setupErr error
+	s.Require().NotPanics(func() {
+		setupErr = s.keeper.SanctionAddresses(s.sdkCtx, s.addr1, s.addr2, s.addr5)
+	}, "SanctionAddresses")
+	s.Require().NoError(setupErr, "SanctionAddresses error")
+	s.Require().NotPanics(func() {
+		setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 1, s.addr3, s.addr4)
+	}, "first AddTemporarySanction")
+	s.Require().NoError(setupErr, "first AddTemporarySanction error")
+	s.Require().NotPanics(func() {
+		setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 2, s.addr2, s.addr4, s.addr5)
+	}, "AddTemporaryUnsanction")
+	s.Require().NoError(setupErr, "AddTemporaryUnsanction error")
+	s.Require().NotPanics(func() {
+		setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 3, s.addr5)
+	}, "second AddTemporarySanction")
+	s.Require().NoError(setupErr, "second AddTemporarySanction error")
+
+	tests := []struct {
+		name string
+		addr sdk.AccAddress
+		exp  bool
+	}{
+		{
+			name: "nil",
+			addr: nil,
+			exp:  false,
+		},
+		{
+			name: "empty",
+			addr: sdk.AccAddress{},
+			exp:  false,
+		},
+		{
+			name: "unknown address",
+			addr: sdk.AccAddress("an__unknown__address"),
+			exp:  false,
+		},
+		{
+			name: "sanctioned addr",
+			addr: s.addr1,
+			exp:  true,
+		},
+		{
+			name: "sanctioned with temp unsanction",
+			addr: s.addr2,
+			exp:  false,
+		},
+		{
+			name: "temp sanction",
+			addr: s.addr3,
+			exp:  true,
+		},
+		{
+			name: "temp sanction then temp unsanction",
+			addr: s.addr4,
+			exp:  false,
+		},
+		{
+			name: "sanctioned with temp unsanction then temp sanction",
+			addr: s.addr5,
+			exp:  true,
+		},
+		{
+			name: "first byte of sanctioned addr",
+			addr: sdk.AccAddress{s.addr1[0]},
+			exp:  false,
+		},
+		{
+			name: "sanctioned addr plus 1 byte at end",
+			addr: append(append([]byte{}, s.addr1...), 'f'),
+			exp:  false,
+		},
+		{
+			name: "sanctioned addr plus 1 byte at front",
+			addr: append([]byte{'g'}, s.addr1...),
+			exp:  false,
+		},
+		{
+			name: "sanctioned addr minus last byte",
+			addr: s.addr1[:len(s.addr1)-1],
+			exp:  false,
+		},
+		{
+			name: "sanctioned addr minus first byte",
+			addr: s.addr1[1:],
+			exp:  false,
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			var origAddr, origAtFullCap sdk.AccAddress
+			if tc.addr != nil {
+				origAddr = make(sdk.AccAddress, len(tc.addr), cap(tc.addr))
+				copy(origAddr, tc.addr[:cap(tc.addr)])
+				origAtFullCap = tc.addr[:cap(tc.addr)]
+			}
+			var actual bool
+			testFunc := func() {
+				actual = s.keeper.IsSanctionedAddr(s.sdkCtx, tc.addr)
+			}
+			s.Require().NotPanics(testFunc, "IsSanctionedAddr")
+			s.Assert().Equal(tc.exp, actual, "IsSanctionedAddr result")
+			s.Assert().Equal(origAddr, tc.addr, "provided addr before and after")
+			s.Assert().Equal(cap(origAddr), cap(tc.addr), "provided addr capacity before and after")
+			var addrAtFullCap sdk.AccAddress
+			if tc.addr != nil {
+				addrAtFullCap = tc.addr[:cap(tc.addr)]
+			}
+			s.Assert().Equal(origAtFullCap, addrAtFullCap, "provided addr at full capacity before and after")
+		})
+	}
+}
+
 // TODO[1046]: SanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) error
 // TODO[1046]: UnsanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) error
 // TODO[1046]: AddTemporarySanction(ctx sdk.Context, govPropID uint64, addrs ...sdk.AccAddress) error
@@ -79,16 +200,284 @@ func (s *TestSuite) TestKeeper_GetAuthority() {
 // TODO[1046]: getLatestTempEntry(store sdk.KVStore, addr sdk.AccAddress) []byte
 // TODO[1046]: DeleteGovPropTempEntries(ctx sdk.Context, govPropID uint64)
 // TODO[1046]: DeleteAddrTempEntries(ctx sdk.Context, addrs ...sdk.AccAddress)
-// TODO[1046]: getSanctionedAddressPrefixStore(ctx sdk.Context) (sdk.KVStore, []byte)
 // TODO[1046]: IterateSanctionedAddresses(ctx sdk.Context, cb func(addr sdk.AccAddress) (stop bool))
-// TODO[1046]: getTemporaryEntryPrefixStore(ctx sdk.Context, addr sdk.AccAddress) (sdk.KVStore, []byte)
 // TODO[1046]: IterateTemporaryEntries(ctx sdk.Context, addr sdk.AccAddress, cb func(addr sdk.AccAddress, govPropID uint64, isSanction bool) (stop bool))
-// TODO[1046]: getProposalIndexPrefixStore(ctx sdk.Context, govPropID *uint64) (sdk.KVStore, []byte)
 // TODO[1046]: IterateProposalIndexEntries(ctx sdk.Context, govPropID *uint64, cb func(govPropID uint64, addr sdk.AccAddress) (stop bool))
-// TODO[1046]: IsSanctionableAddr(addr string) bool
-// TODO[1046]: GetParams(ctx sdk.Context) *sanction.Params
-// TODO[1046]: SetParams(ctx sdk.Context, params *sanction.Params) error
-// TODO[1046]: IterateParams(ctx sdk.Context, cb func(name, value string) (stop bool))
+
+func (s *TestSuite) TestIsSanctionableAddr() {
+	k := s.keeper.WithUnsanctionableAddrs(map[string]bool{
+		string(s.addr1): true,
+		string(s.addr2): true,
+		string(s.addr3): false, // I'm not sure how this would happen, but whatever.
+	})
+
+	tests := []struct {
+		name string
+		addr sdk.AccAddress
+		exp  bool
+	}{
+		{
+			name: "unsanctionable addr 1",
+			addr: s.addr1,
+			exp:  false,
+		},
+		{
+			name: "unsanctionable addr 2",
+			addr: s.addr2,
+			exp:  false,
+		},
+		{
+			name: "sanctionable addr",
+			addr: s.addr3,
+			exp:  true,
+		},
+		{
+			name: "nil",
+			addr: nil,
+			exp:  false,
+		},
+		{
+			name: "empty",
+			addr: nil,
+			exp:  false,
+		},
+		{
+			name: "random",
+			addr: sdk.AccAddress("random"),
+			exp:  true,
+		},
+		{
+			name: "other addr",
+			addr: s.addr5,
+			exp:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			var actual bool
+			testFunc := func() {
+				actual = k.IsSanctionableAddr(tc.addr)
+			}
+			s.Require().NotPanics(testFunc, "isSanctionableAddr")
+			s.Assert().Equal(tc.exp, actual, "isSanctionableAddr result")
+		})
+	}
+}
+
+func (s *TestSuite) TestGetSetParams() {
+	// Change the defaults from their norm so we know they've got values we can check against.
+	origSanct := sanction.DefaultImmediateSanctionMinDeposit
+	origUnsanct := sanction.DefaultImmediateUnsanctionMinDeposit
+	defer func() {
+		sanction.DefaultImmediateSanctionMinDeposit = origSanct
+		sanction.DefaultImmediateUnsanctionMinDeposit = origUnsanct
+	}()
+	sanction.DefaultImmediateSanctionMinDeposit = sdk.NewCoins(sdk.NewInt64Coin("sanct", 93))
+	sanction.DefaultImmediateUnsanctionMinDeposit = sdk.NewCoins(sdk.NewInt64Coin("usanct", 49))
+
+	store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+	s.Require().NotPanics(func() {
+		s.keeper.DeleteParam(store, keeper.ParamNameImmediateSanctionMinDeposit)
+	}, "DeleteParam(%q)", keeper.ParamNameImmediateSanctionMinDeposit)
+	s.Require().NotPanics(func() {
+		s.keeper.DeleteParam(store, keeper.ParamNameImmediateUnsanctionMinDeposit)
+	}, "DeleteParam(%q)", keeper.ParamNameImmediateUnsanctionMinDeposit)
+
+	s.Run("get with no entries in store", func() {
+		expected := sanction.DefaultParams()
+		var actual *sanction.Params
+		testGet := func() {
+			actual = s.keeper.GetParams(s.sdkCtx)
+		}
+		s.Require().NotPanics(testGet, "GetParams")
+		s.Assert().Equal(expected, actual, "GetParams result")
+	})
+
+	tests := []struct {
+		name      string
+		setInput  *sanction.Params
+		getOutput *sanction.Params
+	}{
+		{
+			name: "params with nils",
+			setInput: &sanction.Params{
+				ImmediateSanctionMinDeposit:   nil,
+				ImmediateUnsanctionMinDeposit: nil,
+			},
+			getOutput: &sanction.Params{
+				ImmediateSanctionMinDeposit:   nil,
+				ImmediateUnsanctionMinDeposit: nil,
+			},
+		},
+		{
+			name: "empty coins",
+			setInput: &sanction.Params{
+				ImmediateSanctionMinDeposit:   sdk.Coins{},
+				ImmediateUnsanctionMinDeposit: sdk.Coins{},
+			},
+			getOutput: &sanction.Params{
+				ImmediateSanctionMinDeposit:   nil,
+				ImmediateUnsanctionMinDeposit: nil,
+			},
+		},
+		{
+			name: "only sanction",
+			setInput: &sanction.Params{
+				ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("sanct", 66)),
+				ImmediateUnsanctionMinDeposit: nil,
+			},
+			getOutput: &sanction.Params{
+				ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("sanct", 66)),
+				ImmediateUnsanctionMinDeposit: nil,
+			},
+		},
+		{
+			name: "only unsanction",
+			setInput: &sanction.Params{
+				ImmediateSanctionMinDeposit:   nil,
+				ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("unsuns", 5555)),
+			},
+			getOutput: &sanction.Params{
+				ImmediateSanctionMinDeposit:   nil,
+				ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("unsuns", 5555)),
+			},
+		},
+		{
+			name: "with both",
+			setInput: &sanction.Params{
+				ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("sss", 123)),
+				ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("uuu", 456)),
+			},
+			getOutput: &sanction.Params{
+				ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("sss", 123)),
+				ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("uuu", 456)),
+			},
+		},
+		{
+			name:      "nil",
+			setInput:  nil,
+			getOutput: sanction.DefaultParams(),
+		},
+	}
+
+	paramsUpdatedEvent, eventErr := sdk.TypedEventToEvent(&sanction.EventParamsUpdated{})
+	s.Require().NoError(eventErr, "sdk.TypedEventToEvent(&sanction.EventParamsUpdated{})")
+	expectedEvents := sdk.Events{paramsUpdatedEvent}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			em := sdk.NewEventManager()
+			ctx := s.sdkCtx.WithEventManager(em)
+			var err error
+			testSet := func() {
+				err = s.keeper.SetParams(ctx, tc.setInput)
+			}
+			s.Require().NotPanics(testSet, "SetParams")
+			s.Require().NoError(err, "SetParams error")
+			actualEvents := em.Events()
+			s.Assert().Equal(expectedEvents, actualEvents, "events emitted during SetParams")
+			var actual *sanction.Params
+			testGet := func() {
+				actual = s.keeper.GetParams(ctx)
+			}
+			s.Require().NotPanics(testGet, "GetParams")
+			if !s.Assert().Equal(tc.getOutput, actual, "GetParams result") {
+				if actual != nil {
+					// it failed, but the coins aren't easy to read in that ouptput, so be helpful here.
+					s.Assert().Equal(tc.getOutput.ImmediateSanctionMinDeposit.String(),
+						actual.ImmediateSanctionMinDeposit.String(), "ImmediateSanctionMinDeposit")
+					s.Assert().Equal(tc.getOutput.ImmediateUnsanctionMinDeposit.String(),
+						actual.ImmediateUnsanctionMinDeposit.String(), "ImmediateUnsanctionMinDeposit")
+				}
+			}
+		})
+	}
+}
+
+func (s *TestSuite) TestIterateParams() {
+	type kvPair struct {
+		key   string
+		value string
+	}
+
+	store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+	s.Require().NotPanics(func() {
+		s.keeper.DeleteParam(store, keeper.ParamNameImmediateSanctionMinDeposit)
+	}, "DeleteParam(%q)", keeper.ParamNameImmediateSanctionMinDeposit)
+	s.Require().NotPanics(func() {
+		s.keeper.DeleteParam(store, keeper.ParamNameImmediateUnsanctionMinDeposit)
+	}, "DeleteParam(%q)", keeper.ParamNameImmediateUnsanctionMinDeposit)
+
+	s.Run("no entries", func() {
+		var actual []kvPair
+		cb := func(name, value string) bool {
+			actual = append(actual, kvPair{key: name, value: value})
+			return false
+		}
+		testFunc := func() {
+			s.keeper.IterateParams(s.sdkCtx, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateParams")
+		s.Assert().Empty(actual, "params iterated")
+	})
+
+	// They should be iterated in alphabetical order by key, so they're ordered as such here.
+	expected := []kvPair{
+		{key: "param1", value: "value for param1"},
+		{key: "param2", value: "param2 value"},
+		{key: "param3", value: "the param3 value"},
+		{key: "param4", value: "This is param4's value."},
+		{key: "param5", value: "5valuecoin"},
+	}
+	// Write them in reverse order from expected.
+	for i := len(expected) - 1; i >= 0; i-- {
+		s.Require().NotPanics(func() {
+			s.keeper.SetParam(store, expected[i].key, expected[i].value)
+		}, "SetParam(%q, %q)", expected[i].key, expected[i].value)
+	}
+
+	s.Run("full iteration", func() {
+		var actual []kvPair
+		cb := func(name, value string) bool {
+			actual = append(actual, kvPair{key: name, value: value})
+			return false
+		}
+		testFunc := func() {
+			s.keeper.IterateParams(s.sdkCtx, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateParams")
+		s.Assert().Equal(expected, actual, "params iterated")
+	})
+
+	s.Run("stop after 3", func() {
+		exp := []kvPair{expected[0], expected[1], expected[2]}
+		var actual []kvPair
+		cb := func(name, value string) bool {
+			actual = append(actual, kvPair{key: name, value: value})
+			return len(actual) >= len(exp)
+		}
+		testFunc := func() {
+			s.keeper.IterateParams(s.sdkCtx, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateParams")
+		s.Assert().Equal(exp, actual, "params iterated")
+	})
+
+	s.Run("stop after 1", func() {
+		exp := []kvPair{expected[0]}
+		var actual []kvPair
+		cb := func(name, value string) bool {
+			actual = append(actual, kvPair{key: name, value: value})
+			return len(actual) >= len(exp)
+		}
+		testFunc := func() {
+			s.keeper.IterateParams(s.sdkCtx, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateParams")
+		s.Assert().Equal(exp, actual, "params iterated")
+	})
+}
 
 func (s *TestSuite) TestGetImmediateSanctionMinDeposit() {
 	cz := func(coins string) sdk.Coins {
