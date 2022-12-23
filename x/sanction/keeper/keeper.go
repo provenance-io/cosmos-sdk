@@ -61,6 +61,9 @@ func (k Keeper) GetAuthority() string {
 // IsSanctionedAddr returns true if the provided address is currently sanctioned (either permanently or temporarily).
 func (k Keeper) IsSanctionedAddr(ctx sdk.Context, addr sdk.AccAddress) bool {
 	store := ctx.KVStore(k.storeKey)
+	if len(addr) == 0 {
+		return false
+	}
 	tempEntry := k.getLatestTempEntry(store, addr)
 	if IsTempSanctionBz(tempEntry) {
 		return true
@@ -263,7 +266,7 @@ func (k Keeper) IterateProposalIndexEntries(ctx sdk.Context, govPropID *uint64, 
 // IsSanctionableAddr returns true if the provided address is not one of the ones that cannot be sanctioned.
 // I.e. returns true if it can be sanctioned.
 func (k Keeper) IsSanctionableAddr(addr sdk.AccAddress) bool {
-	return !k.unsanctionableAddrs[string(addr)]
+	return len(addr) > 0 && !k.unsanctionableAddrs[string(addr)]
 }
 
 // GetParams gets the sanction module's params.
