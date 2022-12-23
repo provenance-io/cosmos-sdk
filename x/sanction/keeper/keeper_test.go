@@ -77,9 +77,11 @@ func (s *TestSuite) TestIsSanctionedAddr() {
 	// addr3 will have a temp sanction.
 	// addr4 will have a temp sanction then temp unsanction.
 	// addr5 will be sanctioned and have a temp unsanction then a temp sanction.
+	// addrUnsanctionable will have a sanction in place, but be one of the unsanctionable addresses.
 	var setupErr error
+	addrUnsanctionable := sdk.AccAddress("unsanctionable_addr_")
 	s.Require().NotPanics(func() {
-		setupErr = s.keeper.SanctionAddresses(s.sdkCtx, s.addr1, s.addr2, s.addr5)
+		setupErr = s.keeper.SanctionAddresses(s.sdkCtx, s.addr1, s.addr2, s.addr5, addrUnsanctionable)
 	}, "SanctionAddresses")
 	s.Require().NoError(setupErr, "SanctionAddresses error")
 	s.Require().NotPanics(func() {
@@ -94,6 +96,8 @@ func (s *TestSuite) TestIsSanctionedAddr() {
 		setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 3, s.addr5)
 	}, "second AddTemporarySanction")
 	s.Require().NoError(setupErr, "second AddTemporarySanction error")
+
+	k := s.keeper.WithUnsanctionableAddrs(map[string]bool{string(addrUnsanctionable): true})
 
 	tests := []struct {
 		name string
@@ -165,6 +169,11 @@ func (s *TestSuite) TestIsSanctionedAddr() {
 			addr: s.addr1[1:],
 			exp:  false,
 		},
+		{
+			name: "sanctioned addr that is now unsanctionable",
+			addr: addrUnsanctionable,
+			exp:  false,
+		},
 	}
 
 	for _, tc := range tests {
@@ -177,7 +186,7 @@ func (s *TestSuite) TestIsSanctionedAddr() {
 			}
 			var actual bool
 			testFunc := func() {
-				actual = s.keeper.IsSanctionedAddr(s.sdkCtx, tc.addr)
+				actual = k.IsSanctionedAddr(s.sdkCtx, tc.addr)
 			}
 			s.Require().NotPanics(testFunc, "IsSanctionedAddr")
 			s.Assert().Equal(tc.exp, actual, "IsSanctionedAddr result")
@@ -204,7 +213,7 @@ func (s *TestSuite) TestIsSanctionedAddr() {
 // TODO[1046]: IterateTemporaryEntries(ctx sdk.Context, addr sdk.AccAddress, cb func(addr sdk.AccAddress, govPropID uint64, isSanction bool) (stop bool))
 // TODO[1046]: IterateProposalIndexEntries(ctx sdk.Context, govPropID *uint64, cb func(govPropID uint64, addr sdk.AccAddress) (stop bool))
 
-func (s *TestSuite) TestIsSanctionableAddr() {
+func (s *TestSuite) TestIsAddrThatCannotBeSanctioned() {
 	k := s.keeper.WithUnsanctionableAddrs(map[string]bool{
 		string(s.addr1): true,
 		string(s.addr2): true,
@@ -219,17 +228,17 @@ func (s *TestSuite) TestIsSanctionableAddr() {
 		{
 			name: "unsanctionable addr 1",
 			addr: s.addr1,
-			exp:  false,
+			exp:  true,
 		},
 		{
 			name: "unsanctionable addr 2",
 			addr: s.addr2,
-			exp:  false,
+			exp:  true,
 		},
 		{
 			name: "sanctionable addr",
 			addr: s.addr3,
-			exp:  true,
+			exp:  false,
 		},
 		{
 			name: "nil",
@@ -244,12 +253,12 @@ func (s *TestSuite) TestIsSanctionableAddr() {
 		{
 			name: "random",
 			addr: sdk.AccAddress("random"),
-			exp:  true,
+			exp:  false,
 		},
 		{
 			name: "other addr",
 			addr: s.addr5,
-			exp:  true,
+			exp:  false,
 		},
 	}
 
@@ -257,10 +266,10 @@ func (s *TestSuite) TestIsSanctionableAddr() {
 		s.Run(tc.name, func() {
 			var actual bool
 			testFunc := func() {
-				actual = k.IsSanctionableAddr(tc.addr)
+				actual = k.IsAddrThatCannotBeSanctioned(tc.addr)
 			}
-			s.Require().NotPanics(testFunc, "isSanctionableAddr")
-			s.Assert().Equal(tc.exp, actual, "isSanctionableAddr result")
+			s.Require().NotPanics(testFunc, "IsAddrThatCannotBeSanctioned")
+			s.Assert().Equal(tc.exp, actual, "IsAddrThatCannotBeSanctioned result")
 		})
 	}
 }

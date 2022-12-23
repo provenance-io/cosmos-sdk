@@ -71,11 +71,6 @@ func (k Keeper) GetParamAsCoinsOrDefault(ctx sdk.Context, name string, dflt sdk.
 	return k.getParamAsCoinsOrDefault(ctx, name, dflt)
 }
 
-// IsSanctionableAddr, for unit tests, exposes this keeper's isSanctionableAddr function.
-func (k Keeper) IsSanctionableAddr(addr sdk.AccAddress) bool {
-	return k.isSanctionableAddr(addr)
-}
-
 // GetParam, for unit tests, exposes this keeper's getParam function.
 func (k Keeper) GetParam(store sdk.KVStore, name string) (string, bool) {
 	return k.getParam(store, name)
