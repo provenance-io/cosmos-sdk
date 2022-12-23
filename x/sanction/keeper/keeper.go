@@ -81,7 +81,7 @@ func (k Keeper) SanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) erro
 	store := ctx.KVStore(k.storeKey)
 	val := []byte{0x00}
 	for _, addr := range addrs {
-		if !k.IsSanctionableAddr(addr) {
+		if !k.isSanctionableAddr(addr) {
 			return errors.ErrUnsanctionableAddr.Wrap(addr.String())
 		}
 		key := CreateSanctionedAddrKey(addr)
@@ -112,7 +112,7 @@ func (k Keeper) UnsanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) er
 // AddTemporarySanction adds a temporary sanction with the given gov prop id for each of the provided addresses.
 func (k Keeper) AddTemporarySanction(ctx sdk.Context, govPropID uint64, addrs ...sdk.AccAddress) error {
 	for _, addr := range addrs {
-		if !k.IsSanctionableAddr(addr) {
+		if !k.isSanctionableAddr(addr) {
 			return errors.ErrUnsanctionableAddr.Wrap(addr.String())
 		}
 	}
@@ -263,9 +263,9 @@ func (k Keeper) IterateProposalIndexEntries(ctx sdk.Context, govPropID *uint64, 
 	}
 }
 
-// IsSanctionableAddr returns true if the provided address is not one of the ones that cannot be sanctioned.
+// isSanctionableAddr returns true if the provided address is not one of the ones that cannot be sanctioned.
 // I.e. returns true if it can be sanctioned.
-func (k Keeper) IsSanctionableAddr(addr sdk.AccAddress) bool {
+func (k Keeper) isSanctionableAddr(addr sdk.AccAddress) bool {
 	return len(addr) > 0 && !k.unsanctionableAddrs[string(addr)]
 }
 
