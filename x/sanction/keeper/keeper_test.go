@@ -1,7 +1,17 @@
 package keeper_test
 
 import (
+	"bytes"
 	"context"
+	"sort"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/suite"
+
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	tmtime "github.com/tendermint/tendermint/types/time"
+
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -9,11 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/sanction"
 	"github.com/cosmos/cosmos-sdk/x/sanction/keeper"
 	"github.com/cosmos/cosmos-sdk/x/sanction/testutil"
-	"github.com/stretchr/testify/suite"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
-	"testing"
-	"time"
 )
 
 type TestSuite struct {
@@ -51,6 +56,54 @@ func (s *TestSuite) SetupTest() {
 
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(TestSuite))
+}
+
+// newTempEntry creates a TemporaryEntry from iterator callback args.
+func newTempEntry(addr sdk.AccAddress, govPropId uint64, isSanctioned bool) *sanction.TemporaryEntry {
+	status := sanction.TEMP_STATUS_SANCTIONED
+	if !isSanctioned {
+		status = sanction.TEMP_STATUS_UNSANCTIONED
+	}
+	return &sanction.TemporaryEntry{
+		Address:    addr.String(),
+		ProposalId: govPropId,
+		Status:     status,
+	}
+}
+
+// newIndTempEntry creates a TemporaryEntry to represent a proposal index temporary entry.
+func newIndTempEntry(govPropId uint64, addr sdk.AccAddress) *sanction.TemporaryEntry {
+	return &sanction.TemporaryEntry{
+		Address:    addr.String(),
+		ProposalId: govPropId,
+		Status:     sanction.TEMP_STATUS_UNSPECIFIED,
+	}
+}
+
+// getAllTempEntries gets all temporary entries in the store.
+func (s *TestSuite) getAllTempEntries() []*sanction.TemporaryEntry {
+	var tempEntries []*sanction.TemporaryEntry
+	tempCB := func(cbAddr sdk.AccAddress, cbGovPropId uint64, cbIsSanction bool) bool {
+		tempEntries = append(tempEntries, newTempEntry(cbAddr, cbGovPropId, cbIsSanction))
+		return false
+	}
+	s.Require().NotPanics(func() {
+		s.keeper.IterateTemporaryEntries(s.sdkCtx, nil, tempCB)
+	}, "IterateTemporaryEntries")
+	return tempEntries
+}
+
+// getAllIndexTempEntries gets all the gov prop index temporary entries in the store.
+func (s *TestSuite) getAllIndexTempEntries() []*sanction.TemporaryEntry {
+	var tempIndEntries []*sanction.TemporaryEntry
+	tempIndCB := func(cbGovPropId uint64, cbAddr sdk.AccAddress) bool {
+		tempIndEntries = append(tempIndEntries, newIndTempEntry(cbGovPropId, cbAddr))
+		return false
+	}
+	s.Require().NotPanics(func() {
+		s.keeper.IterateProposalIndexEntries(s.sdkCtx, nil, tempIndCB)
+	}, "IterateProposalIndexEntries")
+	return tempIndEntries
 }
 
 func (s *TestSuite) TestKeeper_GetAuthority() {
@@ -201,17 +254,1520 @@ func (s *TestSuite) TestIsSanctionedAddr() {
 	}
 }
 
-// TODO[1046]: SanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) error
-// TODO[1046]: UnsanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) error
-// TODO[1046]: AddTemporarySanction(ctx sdk.Context, govPropID uint64, addrs ...sdk.AccAddress) error
-// TODO[1046]: AddTemporaryUnsanction(ctx sdk.Context, govPropID uint64, addrs ...sdk.AccAddress) error
-// TODO[1046]: addTempEntries(ctx sdk.Context, value byte, govPropID uint64, addrs []sdk.AccAddress) error
-// TODO[1046]: getLatestTempEntry(store sdk.KVStore, addr sdk.AccAddress) []byte
-// TODO[1046]: DeleteGovPropTempEntries(ctx sdk.Context, govPropID uint64)
-// TODO[1046]: DeleteAddrTempEntries(ctx sdk.Context, addrs ...sdk.AccAddress)
-// TODO[1046]: IterateSanctionedAddresses(ctx sdk.Context, cb func(addr sdk.AccAddress) (stop bool))
-// TODO[1046]: IterateTemporaryEntries(ctx sdk.Context, addr sdk.AccAddress, cb func(addr sdk.AccAddress, govPropID uint64, isSanction bool) (stop bool))
-// TODO[1046]: IterateProposalIndexEntries(ctx sdk.Context, govPropID *uint64, cb func(govPropID uint64, addr sdk.AccAddress) (stop bool))
+func (s *TestSuite) TestSanctionAddresses() {
+	makeEvents := func(addrs ...sdk.AccAddress) sdk.Events {
+		rv := sdk.Events{}
+		for _, addr := range addrs {
+			event, err := sdk.TypedEventToEvent(sanction.NewEventAddressSanctioned(addr))
+			s.Require().NoError(err, "TypedEventToEvent NewEventAddressSanctioned")
+			rv = append(rv, event)
+		}
+		return rv
+	}
+
+	addrUnsanctionable := sdk.AccAddress("unsanctionable_addr_")
+	k := s.keeper.WithUnsanctionableAddrs(map[string]bool{string(addrUnsanctionable): true})
+
+	tests := []struct {
+		name               string
+		addrs              []sdk.AccAddress
+		expEvents          sdk.Events
+		expErr             []string
+		checkSanctioned    []sdk.AccAddress
+		checkNotSanctioned []sdk.AccAddress
+	}{
+		{
+			name:               "no addresses",
+			addrs:              []sdk.AccAddress{},
+			expEvents:          sdk.Events{},
+			checkSanctioned:    []sdk.AccAddress{},
+			checkNotSanctioned: []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5, addrUnsanctionable},
+		},
+		{
+			name:               "one addr",
+			addrs:              []sdk.AccAddress{s.addr1},
+			expEvents:          makeEvents(s.addr1),
+			checkSanctioned:    []sdk.AccAddress{s.addr1},
+			checkNotSanctioned: []sdk.AccAddress{s.addr2, s.addr3, s.addr4, s.addr5, addrUnsanctionable},
+		},
+		{
+			name:               "already sanctioned addr",
+			addrs:              []sdk.AccAddress{s.addr1},
+			expEvents:          makeEvents(s.addr1),
+			checkSanctioned:    []sdk.AccAddress{s.addr1},
+			checkNotSanctioned: []sdk.AccAddress{s.addr2, s.addr3, s.addr4, s.addr5, addrUnsanctionable},
+		},
+		{
+			name:               "two new addrs",
+			addrs:              []sdk.AccAddress{s.addr2, s.addr3},
+			expEvents:          makeEvents(s.addr2, s.addr3),
+			checkSanctioned:    []sdk.AccAddress{s.addr1, s.addr2, s.addr3},
+			checkNotSanctioned: []sdk.AccAddress{s.addr4, s.addr5, addrUnsanctionable},
+		},
+		{
+			name:               "three addrs all already sanctioned",
+			addrs:              []sdk.AccAddress{s.addr1, s.addr2, s.addr3},
+			expEvents:          makeEvents(s.addr1, s.addr2, s.addr3),
+			checkSanctioned:    []sdk.AccAddress{s.addr1, s.addr2, s.addr3},
+			checkNotSanctioned: []sdk.AccAddress{s.addr4, s.addr5, addrUnsanctionable},
+		},
+		{
+			name:               "two addrs one already sanctioned",
+			addrs:              []sdk.AccAddress{s.addr1, s.addr4},
+			expEvents:          makeEvents(s.addr1, s.addr4),
+			checkSanctioned:    []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4},
+			checkNotSanctioned: []sdk.AccAddress{s.addr5, addrUnsanctionable},
+		},
+		{
+			name:               "unsanctionable addr",
+			addrs:              []sdk.AccAddress{addrUnsanctionable},
+			expEvents:          sdk.Events{},
+			expErr:             []string{addrUnsanctionable.String(), "address cannot be sanctioned"},
+			checkSanctioned:    []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4},
+			checkNotSanctioned: []sdk.AccAddress{s.addr5, addrUnsanctionable},
+		},
+		{
+			name:               "three addrs first unsanctionable",
+			addrs:              []sdk.AccAddress{addrUnsanctionable, s.addr4, s.addr5},
+			expEvents:          sdk.Events{},
+			expErr:             []string{addrUnsanctionable.String(), "address cannot be sanctioned"},
+			checkSanctioned:    []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4},
+			checkNotSanctioned: []sdk.AccAddress{s.addr5, addrUnsanctionable},
+		},
+		{
+			name:               "three addrs second unsanctionable",
+			addrs:              []sdk.AccAddress{s.addr1, addrUnsanctionable, s.addr5},
+			expEvents:          makeEvents(s.addr1),
+			expErr:             []string{addrUnsanctionable.String(), "address cannot be sanctioned"},
+			checkSanctioned:    []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4},
+			checkNotSanctioned: []sdk.AccAddress{s.addr5, addrUnsanctionable},
+		},
+		{
+			name:               "three addrs third unsanctionable",
+			addrs:              []sdk.AccAddress{s.addr1, s.addr2, addrUnsanctionable},
+			expEvents:          makeEvents(s.addr1, s.addr2),
+			expErr:             []string{addrUnsanctionable.String(), "address cannot be sanctioned"},
+			checkSanctioned:    []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4},
+			checkNotSanctioned: []sdk.AccAddress{s.addr5, addrUnsanctionable},
+		},
+	}
+
+	var isSanctioned bool
+	testIsSanction := func(addr sdk.AccAddress) func() {
+		return func() {
+			isSanctioned = k.IsSanctionedAddr(s.sdkCtx, addr)
+		}
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			em := sdk.NewEventManager()
+			ctx := s.sdkCtx.WithEventManager(em)
+			var err error
+			testFunc := func() {
+				err = k.SanctionAddresses(ctx, tc.addrs...)
+			}
+			s.Require().NotPanics(testFunc, "SanctionAddresses")
+			testutil.AssertErrorContents(s.T(), err, tc.expErr, "SanctionAddresses error")
+			events := em.Events()
+			s.Assert().Equal(tc.expEvents, events, "events emitted during SanctionAddresses")
+			for _, addr := range tc.checkSanctioned {
+				if s.Assert().NotPanics(testIsSanction(addr), "IsSanctionedAddr") {
+					s.Assert().True(isSanctioned, "IsSanctionedAddr result")
+				}
+			}
+			for _, addr := range tc.checkNotSanctioned {
+				if s.Assert().NotPanics(testIsSanction(addr), "IsSanctionedAddr") {
+					s.Assert().False(isSanctioned, "IsSanctionedAddr result")
+				}
+			}
+		})
+	}
+
+	s.Run("temp entries are deleted", func() {
+		var err error
+		s.Require().NotPanics(func() {
+			err = k.AddTemporarySanction(s.sdkCtx, 1, s.addr1, s.addr2)
+			if err != nil {
+				return
+			}
+			err = k.AddTemporarySanction(s.sdkCtx, 2, s.addr1, s.addr3)
+			if err != nil {
+				return
+			}
+			err = k.AddTemporaryUnsanction(s.sdkCtx, 3, s.addr2, s.addr4, s.addr5)
+			if err != nil {
+				return
+			}
+		}, "adding some temporary entries")
+
+		testFunc := func() {
+			err = k.SanctionAddresses(s.sdkCtx, s.addr5, s.addr3, s.addr1, s.addr2, s.addr4)
+		}
+		s.Require().NotPanics(testFunc, "SanctionAddresses")
+
+		tempEntries := s.getAllTempEntries()
+		s.Assert().Empty(tempEntries, "temporary entries still in the store")
+
+		tempIndEntries := s.getAllIndexTempEntries()
+		s.Assert().Empty(tempIndEntries, "proposal index temporary entries still in the store")
+	})
+}
+
+func (s *TestSuite) TestUnsanctionAddresses() {
+	makeEvents := func(addrs ...sdk.AccAddress) sdk.Events {
+		rv := sdk.Events{}
+		for _, addr := range addrs {
+			event, err := sdk.TypedEventToEvent(sanction.NewEventAddressUnsanctioned(addr))
+			s.Require().NoError(err, "TypedEventToEvent NewEventAddressUnsanctioned")
+			rv = append(rv, event)
+		}
+		return rv
+	}
+
+	// Setup: Sanction all 5 addrs plus a new one that will end up being unsanctionable.
+	addrUnsanctionable := sdk.AccAddress("unsanctionable_addr_")
+	addrRandom := sdk.AccAddress("just_a_random_addr")
+	var setupErr error
+	s.Require().NotPanics(func() {
+		setupErr = s.keeper.SanctionAddresses(s.sdkCtx, s.addr1, s.addr2, s.addr3, s.addr4, s.addr5, addrUnsanctionable)
+	}, "Setup: SanctionAddresses")
+	s.Require().NoError(setupErr, "Setup: SanctionAddresses error")
+	k := s.keeper.WithUnsanctionableAddrs(map[string]bool{string(addrUnsanctionable): true})
+
+	tests := []struct {
+		name               string
+		addrs              []sdk.AccAddress
+		expEvents          sdk.Events
+		checkSanctioned    []sdk.AccAddress
+		checkNotSanctioned []sdk.AccAddress
+	}{
+		{
+			name:               "no addresses",
+			addrs:              []sdk.AccAddress{},
+			expEvents:          sdk.Events{},
+			checkSanctioned:    []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5},
+			checkNotSanctioned: []sdk.AccAddress{addrUnsanctionable, addrRandom},
+		},
+		{
+			name:               "one addr never sanctioned",
+			addrs:              []sdk.AccAddress{addrRandom},
+			expEvents:          makeEvents(addrRandom),
+			checkSanctioned:    []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5},
+			checkNotSanctioned: []sdk.AccAddress{addrUnsanctionable, addrRandom},
+		},
+		{
+			name:               "one addr",
+			addrs:              []sdk.AccAddress{s.addr1},
+			expEvents:          makeEvents(s.addr1),
+			checkSanctioned:    []sdk.AccAddress{s.addr2, s.addr3, s.addr4, s.addr5},
+			checkNotSanctioned: []sdk.AccAddress{s.addr1, addrUnsanctionable, addrRandom},
+		},
+		{
+			name:               "already unsanctioned",
+			addrs:              []sdk.AccAddress{s.addr1},
+			expEvents:          makeEvents(s.addr1),
+			checkSanctioned:    []sdk.AccAddress{s.addr2, s.addr3, s.addr4, s.addr5},
+			checkNotSanctioned: []sdk.AccAddress{s.addr1, addrUnsanctionable, addrRandom},
+		},
+		{
+			name:               "two new addrs",
+			addrs:              []sdk.AccAddress{s.addr2, s.addr3},
+			expEvents:          makeEvents(s.addr2, s.addr3),
+			checkSanctioned:    []sdk.AccAddress{s.addr4, s.addr5},
+			checkNotSanctioned: []sdk.AccAddress{s.addr1, s.addr2, s.addr3, addrUnsanctionable, addrRandom},
+		},
+		{
+			name:               "three addrs all already unsanctioned",
+			addrs:              []sdk.AccAddress{s.addr1, s.addr2, s.addr3},
+			expEvents:          makeEvents(s.addr1, s.addr2, s.addr3),
+			checkSanctioned:    []sdk.AccAddress{s.addr4, s.addr5},
+			checkNotSanctioned: []sdk.AccAddress{s.addr1, s.addr2, s.addr3, addrUnsanctionable, addrRandom},
+		},
+		{
+			name:               "two addrs one already unsanctioned",
+			addrs:              []sdk.AccAddress{s.addr4, s.addr1},
+			expEvents:          makeEvents(s.addr4, s.addr1),
+			checkSanctioned:    []sdk.AccAddress{s.addr5},
+			checkNotSanctioned: []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, addrUnsanctionable, addrRandom},
+		},
+		{
+			name:               "three addrs one unsanctionable",
+			addrs:              []sdk.AccAddress{addrUnsanctionable, s.addr4, s.addr1},
+			expEvents:          makeEvents(addrUnsanctionable, s.addr4, s.addr1),
+			checkSanctioned:    []sdk.AccAddress{s.addr5},
+			checkNotSanctioned: []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, addrUnsanctionable, addrRandom},
+		},
+	}
+
+	var isSanctioned bool
+	testIsSanction := func(addr sdk.AccAddress) func() {
+		return func() {
+			isSanctioned = k.IsSanctionedAddr(s.sdkCtx, addr)
+		}
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			em := sdk.NewEventManager()
+			ctx := s.sdkCtx.WithEventManager(em)
+			var err error
+			testFunc := func() {
+				err = k.UnsanctionAddresses(ctx, tc.addrs...)
+			}
+			s.Require().NotPanics(testFunc, "UnsanctionAddresses")
+			s.Assert().NoError(err, "UnsanctionAddresses error")
+			events := em.Events()
+			s.Assert().Equal(tc.expEvents, events, "events emitted during UnsanctionAddresses")
+			for _, addr := range tc.checkSanctioned {
+				if s.Assert().NotPanics(testIsSanction(addr), "IsSanctionedAddr") {
+					s.Assert().True(isSanctioned, "IsSanctionedAddr result")
+				}
+			}
+			for _, addr := range tc.checkNotSanctioned {
+				if s.Assert().NotPanics(testIsSanction(addr), "IsSanctionedAddr") {
+					s.Assert().False(isSanctioned, "IsSanctionedAddr result")
+				}
+			}
+		})
+	}
+
+	s.Run("temp entries are deleted", func() {
+		var err error
+		s.Require().NotPanics(func() {
+			err = k.AddTemporarySanction(s.sdkCtx, 1, s.addr1, s.addr2)
+			if err != nil {
+				return
+			}
+			err = k.AddTemporarySanction(s.sdkCtx, 2, s.addr1, s.addr3)
+			if err != nil {
+				return
+			}
+			err = k.AddTemporaryUnsanction(s.sdkCtx, 3, s.addr2, s.addr4, s.addr5)
+			if err != nil {
+				return
+			}
+		}, "adding some temporary entries")
+
+		testFunc := func() {
+			err = k.UnsanctionAddresses(s.sdkCtx, s.addr5, s.addr3, s.addr1, s.addr2, s.addr4)
+		}
+		s.Require().NotPanics(testFunc, "UnsanctionAddresses")
+
+		tempEntries := s.getAllTempEntries()
+		s.Assert().Empty(tempEntries, "temporary entries still in the store")
+
+		tempIndEntries := s.getAllIndexTempEntries()
+		s.Assert().Empty(tempIndEntries, "proposal index temporary entries still in the store")
+	})
+}
+
+func (s *TestSuite) TestAddTemporarySanction() {
+	makeEvents := func(addrs ...sdk.AccAddress) sdk.Events {
+		rv := sdk.Events{}
+		for _, addr := range addrs {
+			event, err := sdk.TypedEventToEvent(keeper.NewTempEvent(keeper.TempSanctionB, addr))
+			s.Require().NoError(err, "TypedEventToEvent temp event")
+			rv = append(rv, event)
+		}
+		return rv
+	}
+
+	var previousTempEntries []*sanction.TemporaryEntry
+	var previousIndEntries []*sanction.TemporaryEntry
+
+	getNewEntries := func(previous, now []*sanction.TemporaryEntry) []*sanction.TemporaryEntry {
+		var rv []*sanction.TemporaryEntry
+		for _, entry := range now {
+			found := false
+			for _, known := range previous {
+				if entry.Address == known.Address && entry.ProposalId == known.ProposalId && entry.Status == known.Status {
+					found = true
+					break
+				}
+			}
+			if !found {
+				rv = append(rv, entry)
+			}
+		}
+		return rv
+	}
+
+	// Start with addr5 having a temp unsanction entry.
+	var setupErr error
+	s.Require().NotPanics(func() {
+		setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 100, s.addr5)
+	}, "Setup: AddTemporaryUnsanction")
+	s.Require().NoError(setupErr, "Setup: AddTemporaryUnsanction error")
+
+	addrUnsanctionable := sdk.AccAddress("unsanctionable_addr_")
+	k := s.keeper.WithUnsanctionableAddrs(map[string]bool{string(addrUnsanctionable): true})
+
+	tests := []struct {
+		name             string
+		govPropID        uint64
+		addrs            []sdk.AccAddress
+		expEvents        sdk.Events
+		expErr           []string
+		addedTempEntries []*sanction.TemporaryEntry
+		addedIndEntries  []*sanction.TemporaryEntry
+	}{
+		{
+			name:      "no addrs",
+			addrs:     []sdk.AccAddress{},
+			expEvents: sdk.Events{},
+		},
+		{
+			name:             "one addr",
+			govPropID:        1,
+			addrs:            []sdk.AccAddress{s.addr1},
+			expEvents:        makeEvents(s.addr1),
+			addedTempEntries: []*sanction.TemporaryEntry{newTempEntry(s.addr1, 1, true)},
+			addedIndEntries:  []*sanction.TemporaryEntry{newIndTempEntry(1, s.addr1)},
+		},
+		{
+			name:      "same addr and gov prop as before",
+			govPropID: 1,
+			addrs:     []sdk.AccAddress{s.addr1},
+			expEvents: makeEvents(s.addr1),
+		},
+		{
+			name:             "same addr new gov prop",
+			govPropID:        2,
+			addrs:            []sdk.AccAddress{s.addr1},
+			expEvents:        makeEvents(s.addr1),
+			addedTempEntries: []*sanction.TemporaryEntry{newTempEntry(s.addr1, 2, true)},
+			addedIndEntries:  []*sanction.TemporaryEntry{newIndTempEntry(2, s.addr1)},
+		},
+		{
+			name:             "previous gov prop new addr",
+			govPropID:        1,
+			addrs:            []sdk.AccAddress{s.addr2},
+			expEvents:        makeEvents(s.addr2),
+			addedTempEntries: []*sanction.TemporaryEntry{newTempEntry(s.addr2, 1, true)},
+			addedIndEntries:  []*sanction.TemporaryEntry{newIndTempEntry(1, s.addr2)},
+		},
+		{
+			name:      "three addrs",
+			govPropID: 3,
+			addrs:     []sdk.AccAddress{s.addr1, s.addr2, s.addr3},
+			expEvents: makeEvents(s.addr1, s.addr2, s.addr3),
+			addedTempEntries: []*sanction.TemporaryEntry{
+				newTempEntry(s.addr1, 3, true),
+				newTempEntry(s.addr2, 3, true),
+				newTempEntry(s.addr3, 3, true),
+			},
+			addedIndEntries: []*sanction.TemporaryEntry{
+				newIndTempEntry(3, s.addr1),
+				newIndTempEntry(3, s.addr2),
+				newIndTempEntry(3, s.addr3),
+			},
+		},
+		{
+			name:      "five addrs first unsanctionable",
+			govPropID: 4,
+			addrs:     []sdk.AccAddress{addrUnsanctionable, s.addr2, s.addr3, s.addr4, s.addr5},
+			expEvents: sdk.Events{},
+			expErr:    []string{addrUnsanctionable.String(), "address cannot be sanctioned"},
+		},
+		{
+			name:      "five addrs third unsanctionable",
+			govPropID: 5,
+			addrs:     []sdk.AccAddress{s.addr1, s.addr2, addrUnsanctionable, s.addr4, s.addr5},
+			expEvents: makeEvents(s.addr1, s.addr2),
+			expErr:    []string{addrUnsanctionable.String(), "address cannot be sanctioned"},
+			addedTempEntries: []*sanction.TemporaryEntry{
+				newTempEntry(s.addr1, 5, true),
+				newTempEntry(s.addr2, 5, true),
+			},
+			addedIndEntries: []*sanction.TemporaryEntry{
+				newIndTempEntry(5, s.addr1),
+				newIndTempEntry(5, s.addr2),
+			},
+		},
+		{
+			name:      "five addrs fifth unsanctionable",
+			govPropID: 6,
+			addrs:     []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, addrUnsanctionable},
+			expEvents: makeEvents(s.addr1, s.addr2, s.addr3, s.addr4),
+			expErr:    []string{addrUnsanctionable.String(), "address cannot be sanctioned"},
+			addedTempEntries: []*sanction.TemporaryEntry{
+				newTempEntry(s.addr1, 6, true),
+				newTempEntry(s.addr2, 6, true),
+				newTempEntry(s.addr3, 6, true),
+				newTempEntry(s.addr4, 6, true),
+			},
+			addedIndEntries: []*sanction.TemporaryEntry{
+				newIndTempEntry(6, s.addr1),
+				newIndTempEntry(6, s.addr2),
+				newIndTempEntry(6, s.addr3),
+				newIndTempEntry(6, s.addr4),
+			},
+		},
+		{
+			name:             "previous entry overwritten",
+			govPropID:        100,
+			addrs:            []sdk.AccAddress{s.addr5},
+			expEvents:        makeEvents(s.addr5),
+			addedTempEntries: []*sanction.TemporaryEntry{newTempEntry(s.addr5, 100, true)},
+			addedIndEntries:  nil,
+		},
+	}
+
+	previousTempEntries = s.getAllTempEntries()
+	previousIndEntries = s.getAllIndexTempEntries()
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			em := sdk.NewEventManager()
+			ctx := s.sdkCtx.WithEventManager(em)
+			var err error
+			testFunc := func() {
+				err = k.AddTemporarySanction(ctx, tc.govPropID, tc.addrs...)
+			}
+			s.Require().NotPanics(testFunc, "AddTemporarySanction")
+			testutil.AssertErrorContents(s.T(), err, tc.expErr, "AddTemporarySanction error")
+
+			events := em.Events()
+			s.Assert().Equal(tc.expEvents, events, "events emitted during AddTemporarySanction")
+
+			currentTempEntries := s.getAllTempEntries()
+			newTempEntries := getNewEntries(previousTempEntries, currentTempEntries)
+			s.Assert().ElementsMatch(tc.addedTempEntries, newTempEntries, "new temp entries, A = expected, B = actual")
+			previousTempEntries = currentTempEntries
+
+			currentIndEntries := s.getAllIndexTempEntries()
+			newIndEntries := getNewEntries(previousIndEntries, currentIndEntries)
+			s.Assert().ElementsMatch(tc.addedIndEntries, newIndEntries, "new index entries, A = expected, B = actual")
+			previousIndEntries = currentIndEntries
+		})
+	}
+}
+
+func (s *TestSuite) TestAddTemporaryUnsanction() {
+	makeEvents := func(addrs ...sdk.AccAddress) sdk.Events {
+		rv := sdk.Events{}
+		for _, addr := range addrs {
+			event, err := sdk.TypedEventToEvent(keeper.NewTempEvent(keeper.TempUnsanctionB, addr))
+			s.Require().NoError(err, "TypedEventToEvent temp event")
+			rv = append(rv, event)
+		}
+		return rv
+	}
+
+	var previousTempEntries []*sanction.TemporaryEntry
+	var previousIndEntries []*sanction.TemporaryEntry
+
+	getNewEntries := func(previous, now []*sanction.TemporaryEntry) []*sanction.TemporaryEntry {
+		var rv []*sanction.TemporaryEntry
+		for _, entry := range now {
+			found := false
+			for _, known := range previous {
+				if entry.Address == known.Address && entry.ProposalId == known.ProposalId && entry.Status == known.Status {
+					found = true
+					break
+				}
+			}
+			if !found {
+				rv = append(rv, entry)
+			}
+		}
+		return rv
+	}
+
+	// Start with addr5 having a temp sanction entry.
+	var setupErr error
+	s.Require().NotPanics(func() {
+		setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 100, s.addr5)
+	}, "Setup: AddTemporarySanction")
+	s.Require().NoError(setupErr, "Setup: AddTemporarySanction error")
+
+	addrUnsanctionable := sdk.AccAddress("unsanctionable_addr_")
+	k := s.keeper.WithUnsanctionableAddrs(map[string]bool{string(addrUnsanctionable): true})
+
+	tests := []struct {
+		name             string
+		govPropID        uint64
+		addrs            []sdk.AccAddress
+		expEvents        sdk.Events
+		addedTempEntries []*sanction.TemporaryEntry
+		addedIndEntries  []*sanction.TemporaryEntry
+	}{
+		{
+			name:      "no addrs",
+			addrs:     []sdk.AccAddress{},
+			expEvents: sdk.Events{},
+		},
+		{
+			name:             "one addr",
+			govPropID:        1,
+			addrs:            []sdk.AccAddress{s.addr1},
+			expEvents:        makeEvents(s.addr1),
+			addedTempEntries: []*sanction.TemporaryEntry{newTempEntry(s.addr1, 1, false)},
+			addedIndEntries:  []*sanction.TemporaryEntry{newIndTempEntry(1, s.addr1)},
+		},
+		{
+			name:      "same addr and gov prop as before",
+			govPropID: 1,
+			addrs:     []sdk.AccAddress{s.addr1},
+			expEvents: makeEvents(s.addr1),
+		},
+		{
+			name:             "same addr new gov prop",
+			govPropID:        2,
+			addrs:            []sdk.AccAddress{s.addr1},
+			expEvents:        makeEvents(s.addr1),
+			addedTempEntries: []*sanction.TemporaryEntry{newTempEntry(s.addr1, 2, false)},
+			addedIndEntries:  []*sanction.TemporaryEntry{newIndTempEntry(2, s.addr1)},
+		},
+		{
+			name:             "previous gov prop new addr",
+			govPropID:        1,
+			addrs:            []sdk.AccAddress{s.addr2},
+			expEvents:        makeEvents(s.addr2),
+			addedTempEntries: []*sanction.TemporaryEntry{newTempEntry(s.addr2, 1, false)},
+			addedIndEntries:  []*sanction.TemporaryEntry{newIndTempEntry(1, s.addr2)},
+		},
+		{
+			name:      "three addrs",
+			govPropID: 3,
+			addrs:     []sdk.AccAddress{s.addr1, s.addr2, s.addr3},
+			expEvents: makeEvents(s.addr1, s.addr2, s.addr3),
+			addedTempEntries: []*sanction.TemporaryEntry{
+				newTempEntry(s.addr1, 3, false),
+				newTempEntry(s.addr2, 3, false),
+				newTempEntry(s.addr3, 3, false),
+			},
+			addedIndEntries: []*sanction.TemporaryEntry{
+				newIndTempEntry(3, s.addr1),
+				newIndTempEntry(3, s.addr2),
+				newIndTempEntry(3, s.addr3),
+			},
+		},
+		{
+			name:      "five addrs first unsanctionable",
+			govPropID: 4,
+			addrs:     []sdk.AccAddress{addrUnsanctionable, s.addr2, s.addr3, s.addr4, s.addr5},
+			expEvents: makeEvents(addrUnsanctionable, s.addr2, s.addr3, s.addr4, s.addr5),
+			addedTempEntries: []*sanction.TemporaryEntry{
+				newTempEntry(addrUnsanctionable, 4, false),
+				newTempEntry(s.addr2, 4, false),
+				newTempEntry(s.addr3, 4, false),
+				newTempEntry(s.addr4, 4, false),
+				newTempEntry(s.addr5, 4, false),
+			},
+			addedIndEntries: []*sanction.TemporaryEntry{
+				newIndTempEntry(4, addrUnsanctionable),
+				newIndTempEntry(4, s.addr2),
+				newIndTempEntry(4, s.addr3),
+				newIndTempEntry(4, s.addr4),
+				newIndTempEntry(4, s.addr5),
+			},
+		},
+		{
+			name:      "five addrs third unsanctionable",
+			govPropID: 5,
+			addrs:     []sdk.AccAddress{s.addr1, s.addr2, addrUnsanctionable, s.addr4, s.addr5},
+			expEvents: makeEvents(s.addr1, s.addr2, addrUnsanctionable, s.addr4, s.addr5),
+			addedTempEntries: []*sanction.TemporaryEntry{
+				newTempEntry(s.addr1, 5, false),
+				newTempEntry(s.addr2, 5, false),
+				newTempEntry(addrUnsanctionable, 5, false),
+				newTempEntry(s.addr4, 5, false),
+				newTempEntry(s.addr5, 5, false),
+			},
+			addedIndEntries: []*sanction.TemporaryEntry{
+				newIndTempEntry(5, s.addr1),
+				newIndTempEntry(5, s.addr2),
+				newIndTempEntry(5, addrUnsanctionable),
+				newIndTempEntry(5, s.addr4),
+				newIndTempEntry(5, s.addr5),
+			},
+		},
+		{
+			name:      "five addrs fifth unsanctionable",
+			govPropID: 6,
+			addrs:     []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, addrUnsanctionable},
+			expEvents: makeEvents(s.addr1, s.addr2, s.addr3, s.addr4, addrUnsanctionable),
+			addedTempEntries: []*sanction.TemporaryEntry{
+				newTempEntry(s.addr1, 6, false),
+				newTempEntry(s.addr2, 6, false),
+				newTempEntry(s.addr3, 6, false),
+				newTempEntry(s.addr4, 6, false),
+				newTempEntry(addrUnsanctionable, 6, false),
+			},
+			addedIndEntries: []*sanction.TemporaryEntry{
+				newIndTempEntry(6, s.addr1),
+				newIndTempEntry(6, s.addr2),
+				newIndTempEntry(6, s.addr3),
+				newIndTempEntry(6, s.addr4),
+				newIndTempEntry(6, addrUnsanctionable),
+			},
+		},
+		{
+			name:             "previous entry overwritten",
+			govPropID:        100,
+			addrs:            []sdk.AccAddress{s.addr5},
+			expEvents:        makeEvents(s.addr5),
+			addedTempEntries: []*sanction.TemporaryEntry{newTempEntry(s.addr5, 100, false)},
+			addedIndEntries:  nil,
+		},
+	}
+
+	previousTempEntries = s.getAllTempEntries()
+	previousIndEntries = s.getAllIndexTempEntries()
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			em := sdk.NewEventManager()
+			ctx := s.sdkCtx.WithEventManager(em)
+			var err error
+			testFunc := func() {
+				err = k.AddTemporaryUnsanction(ctx, tc.govPropID, tc.addrs...)
+			}
+			s.Require().NotPanics(testFunc, "AddTemporaryUnsanction")
+			s.Assert().NoError(err, "AddTemporaryUnsanction error")
+
+			events := em.Events()
+			s.Assert().Equal(tc.expEvents, events, "events emitted during AddTemporaryUnsanction")
+
+			currentTempEntries := s.getAllTempEntries()
+			newTempEntries := getNewEntries(previousTempEntries, currentTempEntries)
+			s.Assert().ElementsMatch(tc.addedTempEntries, newTempEntries, "new temp entries, A = expected, B = actual")
+			previousTempEntries = currentTempEntries
+
+			currentIndEntries := s.getAllIndexTempEntries()
+			newIndEntries := getNewEntries(previousIndEntries, currentIndEntries)
+			s.Assert().ElementsMatch(tc.addedIndEntries, newIndEntries, "new index entries, A = expected, B = actual")
+			previousIndEntries = currentIndEntries
+		})
+	}
+}
+
+func (s *TestSuite) TestGetLatestTempEntry() {
+	store := s.sdkCtx.KVStore(s.keeper.GetStoreKey())
+	// Add a few random entries with weird values so they're easy to identify.
+	randAddr1 := sdk.AccAddress{0, 0, 0, 0, 0}
+	randAddr2 := s.addr1[:len(s.addr1)-1]
+	randAddr3 := s.addr1[1:]
+	randAddr4 := sdk.AccAddress{255, 255, 255, 255, 255, 255}
+	val := uint8(39)
+	for _, id := range []uint64{18, 19, 55, 100000} {
+		for _, addr := range []sdk.AccAddress{randAddr1, randAddr2, randAddr3, randAddr4} {
+			val += 1
+			store.Set(keeper.CreateTemporaryKey(addr, id), []byte{val})
+			store.Set(keeper.CreateProposalTempIndexKey(id, addr), []byte{val})
+		}
+	}
+
+	s.Run("nil addr", func() {
+		var expected []byte
+		var actual []byte
+		testFunc := func() {
+			actual = s.keeper.GetLatestTempEntry(store, nil)
+		}
+		s.Require().NotPanics(testFunc, "GetLatestTempEntry")
+		s.Assert().Equal(expected, actual, "GetLatestTempEntry result")
+	})
+
+	s.Run("empty addr", func() {
+		var expected []byte
+		var actual []byte
+		testFunc := func() {
+			actual = s.keeper.GetLatestTempEntry(store, sdk.AccAddress{})
+		}
+		s.Require().NotPanics(testFunc, "GetLatestTempEntry")
+		s.Assert().Equal(expected, actual, "GetLatestTempEntry result")
+	})
+
+	s.Run("no entries", func() {
+		var expected []byte
+		var actual []byte
+		testFunc := func() {
+			actual = s.keeper.GetLatestTempEntry(store, s.addr1)
+		}
+		s.Require().NotPanics(testFunc, "GetLatestTempEntry")
+		s.Assert().Equal(expected, actual, "GetLatestTempEntry result")
+	})
+
+	s.Run("one sanction entry", func() {
+		addr := sdk.AccAddress("one_entry_test_addr")
+		var setupErr error
+		s.Require().NotPanics(func() {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 1, addr)
+		}, "Setup")
+		s.Require().NoError(setupErr, "Setup error")
+
+		expected := []byte{keeper.TempSanctionB}
+		var actual []byte
+		testFunc := func() {
+			actual = s.keeper.GetLatestTempEntry(store, addr)
+		}
+		s.Require().NotPanics(testFunc, "GetLatestTempEntry")
+		s.Assert().Equal(expected, actual, "GetLatestTempEntry result")
+	})
+
+	s.Run("one unsanction entry", func() {
+		addr := sdk.AccAddress("one_entry_test_addr2")
+		var setupErr error
+		s.Require().NotPanics(func() {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 2, addr)
+		}, "Setup")
+		s.Require().NoError(setupErr, "Setup error")
+
+		expected := []byte{keeper.TempUnsanctionB}
+		var actual []byte
+		testFunc := func() {
+			actual = s.keeper.GetLatestTempEntry(store, addr)
+		}
+		s.Require().NotPanics(testFunc, "GetLatestTempEntry")
+		s.Assert().Equal(expected, actual, "GetLatestTempEntry result")
+	})
+
+	s.Run("three entries last sanction", func() {
+		addr := sdk.AccAddress("three_entry_sanctioned")
+		var setupErr error
+		s.Require().NotPanics(func() {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 5, addr)
+			if setupErr == nil {
+				setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 3, addr)
+			}
+			if setupErr == nil {
+				setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 4, addr)
+			}
+		}, "Setup")
+		s.Require().NoError(setupErr, "Setup error")
+
+		expected := []byte{keeper.TempSanctionB}
+		var actual []byte
+		testFunc := func() {
+			actual = s.keeper.GetLatestTempEntry(store, addr)
+		}
+		s.Require().NotPanics(testFunc, "GetLatestTempEntry")
+		s.Assert().Equal(expected, actual, "GetLatestTempEntry result")
+	})
+
+	s.Run("three entries last unsanction", func() {
+		addr := sdk.AccAddress("three_entry_unsanctioned")
+		var setupErr error
+		s.Require().NotPanics(func() {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 8, addr)
+			if setupErr == nil {
+				setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 7, addr)
+			}
+			if setupErr == nil {
+				setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 6, addr)
+			}
+		}, "Setup")
+		s.Require().NoError(setupErr, "Setup error")
+
+		expected := []byte{keeper.TempUnsanctionB}
+		var actual []byte
+		testFunc := func() {
+			actual = s.keeper.GetLatestTempEntry(store, addr)
+		}
+		s.Require().NotPanics(testFunc, "GetLatestTempEntry")
+		s.Assert().Equal(expected, actual, "GetLatestTempEntry result")
+	})
+}
+
+func (s *TestSuite) TestDeleteGovPropTempEntries() {
+	// Add several temp entries for multiple gov props.
+	addrs := []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5}
+	var setupErr error
+	s.Require().NotPanics(func() {
+		for id := uint64(1); id <= 10; id++ {
+			if id%2 == 1 {
+				setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, id, addrs...)
+			} else {
+				setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, id, addrs...)
+			}
+			if setupErr != nil {
+				return
+			}
+		}
+	}, "Setup: add a bunch of temp entries")
+	s.Require().NoError(setupErr, "Setup: error adding a bunch of temp entries")
+
+	s.Run("unknown gov prop id", func() {
+		origTempEntries := s.getAllTempEntries()
+		origIndEntries := s.getAllIndexTempEntries()
+
+		testFunc := func() {
+			s.keeper.DeleteGovPropTempEntries(s.sdkCtx, 382892)
+		}
+		s.Require().NotPanics(testFunc, "DeleteGovPropTempEntries")
+
+		finalTempEntries := s.getAllTempEntries()
+		finalIndEntries := s.getAllIndexTempEntries()
+
+		s.Assert().ElementsMatch(origTempEntries, finalTempEntries, "temp entries, A = orig, B = after delete")
+		s.Assert().ElementsMatch(origIndEntries, finalIndEntries, "index entries, A = orig, B = after delete")
+	})
+
+	s.Run("id with sanction entries", func() {
+		origTempEntries := s.getAllTempEntries()
+		origIndEntries := s.getAllIndexTempEntries()
+
+		idToDelete := uint64(5)
+		var expTempEntries []*sanction.TemporaryEntry
+		for _, entry := range origTempEntries {
+			if entry.ProposalId != idToDelete {
+				expTempEntries = append(expTempEntries, entry)
+			}
+		}
+		var expIndEntries []*sanction.TemporaryEntry
+		for _, entry := range origIndEntries {
+			if entry.ProposalId != idToDelete {
+				expIndEntries = append(expIndEntries, entry)
+			}
+		}
+
+		testFunc := func() {
+			s.keeper.DeleteGovPropTempEntries(s.sdkCtx, idToDelete)
+		}
+		s.Require().NotPanics(testFunc, "DeleteGovPropTempEntries")
+
+		finalTempEntries := s.getAllTempEntries()
+		finalIndEntries := s.getAllIndexTempEntries()
+
+		s.Assert().ElementsMatch(expTempEntries, finalTempEntries, "temp entries, A = expected, B = after delete")
+		s.Assert().ElementsMatch(expIndEntries, finalIndEntries, "index entries, A = expected, B = after delete")
+	})
+
+	s.Run("id with unsanction entries", func() {
+		origTempEntries := s.getAllTempEntries()
+		origIndEntries := s.getAllIndexTempEntries()
+
+		idToDelete := uint64(2)
+		var expTempEntries []*sanction.TemporaryEntry
+		for _, entry := range origTempEntries {
+			if entry.ProposalId != idToDelete {
+				expTempEntries = append(expTempEntries, entry)
+			}
+		}
+		var expIndEntries []*sanction.TemporaryEntry
+		for _, entry := range origIndEntries {
+			if entry.ProposalId != idToDelete {
+				expIndEntries = append(expIndEntries, entry)
+			}
+		}
+
+		testFunc := func() {
+			s.keeper.DeleteGovPropTempEntries(s.sdkCtx, idToDelete)
+		}
+		s.Require().NotPanics(testFunc, "DeleteGovPropTempEntries")
+
+		finalTempEntries := s.getAllTempEntries()
+		finalIndEntries := s.getAllIndexTempEntries()
+
+		s.Assert().ElementsMatch(expTempEntries, finalTempEntries, "temp entries, A = expected, B = after delete")
+		s.Assert().ElementsMatch(expIndEntries, finalIndEntries, "index entries, A = expected, B = after delete")
+	})
+}
+
+func (s *TestSuite) TestDeleteAddrTempEntries() {
+	// Add several temp entries for multiple gov props.
+	addrs := []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5}
+	var setupErr error
+	s.Require().NotPanics(func() {
+		for id := uint64(1); id <= 10; id++ {
+			if id%2 == 1 {
+				setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, id, addrs...)
+			} else {
+				setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, id, addrs...)
+			}
+			if setupErr != nil {
+				return
+			}
+		}
+	}, "Setup: add a bunch of temp entries")
+	s.Require().NoError(setupErr, "Setup: error adding a bunch of temp entries")
+
+	s.Run("unknown address", func() {
+		origTempEntries := s.getAllTempEntries()
+		origIndEntries := s.getAllIndexTempEntries()
+
+		testFunc := func() {
+			s.keeper.DeleteAddrTempEntries(s.sdkCtx, sdk.AccAddress("unknown_test_address"))
+		}
+		s.Require().NotPanics(testFunc, "DeleteAddrTempEntries")
+
+		finalTempEntries := s.getAllTempEntries()
+		finalIndEntries := s.getAllIndexTempEntries()
+
+		s.Assert().ElementsMatch(origTempEntries, finalTempEntries, "temp entries, A = orig, B = after delete")
+		s.Assert().ElementsMatch(origIndEntries, finalIndEntries, "index entries, A = orig, B = after delete")
+	})
+
+	s.Run("known addr", func() {
+		origTempEntries := s.getAllTempEntries()
+		origIndEntries := s.getAllIndexTempEntries()
+
+		addrToDelete := s.addr3
+		addrToDeleteStr := addrToDelete.String()
+
+		var expTempEntries []*sanction.TemporaryEntry
+		for _, entry := range origTempEntries {
+			if entry.Address != addrToDeleteStr {
+				expTempEntries = append(expTempEntries, entry)
+			}
+		}
+		var expIndEntries []*sanction.TemporaryEntry
+		for _, entry := range origIndEntries {
+			if entry.Address != addrToDeleteStr {
+				expIndEntries = append(expIndEntries, entry)
+			}
+		}
+
+		testFunc := func() {
+			s.keeper.DeleteAddrTempEntries(s.sdkCtx, addrToDelete)
+		}
+		s.Require().NotPanics(testFunc, "DeleteAddrTempEntries")
+
+		finalTempEntries := s.getAllTempEntries()
+		finalIndEntries := s.getAllIndexTempEntries()
+
+		s.Assert().ElementsMatch(expTempEntries, finalTempEntries, "temp entries, A = expected, B = after delete")
+		s.Assert().ElementsMatch(expIndEntries, finalIndEntries, "index entries, A = expected, B = after delete")
+	})
+}
+
+func (s *TestSuite) TestIterateSanctionedAddresses() {
+	s.Run("nothing to iterate", func() {
+		var addrs []sdk.AccAddress
+		cb := func(addr sdk.AccAddress) bool {
+			addrs = append(addrs, addr)
+			return false
+		}
+		testFunc := func() {
+			s.keeper.IterateSanctionedAddresses(s.sdkCtx, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateSanctionedAddresses")
+		s.Require().Empty(addrs, "addresses iterated")
+	})
+
+	// rAddr makes a "random" address that starts with 0xFF, 0xFF and an index.
+	// hopefully that makes them last when iterating, putting other entries first.
+	rAddr := func(i uint8) sdk.AccAddress {
+		return append(sdk.AccAddress{255, 255, i}, "_random_test_addr"...)
+	}
+	randomAddrs := []sdk.AccAddress{rAddr(0), rAddr(1), rAddr(2), rAddr(3), rAddr(4)}
+	// Setup:
+	// all the randomAddrs = sanctioned
+	// addr1 = sanctioned
+	// addr2 = sanctioned then unsanctioned
+	// addr3 = temp sanctioned
+	// addr4 = temp unsanctioned
+	var setupErr error
+	s.Require().NotPanics(func() {
+		setupErr = s.keeper.SanctionAddresses(s.sdkCtx, s.addr1, s.addr2)
+		if setupErr == nil {
+			setupErr = s.keeper.SanctionAddresses(s.sdkCtx, randomAddrs...)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.UnsanctionAddresses(s.sdkCtx, s.addr2)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 1, s.addr3)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 1, s.addr4)
+		}
+	}, "Setup: adding records")
+	s.Require().NoError(setupErr, "error during setup")
+
+	s.Run("get all entries", func() {
+		expected := []sdk.AccAddress{s.addr1}
+		expected = append(expected, randomAddrs...)
+		var addrs []sdk.AccAddress
+		cb := func(addr sdk.AccAddress) bool {
+			addrs = append(addrs, addr)
+			return false
+		}
+		testFunc := func() {
+			s.keeper.IterateSanctionedAddresses(s.sdkCtx, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateSanctionedAddresses")
+		s.Assert().Equal(expected, addrs, "sanctioned addresses iterated")
+	})
+
+	s.Run("stop after third", func() {
+		expected := []sdk.AccAddress{s.addr1}
+		expected = append(expected, randomAddrs...)
+		expected = expected[:3]
+		var addrs []sdk.AccAddress
+		cb := func(addr sdk.AccAddress) bool {
+			addrs = append(addrs, addr)
+			return len(addrs) >= 3
+		}
+		testFunc := func() {
+			s.keeper.IterateSanctionedAddresses(s.sdkCtx, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateSanctionedAddresses")
+		s.Assert().Equal(expected, addrs, "sanctioned addresses iterated")
+	})
+
+	s.Run("stop after first", func() {
+		expected := []sdk.AccAddress{s.addr1}
+		var addrs []sdk.AccAddress
+		cb := func(addr sdk.AccAddress) bool {
+			addrs = append(addrs, addr)
+			return true
+		}
+		testFunc := func() {
+			s.keeper.IterateSanctionedAddresses(s.sdkCtx, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateSanctionedAddresses")
+		s.Assert().Equal(expected, addrs, "sanctioned addresses iterated")
+	})
+}
+
+func (s *TestSuite) TestIterateTemporaryEntries() {
+	s.Run("nothing to iterate", func() {
+		var addrs []sdk.AccAddress
+		cb := func(addr sdk.AccAddress, _ uint64, _ bool) bool {
+			addrs = append(addrs, addr)
+			return false
+		}
+		testFunc := func() {
+			s.keeper.IterateTemporaryEntries(s.sdkCtx, nil, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateTemporaryEntries")
+		s.Require().Empty(addrs, "addresses iterated")
+	})
+
+	// rAddr makes a "random" address that starts with 0xFF, 0xFF and an index.
+	// hopefully that makes them last when iterating, putting other entries first.
+	rAddr := func(i uint8) sdk.AccAddress {
+		return append(sdk.AccAddress{255, 255, i}, "_random_test_addr"...)
+	}
+	randomSanctAddrs := []sdk.AccAddress{rAddr(0), rAddr(1), rAddr(2), rAddr(3), rAddr(4)}
+	randomUnsanctAddrs := []sdk.AccAddress{rAddr(5), rAddr(6), rAddr(7), rAddr(8), rAddr(9)}
+	mixedAddr := rAddr(10)
+	// Setup:
+	// addr1 = sanctioned
+	// addr2 = sanctioned then unsanctioned
+	// addr3 = temp sanctioned id 1
+	// addr4 = temp unsanctioned id 1
+	// all the randomSanctAddrs = temp sanctioned for gov prop 1 and 2
+	// first two randomSanctAddrs = temp unsanctioned for gov prop 3 too
+	// all the randomUnsanctAddrs = temp unsanctioned for gov prop 1 and 2
+	// first two randomUnsanctAddrs = temp unsanctioned for gov prop 3 too
+	// mixedAddr = temp sanction for 1 and 3, temp unsanction for 2
+	var setupErr error
+	s.Require().NotPanics(func() {
+		setupErr = s.keeper.SanctionAddresses(s.sdkCtx, s.addr1, s.addr2)
+		if setupErr == nil {
+			setupErr = s.keeper.UnsanctionAddresses(s.sdkCtx, s.addr2)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 1, s.addr3)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 1, s.addr4)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 1, randomSanctAddrs...)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 2, randomSanctAddrs...)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 3, randomSanctAddrs[:2]...)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 1, randomUnsanctAddrs...)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 2, randomUnsanctAddrs...)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 3, randomUnsanctAddrs[:2]...)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 1, mixedAddr)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 2, mixedAddr)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 3, mixedAddr)
+		}
+	}, "Setup: adding records")
+	s.Require().NoError(setupErr, "error during setup")
+
+	sortEntries := func(entries []*sanction.TemporaryEntry) []*sanction.TemporaryEntry {
+		sort.Slice(entries, func(i, j int) bool {
+			addrI, err := sdk.AccAddressFromBech32(entries[i].Address)
+			s.Require().NoError(err, "AccAddressFromBech32(%q)", entries[i].Address)
+			addrJ, err := sdk.AccAddressFromBech32(entries[j].Address)
+			s.Require().NoError(err, "AccAddressFromBech32(%q)", entries[j].Address)
+			addrCmp := bytes.Compare(addrI, addrJ)
+			if addrCmp < 0 {
+				return true
+			}
+			return addrCmp == 0 && entries[i].ProposalId < entries[j].ProposalId
+		})
+		return entries
+	}
+
+	addr3Entries := sortEntries([]*sanction.TemporaryEntry{
+		newTempEntry(s.addr3, 1, true),
+	})
+	addr4Entries := sortEntries([]*sanction.TemporaryEntry{
+		newTempEntry(s.addr4, 1, false),
+	})
+	randomSanctEntries := [][]*sanction.TemporaryEntry{
+		sortEntries([]*sanction.TemporaryEntry{
+			newTempEntry(randomSanctAddrs[0], 1, true),
+			newTempEntry(randomSanctAddrs[0], 2, true),
+			newTempEntry(randomSanctAddrs[0], 3, true),
+		}),
+		sortEntries([]*sanction.TemporaryEntry{
+			newTempEntry(randomSanctAddrs[1], 1, true),
+			newTempEntry(randomSanctAddrs[1], 2, true),
+			newTempEntry(randomSanctAddrs[1], 3, true),
+		}),
+		sortEntries([]*sanction.TemporaryEntry{
+			newTempEntry(randomSanctAddrs[2], 1, true),
+			newTempEntry(randomSanctAddrs[2], 2, true),
+		}),
+		sortEntries([]*sanction.TemporaryEntry{
+			newTempEntry(randomSanctAddrs[3], 1, true),
+			newTempEntry(randomSanctAddrs[3], 2, true),
+		}),
+		sortEntries([]*sanction.TemporaryEntry{
+			newTempEntry(randomSanctAddrs[4], 1, true),
+			newTempEntry(randomSanctAddrs[4], 2, true),
+		}),
+	}
+	randomUnsanctEntries := [][]*sanction.TemporaryEntry{
+		sortEntries([]*sanction.TemporaryEntry{
+			newTempEntry(randomUnsanctAddrs[0], 1, false),
+			newTempEntry(randomUnsanctAddrs[0], 2, false),
+			newTempEntry(randomUnsanctAddrs[0], 3, false),
+		}),
+		sortEntries([]*sanction.TemporaryEntry{
+			newTempEntry(randomUnsanctAddrs[1], 1, false),
+			newTempEntry(randomUnsanctAddrs[1], 2, false),
+			newTempEntry(randomUnsanctAddrs[1], 3, false),
+		}),
+		sortEntries([]*sanction.TemporaryEntry{
+			newTempEntry(randomUnsanctAddrs[2], 1, false),
+			newTempEntry(randomUnsanctAddrs[2], 2, false),
+		}),
+		sortEntries([]*sanction.TemporaryEntry{
+			newTempEntry(randomUnsanctAddrs[3], 1, false),
+			newTempEntry(randomUnsanctAddrs[3], 2, false),
+		}),
+		sortEntries([]*sanction.TemporaryEntry{
+			newTempEntry(randomUnsanctAddrs[4], 1, false),
+			newTempEntry(randomUnsanctAddrs[4], 2, false),
+		}),
+	}
+	mixedEntries := sortEntries([]*sanction.TemporaryEntry{
+		newTempEntry(mixedAddr, 1, true),
+		newTempEntry(mixedAddr, 2, false),
+		newTempEntry(mixedAddr, 3, true),
+	})
+
+	var allEntries []*sanction.TemporaryEntry
+	allEntries = append(allEntries, addr3Entries...)
+	allEntries = append(allEntries, addr4Entries...)
+	for _, entries := range randomSanctEntries {
+		allEntries = append(allEntries, entries...)
+	}
+	for _, entries := range randomUnsanctEntries {
+		allEntries = append(allEntries, entries...)
+	}
+	allEntries = append(allEntries, mixedEntries...)
+	// horribly inefficient, but whatever, it's a unit test.
+
+	allEntries = sortEntries(allEntries)
+
+	s.Run("stop after third", func() {
+		expected := allEntries[:3]
+		var entries []*sanction.TemporaryEntry
+		cb := func(addr sdk.AccAddress, govPropId uint64, isSanctioned bool) bool {
+			entries = append(entries, newTempEntry(addr, govPropId, isSanctioned))
+			return len(entries) >= 3
+		}
+		testFunc := func() {
+			s.keeper.IterateTemporaryEntries(s.sdkCtx, nil, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateTemporaryEntries")
+		s.Assert().Equal(expected, entries, "entries iterated")
+	})
+
+	s.Run("stop after first", func() {
+		expected := allEntries[:1]
+		var entries []*sanction.TemporaryEntry
+		cb := func(addr sdk.AccAddress, govPropId uint64, isSanctioned bool) bool {
+			entries = append(entries, newTempEntry(addr, govPropId, isSanctioned))
+			return true
+		}
+		testFunc := func() {
+			s.keeper.IterateTemporaryEntries(s.sdkCtx, nil, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateTemporaryEntries")
+		s.Assert().Equal(expected, entries, "entries iterated")
+	})
+
+	tests := []struct {
+		name     string
+		addr     sdk.AccAddress
+		expected []*sanction.TemporaryEntry
+	}{
+		{
+			name:     "nil addr",
+			addr:     nil,
+			expected: allEntries,
+		},
+		{
+			name:     "addr with only one is sanction",
+			addr:     s.addr3,
+			expected: addr3Entries,
+		},
+		{
+			name:     "addr with only one is unsanction",
+			addr:     s.addr4,
+			expected: addr4Entries,
+		},
+		{
+			name:     "addr with 3 sanction entries",
+			addr:     randomSanctAddrs[0],
+			expected: randomSanctEntries[0],
+		},
+		{
+			name:     "addr with 3 unsanction entries",
+			addr:     randomUnsanctAddrs[0],
+			expected: randomUnsanctEntries[0],
+		},
+		{
+			name:     "addr with mixed entries",
+			addr:     mixedAddr,
+			expected: mixedEntries,
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			var entries []*sanction.TemporaryEntry
+			cb := func(addr sdk.AccAddress, govPropId uint64, isSanctioned bool) bool {
+				entries = append(entries, newTempEntry(addr, govPropId, isSanctioned))
+				return false
+			}
+			testFunc := func() {
+				s.keeper.IterateTemporaryEntries(s.sdkCtx, tc.addr, cb)
+			}
+			s.Require().NotPanics(testFunc, "IterateTemporaryEntries")
+			s.Assert().Equal(tc.expected, entries, "entries iterated")
+		})
+	}
+}
+
+func (s *TestSuite) TestIterateProposalIndexEntries() {
+	s.Run("nothing to iterate", func() {
+		var addrs []sdk.AccAddress
+		cb := func(_ uint64, addr sdk.AccAddress) bool {
+			addrs = append(addrs, addr)
+			return false
+		}
+		testFunc := func() {
+			s.keeper.IterateProposalIndexEntries(s.sdkCtx, nil, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateProposalIndexEntries")
+		s.Require().Empty(addrs, "addresses iterated")
+	})
+
+	// rAddr makes a "random" address that starts with 0xFF, 0xFF and an index.
+	// hopefully that makes them last when iterating, putting other entries first.
+	rAddr := func(i uint8) sdk.AccAddress {
+		return append(sdk.AccAddress{255, 255, i}, "_random_test_addr"...)
+	}
+	randomSanctAddrs := []sdk.AccAddress{rAddr(0), rAddr(1), rAddr(2), rAddr(3), rAddr(4)}
+	randomUnsanctAddrs := []sdk.AccAddress{rAddr(5), rAddr(6), rAddr(7), rAddr(8), rAddr(9)}
+	mixedAddr := rAddr(10)
+
+	// Setup:
+	// id 1 = sanctioned: addr3, all randomSanctAddrs mixed addr, unsanctioned: addr4, all randomUnsanctAddrs
+	// id 2 = sanctioned: addr3, all randomSanctAddrs mixed addr
+	// id 3 = unsanctioned: addr4, all randomUnsanctAddrs, mixed addr
+	var setupErr error
+	s.Require().NotPanics(func() {
+		setupErr = s.keeper.SanctionAddresses(s.sdkCtx, s.addr1, s.addr2)
+		if setupErr == nil {
+			setupErr = s.keeper.UnsanctionAddresses(s.sdkCtx, s.addr2)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 1, s.addr3, mixedAddr)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 1, randomSanctAddrs...)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 1, s.addr4)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 1, randomUnsanctAddrs...)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 2, s.addr3, mixedAddr)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporarySanction(s.sdkCtx, 2, randomSanctAddrs...)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 3, s.addr4, mixedAddr)
+		}
+		if setupErr == nil {
+			setupErr = s.keeper.AddTemporaryUnsanction(s.sdkCtx, 3, randomUnsanctAddrs...)
+		}
+	}, "Setup: adding records")
+	s.Require().NoError(setupErr, "error during setup")
+
+	sortEntries := func(entries []*sanction.TemporaryEntry) []*sanction.TemporaryEntry {
+		// horribly inefficient, but whatever, it's a unit test.
+		sort.Slice(entries, func(i, j int) bool {
+			if entries[i].ProposalId < entries[j].ProposalId {
+				return true
+			}
+			if entries[i].ProposalId > entries[j].ProposalId {
+				return false
+			}
+			addrI, err := sdk.AccAddressFromBech32(entries[i].Address)
+			s.Require().NoError(err, "AccAddressFromBech32(%q)", entries[i].Address)
+			addrJ, err := sdk.AccAddressFromBech32(entries[j].Address)
+			s.Require().NoError(err, "AccAddressFromBech32(%q)", entries[j].Address)
+			return bytes.Compare(addrI, addrJ) < 0
+		})
+		return entries
+	}
+
+	// Setup:
+	// id 1 = sanctioned: addr3, all randomSanctAddrs mixed addr, unsanctioned: addr4, all randomUnsanctAddrs
+	// id 2 = sanctioned: addr3, all randomSanctAddrs mixed addr
+	// id 3 = unsanctioned: addr4, all randomUnsanctAddrs, mixed addr
+	prop1Entries := sortEntries([]*sanction.TemporaryEntry{
+		newIndTempEntry(1, s.addr3),
+		newIndTempEntry(1, s.addr4),
+		newIndTempEntry(1, mixedAddr),
+		newIndTempEntry(1, randomSanctAddrs[0]),
+		newIndTempEntry(1, randomSanctAddrs[1]),
+		newIndTempEntry(1, randomSanctAddrs[2]),
+		newIndTempEntry(1, randomSanctAddrs[3]),
+		newIndTempEntry(1, randomSanctAddrs[4]),
+		newIndTempEntry(1, randomUnsanctAddrs[0]),
+		newIndTempEntry(1, randomUnsanctAddrs[1]),
+		newIndTempEntry(1, randomUnsanctAddrs[2]),
+		newIndTempEntry(1, randomUnsanctAddrs[3]),
+		newIndTempEntry(1, randomUnsanctAddrs[4]),
+	})
+	prop2Entries := sortEntries([]*sanction.TemporaryEntry{
+		newIndTempEntry(2, s.addr3),
+		newIndTempEntry(2, mixedAddr),
+		newIndTempEntry(2, randomSanctAddrs[0]),
+		newIndTempEntry(2, randomSanctAddrs[1]),
+		newIndTempEntry(2, randomSanctAddrs[2]),
+		newIndTempEntry(2, randomSanctAddrs[3]),
+		newIndTempEntry(2, randomSanctAddrs[4]),
+	})
+	prop3Entries := sortEntries([]*sanction.TemporaryEntry{
+		newIndTempEntry(3, s.addr4),
+		newIndTempEntry(3, mixedAddr),
+		newIndTempEntry(3, randomUnsanctAddrs[0]),
+		newIndTempEntry(3, randomUnsanctAddrs[1]),
+		newIndTempEntry(3, randomUnsanctAddrs[2]),
+		newIndTempEntry(3, randomUnsanctAddrs[3]),
+		newIndTempEntry(3, randomUnsanctAddrs[4]),
+	})
+
+	var allEntries []*sanction.TemporaryEntry
+	allEntries = append(allEntries, prop1Entries...)
+	allEntries = append(allEntries, prop2Entries...)
+	allEntries = append(allEntries, prop3Entries...)
+	allEntries = sortEntries(allEntries)
+
+	s.Run("stop after third", func() {
+		expected := allEntries[:3]
+		var entries []*sanction.TemporaryEntry
+		cb := func(govPropId uint64, addr sdk.AccAddress) bool {
+			entries = append(entries, newIndTempEntry(govPropId, addr))
+			return len(entries) >= 3
+		}
+		testFunc := func() {
+			s.keeper.IterateProposalIndexEntries(s.sdkCtx, nil, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateProposalIndexEntries")
+		s.Assert().Equal(expected, entries, "entries iterated")
+	})
+
+	s.Run("stop after first", func() {
+		expected := allEntries[:1]
+		var entries []*sanction.TemporaryEntry
+		cb := func(govPropId uint64, addr sdk.AccAddress) bool {
+			entries = append(entries, newIndTempEntry(govPropId, addr))
+			return true
+		}
+		testFunc := func() {
+			s.keeper.IterateProposalIndexEntries(s.sdkCtx, nil, cb)
+		}
+		s.Require().NotPanics(testFunc, "IterateProposalIndexEntries")
+		s.Assert().Equal(expected, entries, "entries iterated")
+	})
+
+	id := func(i uint64) *uint64 {
+		return &i
+	}
+
+	tests := []struct {
+		name      string
+		govPropId *uint64
+		expected  []*sanction.TemporaryEntry
+	}{
+		{
+			name:      "nil id",
+			govPropId: nil,
+			expected:  allEntries,
+		},
+		{
+			name:      "id without entries.",
+			govPropId: id(392023),
+			expected:  nil,
+		},
+		{
+			name:      "id with mixed entries.",
+			govPropId: id(1),
+			expected:  prop1Entries,
+		},
+		{
+			name:      "id with only sanctions",
+			govPropId: id(2),
+			expected:  prop2Entries,
+		},
+		{
+			name:      "id with only unsanctions",
+			govPropId: id(3),
+			expected:  prop3Entries,
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			var entries []*sanction.TemporaryEntry
+			cb := func(govPropId uint64, addr sdk.AccAddress) bool {
+				entries = append(entries, newIndTempEntry(govPropId, addr))
+				return false
+			}
+			testFunc := func() {
+				s.keeper.IterateProposalIndexEntries(s.sdkCtx, tc.govPropId, cb)
+			}
+			s.Require().NotPanics(testFunc, "IterateProposalIndexEntries")
+			s.Assert().Equal(tc.expected, entries, "entries iterated")
+		})
+	}
+}
 
 func (s *TestSuite) TestIsAddrThatCannotBeSanctioned() {
 	k := s.keeper.WithUnsanctionableAddrs(map[string]bool{

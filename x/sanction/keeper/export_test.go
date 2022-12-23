@@ -71,6 +71,11 @@ func (k Keeper) GetParamAsCoinsOrDefault(ctx sdk.Context, name string, dflt sdk.
 	return k.getParamAsCoinsOrDefault(ctx, name, dflt)
 }
 
+// GetLatestTempEntry, for unit tests, exposes this keeper's getLatestTempEntry function.
+func (k Keeper) GetLatestTempEntry(store sdk.KVStore, addr sdk.AccAddress) []byte {
+	return k.getLatestTempEntry(store, addr)
+}
+
 // GetParam, for unit tests, exposes this keeper's getParam function.
 func (k Keeper) GetParam(store sdk.KVStore, name string) (string, bool) {
 	return k.getParam(store, name)
