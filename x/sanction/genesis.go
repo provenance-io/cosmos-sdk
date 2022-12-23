@@ -6,15 +6,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/sanction/errors"
 )
 
-func NewGenesisState(params *Params, addrs []string) *GenesisState {
+func NewGenesisState(params *Params, addrs []string, tempEntries []*TemporaryEntry) *GenesisState {
 	return &GenesisState{
 		Params:              params,
 		SanctionedAddresses: addrs,
+		TemporaryEntries:    tempEntries,
 	}
 }
 
 func DefaultGenesisState() *GenesisState {
-	return NewGenesisState(DefaultParams(), nil)
+	return NewGenesisState(DefaultParams(), nil, nil)
 }
 
 func (g GenesisState) Validate() error {

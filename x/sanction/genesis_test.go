@@ -21,99 +21,183 @@ func TestNewGenesisState(t *testing.T) {
 		name   string
 		params *sanction.Params
 		addrs  []string
+		temps  []*sanction.TemporaryEntry
 		exp    *sanction.GenesisState
 	}{
 		{
 			name:   "nil nil",
 			params: nil,
 			addrs:  nil,
+			temps:  nil,
 			exp: &sanction.GenesisState{
 				Params:              nil,
 				SanctionedAddresses: nil,
+				TemporaryEntries:    nil,
 			},
 		},
 		{
-			name:   "nil empty",
+			name:   "nil empty empty",
 			params: nil,
 			addrs:  []string{},
+			temps:  []*sanction.TemporaryEntry{},
 			exp: &sanction.GenesisState{
 				Params:              nil,
 				SanctionedAddresses: []string{},
+				TemporaryEntries:    []*sanction.TemporaryEntry{},
 			},
 		},
 		{
-			name:   "empty nil",
+			name:   "empty nil empty",
 			params: &sanction.Params{},
 			addrs:  nil,
+			temps:  []*sanction.TemporaryEntry{},
 			exp: &sanction.GenesisState{
 				Params:              &sanction.Params{},
 				SanctionedAddresses: nil,
+				TemporaryEntries:    []*sanction.TemporaryEntry{},
 			},
 		},
 		{
-			name:   "empty empty",
+			name:   "empty empty empty",
 			params: &sanction.Params{},
 			addrs:  []string{},
+			temps:  []*sanction.TemporaryEntry{},
 			exp: &sanction.GenesisState{
 				Params:              &sanction.Params{},
 				SanctionedAddresses: []string{},
+				TemporaryEntries:    []*sanction.TemporaryEntry{},
 			},
 		},
 		{
-			name:   "only-sanct-dep nil",
+			name:   "only-sanct-dep nil nil",
 			params: &sanction.Params{ImmediateSanctionMinDeposit: cz("5sanct")},
 			addrs:  nil,
+			temps:  nil,
 			exp: &sanction.GenesisState{
 				Params:              &sanction.Params{ImmediateSanctionMinDeposit: cz("5sanct")},
 				SanctionedAddresses: nil,
+				TemporaryEntries:    nil,
 			},
 		},
 		{
-			name:   "only-unsanct-dep nil",
+			name:   "only-unsanct-dep nil nil",
 			params: &sanction.Params{ImmediateUnsanctionMinDeposit: cz("8usanct")},
 			addrs:  nil,
+			temps:  nil,
 			exp: &sanction.GenesisState{
 				Params:              &sanction.Params{ImmediateUnsanctionMinDeposit: cz("8usanct")},
 				SanctionedAddresses: nil,
+				TemporaryEntries:    nil,
 			},
 		},
 		{
-			name: "both params nil addrs",
+			name: "both params nil addrs and temps",
 			params: &sanction.Params{
 				ImmediateSanctionMinDeposit:   cz("11sanct"),
 				ImmediateUnsanctionMinDeposit: cz("13usanct"),
 			},
 			addrs: nil,
+			temps: nil,
 			exp: &sanction.GenesisState{
 				Params: &sanction.Params{
 					ImmediateSanctionMinDeposit:   cz("11sanct"),
 					ImmediateUnsanctionMinDeposit: cz("13usanct"),
 				},
 				SanctionedAddresses: nil,
+				TemporaryEntries:    nil,
 			},
 		},
 		{
-			name:   "nil params 3 addrs",
+			name:   "nil params 3 addrs nil temps",
 			params: nil,
 			addrs:  []string{"addr1", "addr2", "addr3"},
+			temps:  nil,
 			exp: &sanction.GenesisState{
 				Params:              nil,
 				SanctionedAddresses: []string{"addr1", "addr2", "addr3"},
+				TemporaryEntries:    nil,
 			},
 		},
 		{
-			name: "a little of both",
+			name:   "nil params nil addrs 3 temps",
+			params: nil,
+			addrs:  nil,
+			temps: []*sanction.TemporaryEntry{
+				{
+					Address:    "addr4",
+					ProposalId: 4,
+					Status:     sanction.TEMP_STATUS_SANCTIONED,
+				},
+				{
+					Address:    "addr5",
+					ProposalId: 5,
+					Status:     sanction.TEMP_STATUS_UNSANCTIONED,
+				},
+				{
+					Address:    "addr6",
+					ProposalId: 6,
+					Status:     8,
+				},
+			},
+			exp: &sanction.GenesisState{
+				Params:              nil,
+				SanctionedAddresses: nil,
+				TemporaryEntries: []*sanction.TemporaryEntry{
+					{
+						Address:    "addr4",
+						ProposalId: 4,
+						Status:     sanction.TEMP_STATUS_SANCTIONED,
+					},
+					{
+						Address:    "addr5",
+						ProposalId: 5,
+						Status:     sanction.TEMP_STATUS_UNSANCTIONED,
+					},
+					{
+						Address:    "addr6",
+						ProposalId: 6,
+						Status:     8,
+					},
+				},
+			},
+		},
+		{
+			name: "a little of all",
 			params: &sanction.Params{
 				ImmediateSanctionMinDeposit:   cz("11sanct"),
 				ImmediateUnsanctionMinDeposit: cz("13usanct"),
 			},
 			addrs: []string{"addr-one", "addr-two", "addr-three", "addr-fourteen"}, // Bono, why?
+			temps: []*sanction.TemporaryEntry{
+				{
+					Address:    "addr-twenty",
+					ProposalId: 8,
+					Status:     sanction.TEMP_STATUS_SANCTIONED,
+				},
+				{
+					Address:    "addr-twenty-one",
+					ProposalId: 9,
+					Status:     sanction.TEMP_STATUS_UNSANCTIONED,
+				},
+			},
 			exp: &sanction.GenesisState{
 				Params: &sanction.Params{
 					ImmediateSanctionMinDeposit:   cz("11sanct"),
 					ImmediateUnsanctionMinDeposit: cz("13usanct"),
 				},
 				SanctionedAddresses: []string{"addr-one", "addr-two", "addr-three", "addr-fourteen"},
+				TemporaryEntries: []*sanction.TemporaryEntry{
+					{
+						Address:    "addr-twenty",
+						ProposalId: 8,
+						Status:     sanction.TEMP_STATUS_SANCTIONED,
+					},
+					{
+						Address:    "addr-twenty-one",
+						ProposalId: 9,
+						Status:     sanction.TEMP_STATUS_UNSANCTIONED,
+					},
+				},
 			},
 		},
 		{
@@ -128,7 +212,7 @@ func TestNewGenesisState(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var actual *sanction.GenesisState
 			testFunc := func() {
-				actual = sanction.NewGenesisState(tc.params, tc.addrs)
+				actual = sanction.NewGenesisState(tc.params, tc.addrs, tc.temps)
 			}
 			require.NotPanics(t, testFunc, "NewGenesisState")
 			if assert.NotNil(t, actual, "NewGenesisState result") {
@@ -136,6 +220,7 @@ func TestNewGenesisState(t *testing.T) {
 					// If we get here, at least one of these should fail and hopefully help point to the thing that's different.
 					assert.Equal(t, tc.exp.Params, actual.Params, "NewGenesisState Params")
 					assert.Equal(t, tc.exp.SanctionedAddresses, actual.SanctionedAddresses, "NewGenesisState SanctionedAddresses")
+					assert.Equal(t, tc.exp.TemporaryEntries, actual.TemporaryEntries, "NewGenesisState TemporaryEntries")
 				}
 			}
 		})
