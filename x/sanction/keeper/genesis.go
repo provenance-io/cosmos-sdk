@@ -23,6 +23,7 @@ func (k Keeper) InitGenesis(origCtx sdk.Context, genState *sanction.GenesisState
 	if err != nil {
 		panic(err)
 	}
+
 	for _, entry := range genState.TemporaryEntries {
 		var addr sdk.AccAddress
 		addr, err = sdk.AccAddressFromBech32(entry.Address)

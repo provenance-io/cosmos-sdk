@@ -95,11 +95,6 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	sanction.RegisterLegacyAminoCodec(cdc)
 }
 
-// Name returns the sanction module's name.
-func (AppModule) Name() string {
-	return sanction.ModuleName
-}
-
 // RegisterInvariants does nothing, there are no invariants to enforce for the sanction module.
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
 
