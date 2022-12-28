@@ -103,7 +103,7 @@ func (k Keeper) unwrapLegacyGovPropMsg(msg *codectypes.Any) *codectypes.Any {
 	if msg.TypeUrl != k.msgExecLegacyContentTypeURL {
 		return msg
 	}
-	var newMsg govv1.MsgExecLegacyContent
+	var newMsg *govv1.MsgExecLegacyContent
 	if err := k.cdc.UnpackAny(msg, &newMsg); err != nil {
 		panic(err)
 	}
