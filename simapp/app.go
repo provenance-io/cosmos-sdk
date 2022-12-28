@@ -328,7 +328,7 @@ func NewSimApp(
 
 	// TODO[1046]: Figure out how best to provide the unsanctionable addresses.
 	app.SanctionKeeper = sanctionkeeper.NewKeeper(appCodec, keys[sanction.StoreKey],
-		app.BankKeeper, app.GovKeeper,
+		app.BankKeeper, &govKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(), nil)
 
 	app.GovKeeper = *govKeeper.SetHooks(
