@@ -3,6 +3,7 @@ package testutil
 import (
 	"fmt"
 	"runtime/debug"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,13 +18,15 @@ func AssertErrorContents(t *testing.T, theError error, contains []string, msgAnd
 	if len(contains) == 0 {
 		return assert.NoError(t, theError, msgAndArgs)
 	}
-	rv := assert.Error(t, theError, msgAndArgs...)
-	if rv {
-		for _, expInErr := range contains {
-			rv = assert.ErrorContains(t, theError, expInErr, msgAndArgs...) && rv
-		}
+	if !assert.Error(t, theError, msgAndArgs...) {
+		return false
 	}
-	return rv
+
+	hasAll := true
+	for _, expInErr := range contains {
+		hasAll = assert.ErrorContains(t, theError, expInErr, msgAndArgs...) && hasAll
+	}
+	return hasAll
 }
 
 // didPanic safely executes the provided function and returns info about any panic it might have encountered.
@@ -56,14 +59,21 @@ func AssertPanicsWithMessage(t *testing.T, expected string, f assert.PanicTestFu
 
 	funcDidPanic, panicValue, panickedStack := didPanic(f)
 	if !funcDidPanic {
-		return assert.Fail(t, fmt.Sprintf("func %#v should panic\n\tPanic value:\t%#v", f, panicValue), msgAndArgs...)
+		msg := fmt.Sprintf("func %#v should panic, but did not.", f)
+		msg += fmt.Sprintf("\n\tExpected message:\t%q", expected)
+		return assert.Fail(t, msg, msgAndArgs...)
 	}
 	panicMsg := fmt.Sprintf("%v", panicValue)
-	if assert.Equal(t, expected, panicMsg, "panic message") {
+	if panicMsg == expected {
 		return true
 	}
-	return assert.Fail(t, fmt.Sprintf("func %#v should panic with value:\t%#v\n\tPanic value:\t%#v\n\tPanic stack:\t%s",
-		f, expected, panicValue, panickedStack), msgAndArgs...)
+
+	msg := fmt.Sprintf("func %#v panic message incorrect.", f)
+	msg += fmt.Sprintf("\n\tExpected:\t%q", expected)
+	msg += fmt.Sprintf("\n\t  Actual:\t%q", panicMsg)
+	msg += fmt.Sprintf("\n\tPanic value:\t%#v", panicValue)
+	msg += fmt.Sprintf("\n\tPanic stack:\t%s", panickedStack)
+	return assert.Fail(t, msg, msgAndArgs...)
 }
 
 // RequirePanicsWithMessage asserts that the code inside the specified PanicTestFunc panics, and that
@@ -74,9 +84,96 @@ func AssertPanicsWithMessage(t *testing.T, expected string, f assert.PanicTestFu
 // PanicsWithValue requires a specific interface{} value to be provided, which can be problematic.
 // PanicsWithError requires that the panic value is an error.
 // This one uses fmt.Sprintf("%v", panicValue) to convert the panic recovery value to a string to test against.
+//
+// If the assertion fails, the test is halted.
 func RequirePanicsWithMessage(t *testing.T, expected string, f assert.PanicTestFunc, msgAndArgs ...interface{}) {
 	t.Helper()
 	if AssertPanicsWithMessage(t, expected, f, msgAndArgs...) {
+		return
+	}
+	t.FailNow()
+}
+
+// AssertPanicContents asserts that, if contains is empty, the provided func does not panic
+// Otherwise, asserts that the func panics and that its panic message contains each of the provided strings.
+func AssertPanicContents(t *testing.T, contains []string, f assert.PanicTestFunc, msgAndArgs ...interface{}) bool {
+	t.Helper()
+
+	funcDidPanic, panicValue, panickedStack := didPanic(f)
+	panicMsg := fmt.Sprintf("%v", panicValue)
+
+	if len(contains) == 0 {
+		if !funcDidPanic {
+			return true
+		}
+		msg := fmt.Sprintf("func %#v should not panic, but did.", f)
+		msg += fmt.Sprintf("\n\tPanic message:\t%q", panicMsg)
+		msg += fmt.Sprintf("\n\t  Panic value:\t%#v", panicValue)
+		msg += fmt.Sprintf("\n\t  Panic stack:\t%s", panickedStack)
+		return assert.Fail(t, msg, msgAndArgs...)
+	}
+
+	if !funcDidPanic {
+		msg := fmt.Sprintf("func %#v should panic, but did not.", f)
+		for _, exp := range contains {
+			msg += fmt.Sprintf("\n\tExpected to contain:\t%q", exp)
+		}
+		return assert.Fail(t, msg, msgAndArgs...)
+	}
+
+	var missing []string
+	for _, exp := range contains {
+		if !strings.Contains(panicMsg, exp) {
+			missing = append(missing, exp)
+
+		}
+	}
+
+	if len(missing) == 0 {
+		return true
+	}
+
+	msg := fmt.Sprintf("func %#v panic message incorrect.", f)
+	msg += fmt.Sprintf("\n\t   Panic message:\t%q", panicMsg)
+	for _, exp := range missing {
+		msg += fmt.Sprintf("\n\tDoes not contain:\t%q", exp)
+	}
+	msg += fmt.Sprintf("\n\tPanic value:\t%#v", panicValue)
+	msg += fmt.Sprintf("\n\tPanic stack:\t%s", panickedStack)
+	return assert.Fail(t, msg, msgAndArgs)
+}
+
+// RequirePanicContents asserts that, if contains is empty, the provided func does not panic
+// Otherwise, asserts that the func panics and that its panic message contains each of the provided strings.
+//
+// If the assertion fails, the test is halted.
+func RequirePanicContents(t *testing.T, contains []string, f assert.PanicTestFunc, msgAndArgs ...interface{}) {
+	t.Helper()
+	if AssertPanicContents(t, contains, f, msgAndArgs...) {
+		return
+	}
+	t.FailNow()
+}
+
+// AssertNotPanicsNoError asserts that the code inside the provided function does not panic
+// and that it does not return an error.
+// Returns true if it neither panics nor errors.
+func AssertNotPanicsNoError(t *testing.T, f func() error, msgAndArgs ...interface{}) bool {
+	t.Helper()
+	var err error
+	if assert.NotPanics(t, func() { err = f() }, msgAndArgs...) {
+		return assert.NoError(t, err, msgAndArgs...)
+	}
+	return false
+}
+
+// RequireNotPanicsNoError asserts that the code inside the provided function does not panic
+// and that it does not return an error.
+//
+// If the assertion fails, the test is halted.
+func RequireNotPanicsNoError(t *testing.T, f func() error, msgAndArgs ...interface{}) {
+	t.Helper()
+	if AssertNotPanicsNoError(t, f, msgAndArgs...) {
 		return
 	}
 	t.FailNow()
