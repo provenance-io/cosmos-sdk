@@ -106,6 +106,43 @@ func (s *TestSuite) getAllIndexTempEntries() []*sanction.TemporaryEntry {
 	return tempIndEntries
 }
 
+func (s *TestSuite) TestKeeperMsgUrls() {
+	vals := []struct {
+		name string
+		val  string
+		exp  string
+	}{
+		{
+			name: "msgSanctionTypeURL",
+			val:  s.keeper.OnlyTestsGetMsgSanctionTypeURL(),
+			exp:  "/cosmos.sanction.v1beta1.MsgSanction",
+		},
+		{
+			name: "msgUnsanctionTypeURL",
+			val:  s.keeper.OnlyTestsGetMsgUnsanctionTypeURL(),
+			exp:  "/cosmos.sanction.v1beta1.MsgUnsanction",
+		},
+		{
+			name: "msgExecLegacyContentTypeURL",
+			val:  s.keeper.OnlyTestsGetMsgExecLegacyContentTypeURL(),
+			exp:  "/cosmos.gov.v1.MsgExecLegacyContent",
+		},
+	}
+
+	for i, val := range vals {
+		s.Run(val.name, func() {
+			s.Assert().Equal(val.exp, val.val, "field value")
+
+			for j, val2 := range vals {
+				if i == j {
+					continue
+				}
+				s.Assert().NotEqual(val.val, val2.val, "%q = %s = %s", val.val, val.name, val2.name)
+			}
+		})
+	}
+}
+
 func (s *TestSuite) TestKeeper_GetAuthority() {
 	s.Run("default", func() {
 		expected := authtypes.NewModuleAddress(govtypes.ModuleName).String()

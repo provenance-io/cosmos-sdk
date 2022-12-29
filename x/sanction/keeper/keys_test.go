@@ -27,18 +27,17 @@ func TestPrefixValues(t *testing.T) {
 		{name: "ProposalIndexPrefix", prefix: keeper.ProposalIndexPrefix, expected: []byte{0x03}},
 	}
 
-	for _, p := range prefixes {
+	for i, p := range prefixes {
 		t.Run(fmt.Sprintf("%s expected value", p.name), func(t *testing.T) {
-			assert.Equal(t, p.prefix, p.expected, p.name)
-		})
-	}
+			assert.Equal(t, p.prefix, p.expected, "prefix value")
 
-	for i := 0; i < len(prefixes)-1; i++ {
-		for j := i + 1; j < len(prefixes); j++ {
-			t.Run(fmt.Sprintf("%s is different from %s", prefixes[i].name, prefixes[j].name), func(t *testing.T) {
-				assert.NotEqual(t, prefixes[i].prefix, prefixes[j].prefix, "expected: %s, actual: %s", prefixes[i].name, prefixes[j].name)
-			})
-		}
+			for j, p2 := range prefixes {
+				if i == j {
+					continue
+				}
+				assert.NotEqual(t, p.prefix, p2.prefix, "%v = %s = %s", p.prefix, p.name, p2.name)
+			}
+		})
 	}
 }
 
@@ -60,19 +59,19 @@ func TestConstValues(t *testing.T) {
 		},
 	}
 
-	for _, c := range consts {
-		t.Run(fmt.Sprintf("%s expected value", c.name), func(t *testing.T) {
-			assert.Equal(t, c.exptected, c.value)
+	for i, c := range consts {
+		t.Run(fmt.Sprintf("%s", c.name), func(t *testing.T) {
+			assert.Equal(t, c.exptected, c.value, "variable value")
+
+			for j, c2 := range consts {
+				if i == j {
+					continue
+				}
+				assert.NotEqual(t, c.value, c2.value, "%q = %s = %s", c.value, c.name, c2.name)
+			}
 		})
 	}
 
-	for i := 0; i < len(consts)-1; i++ {
-		for j := i + 1; j < len(consts); j++ {
-			t.Run(fmt.Sprintf("%s is different from %s", consts[i].name, consts[j].name), func(t *testing.T) {
-				assert.NotEqual(t, consts[i].value, consts[j].value, "expected: %s, actual: %s", consts[i].name, consts[j].name)
-			})
-		}
-	}
 }
 
 func TestConcatBz(t *testing.T) {
@@ -736,7 +735,7 @@ func TestParseTemporaryKey(t *testing.T) {
 
 func TestTempBValues(t *testing.T) {
 	// If these were the same, it'd be bad.
-	assert.NotEqual(t, keeper.TempSanctionB, keeper.TempUnsanctionB, "TempSanctionB vs TempUnsanctionB")
+	assert.NotEqual(t, keeper.TempSanctionB, keeper.TempUnsanctionB, "%v = TempSanctionB = TempUnsanctionB", keeper.TempSanctionB)
 }
 
 func TestIsTempSanctionBz(t *testing.T) {
