@@ -286,7 +286,7 @@ func TestConcatBz(t *testing.T) {
 		t.Run(tc_orig.name+" plus cap", func(t *testing.T) {
 			tc := copyTestCase(tc_orig)
 			plusCap := 5
-			actual := keeper.ConcatBzPlusCap(tc.bz1, tc.bz2, plusCap)
+			actual := keeper.OnlyTestsConcatBzPlusCap(tc.bz1, tc.bz2, plusCap)
 			assert.Equal(t, tc.expected, actual, "concatBzPlusCap result")
 			assert.Equal(t, len(tc.expected), len(actual), "concatBzPlusCap result length")
 			assert.Equal(t, cap(tc.expected)+plusCap, cap(actual), "concatBzPlusCap result capacity")
