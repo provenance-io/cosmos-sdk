@@ -21,7 +21,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/sanction/testutil"
 )
 
-type TestSuite struct {
+type KeeperTestSuite struct {
 	suite.Suite
 
 	app       *simapp.SimApp
@@ -38,7 +38,7 @@ type TestSuite struct {
 	addr5     sdk.AccAddress
 }
 
-func (s *TestSuite) SetupTest() {
+func (s *KeeperTestSuite) SetupTest() {
 	s.blockTime = tmtime.Now()
 	s.app = simapp.Setup(s.T(), false)
 	s.sdkCtx = s.app.BaseApp.NewContext(false, tmproto.Header{}).WithBlockHeader(tmproto.Header{Time: s.blockTime})
@@ -55,7 +55,7 @@ func (s *TestSuite) SetupTest() {
 }
 
 func TestKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(TestSuite))
+	suite.Run(t, new(KeeperTestSuite))
 }
 
 // newTempEntry creates a TemporaryEntry from iterator callback args.
@@ -81,7 +81,7 @@ func newIndTempEntry(govPropId uint64, addr sdk.AccAddress) *sanction.TemporaryE
 }
 
 // getAllTempEntries gets all temporary entries in the store.
-func (s *TestSuite) getAllTempEntries() []*sanction.TemporaryEntry {
+func (s *KeeperTestSuite) getAllTempEntries() []*sanction.TemporaryEntry {
 	var tempEntries []*sanction.TemporaryEntry
 	tempCB := func(cbAddr sdk.AccAddress, cbGovPropId uint64, cbIsSanction bool) bool {
 		tempEntries = append(tempEntries, newTempEntry(cbAddr, cbGovPropId, cbIsSanction))
@@ -94,7 +94,7 @@ func (s *TestSuite) getAllTempEntries() []*sanction.TemporaryEntry {
 }
 
 // getAllIndexTempEntries gets all the gov prop index temporary entries in the store.
-func (s *TestSuite) getAllIndexTempEntries() []*sanction.TemporaryEntry {
+func (s *KeeperTestSuite) getAllIndexTempEntries() []*sanction.TemporaryEntry {
 	var tempIndEntries []*sanction.TemporaryEntry
 	tempIndCB := func(cbGovPropId uint64, cbAddr sdk.AccAddress) bool {
 		tempIndEntries = append(tempIndEntries, newIndTempEntry(cbGovPropId, cbAddr))
@@ -106,7 +106,7 @@ func (s *TestSuite) getAllIndexTempEntries() []*sanction.TemporaryEntry {
 	return tempIndEntries
 }
 
-func (s *TestSuite) TestKeeperMsgUrls() {
+func (s *KeeperTestSuite) TestKeeperMsgUrls() {
 	vals := []struct {
 		name string
 		val  string
@@ -143,7 +143,7 @@ func (s *TestSuite) TestKeeperMsgUrls() {
 	}
 }
 
-func (s *TestSuite) TestKeeper_GetAuthority() {
+func (s *KeeperTestSuite) TestKeeper_GetAuthority() {
 	s.Run("default", func() {
 		expected := authtypes.NewModuleAddress(govtypes.ModuleName).String()
 		actual := s.keeper.GetAuthority()
@@ -160,7 +160,7 @@ func (s *TestSuite) TestKeeper_GetAuthority() {
 	}
 }
 
-func (s *TestSuite) TestKeeper_IsSanctionedAddr() {
+func (s *KeeperTestSuite) TestKeeper_IsSanctionedAddr() {
 	// Setup:
 	// addr1 will be sanctioned.
 	// addr2 will be sanctioned, but have a temp unsanction.
@@ -291,7 +291,7 @@ func (s *TestSuite) TestKeeper_IsSanctionedAddr() {
 	}
 }
 
-func (s *TestSuite) TestKeeper_SanctionAddresses() {
+func (s *KeeperTestSuite) TestKeeper_SanctionAddresses() {
 	makeEvents := func(addrs ...sdk.AccAddress) sdk.Events {
 		rv := sdk.Events{}
 		for _, addr := range addrs {
@@ -451,7 +451,7 @@ func (s *TestSuite) TestKeeper_SanctionAddresses() {
 	})
 }
 
-func (s *TestSuite) TestKeeper_UnsanctionAddresses() {
+func (s *KeeperTestSuite) TestKeeper_UnsanctionAddresses() {
 	makeEvents := func(addrs ...sdk.AccAddress) sdk.Events {
 		rv := sdk.Events{}
 		for _, addr := range addrs {
@@ -599,7 +599,7 @@ func (s *TestSuite) TestKeeper_UnsanctionAddresses() {
 	})
 }
 
-func (s *TestSuite) TestKeeper_AddTemporarySanction() {
+func (s *KeeperTestSuite) TestKeeper_AddTemporarySanction() {
 	makeEvents := func(addrs ...sdk.AccAddress) sdk.Events {
 		rv := sdk.Events{}
 		for _, addr := range addrs {
@@ -781,7 +781,7 @@ func (s *TestSuite) TestKeeper_AddTemporarySanction() {
 	}
 }
 
-func (s *TestSuite) TestKeeper_AddTemporaryUnsanction() {
+func (s *KeeperTestSuite) TestKeeper_AddTemporaryUnsanction() {
 	makeEvents := func(addrs ...sdk.AccAddress) sdk.Events {
 		rv := sdk.Events{}
 		for _, addr := range addrs {
@@ -981,7 +981,7 @@ func (s *TestSuite) TestKeeper_AddTemporaryUnsanction() {
 	}
 }
 
-func (s *TestSuite) TestKeeper_GetLatestTempEntry() {
+func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
 	store := s.sdkCtx.KVStore(s.keeper.OnlyTestsGetStoreKey())
 	// Add a few random entries with weird values so they're easy to identify.
 	randAddr1 := sdk.AccAddress{0, 0, 0, 0, 0}
@@ -1108,7 +1108,7 @@ func (s *TestSuite) TestKeeper_GetLatestTempEntry() {
 	})
 }
 
-func (s *TestSuite) TestKeeper_DeleteGovPropTempEntries() {
+func (s *KeeperTestSuite) TestKeeper_DeleteGovPropTempEntries() {
 	// Add several temp entries for multiple gov props.
 	addrs := []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5}
 	var setupErr error
@@ -1203,7 +1203,7 @@ func (s *TestSuite) TestKeeper_DeleteGovPropTempEntries() {
 	})
 }
 
-func (s *TestSuite) TestKeeper_DeleteAddrTempEntries() {
+func (s *KeeperTestSuite) TestKeeper_DeleteAddrTempEntries() {
 	// Add several temp entries for multiple gov props.
 	addrs := []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5}
 	var setupErr error
@@ -1270,7 +1270,7 @@ func (s *TestSuite) TestKeeper_DeleteAddrTempEntries() {
 	})
 }
 
-func (s *TestSuite) TestKeeper_IterateSanctionedAddresses() {
+func (s *KeeperTestSuite) TestKeeper_IterateSanctionedAddresses() {
 	s.Run("nothing to iterate", func() {
 		var addrs []sdk.AccAddress
 		cb := func(addr sdk.AccAddress) bool {
@@ -1360,7 +1360,7 @@ func (s *TestSuite) TestKeeper_IterateSanctionedAddresses() {
 	})
 }
 
-func (s *TestSuite) TestKeeper_IterateTemporaryEntries() {
+func (s *KeeperTestSuite) TestKeeper_IterateTemporaryEntries() {
 	s.Run("nothing to iterate", func() {
 		var addrs []sdk.AccAddress
 		cb := func(addr sdk.AccAddress, _ uint64, _ bool) bool {
@@ -1604,7 +1604,7 @@ func (s *TestSuite) TestKeeper_IterateTemporaryEntries() {
 	}
 }
 
-func (s *TestSuite) TestKeeper_IterateProposalIndexEntries() {
+func (s *KeeperTestSuite) TestKeeper_IterateProposalIndexEntries() {
 	s.Run("nothing to iterate", func() {
 		var addrs []sdk.AccAddress
 		cb := func(_ uint64, addr sdk.AccAddress) bool {
@@ -1806,7 +1806,7 @@ func (s *TestSuite) TestKeeper_IterateProposalIndexEntries() {
 	}
 }
 
-func (s *TestSuite) TestKeeper_IsAddrThatCannotBeSanctioned() {
+func (s *KeeperTestSuite) TestKeeper_IsAddrThatCannotBeSanctioned() {
 	k := s.keeper.OnlyTestsWithUnsanctionableAddrs(map[string]bool{
 		string(s.addr1): true,
 		string(s.addr2): true,
@@ -1867,7 +1867,7 @@ func (s *TestSuite) TestKeeper_IsAddrThatCannotBeSanctioned() {
 	}
 }
 
-func (s *TestSuite) TestKeeper_GetSetParams() {
+func (s *KeeperTestSuite) TestKeeper_GetSetParams() {
 	// Change the defaults from their norm so we know they've got values we can check against.
 	origSanct := sanction.DefaultImmediateSanctionMinDeposit
 	origUnsanct := sanction.DefaultImmediateUnsanctionMinDeposit
@@ -1997,7 +1997,7 @@ func (s *TestSuite) TestKeeper_GetSetParams() {
 	}
 }
 
-func (s *TestSuite) TestKeeper_IterateParams() {
+func (s *KeeperTestSuite) TestKeeper_IterateParams() {
 	type kvPair struct {
 		key   string
 		value string
@@ -2081,7 +2081,7 @@ func (s *TestSuite) TestKeeper_IterateParams() {
 	})
 }
 
-func (s *TestSuite) TestKeeper_GetImmediateSanctionMinDeposit() {
+func (s *KeeperTestSuite) TestKeeper_GetImmediateSanctionMinDeposit() {
 	cz := func(coins string) sdk.Coins {
 		rv, err := sdk.ParseCoinsNormalized(coins)
 		s.Require().NoError(err, "ParseCoinsNormalized(%q)", coins)
@@ -2169,7 +2169,7 @@ func (s *TestSuite) TestKeeper_GetImmediateSanctionMinDeposit() {
 	}
 }
 
-func (s *TestSuite) TestKeeper_GetImmediateUnsanctionMinDeposit() {
+func (s *KeeperTestSuite) TestKeeper_GetImmediateUnsanctionMinDeposit() {
 	cz := func(coins string) sdk.Coins {
 		rv, err := sdk.ParseCoinsNormalized(coins)
 		s.Require().NoError(err, "ParseCoinsNormalized(%q)", coins)
@@ -2257,7 +2257,7 @@ func (s *TestSuite) TestKeeper_GetImmediateUnsanctionMinDeposit() {
 	}
 }
 
-func (s *TestSuite) TestKeeper_GetSetDeleteParam() {
+func (s *KeeperTestSuite) TestKeeper_getSetDeleteParam() {
 	store := s.sdkCtx.KVStore(s.keeper.OnlyTestsGetStoreKey())
 	var toDelete []string
 
@@ -2376,7 +2376,7 @@ func (s *TestSuite) TestKeeper_GetSetDeleteParam() {
 	})
 }
 
-func (s *TestSuite) TestKeeper_GetParamAsCoinsOrDefault() {
+func (s *KeeperTestSuite) TestKeeper_getParamAsCoinsOrDefault() {
 	cz := func(coins string) sdk.Coins {
 		rv, err := sdk.ParseCoinsNormalized(coins)
 		s.Require().NoError(err, "ParseCoinsNormalized(%q)", coins)
@@ -2451,7 +2451,7 @@ func (s *TestSuite) TestKeeper_GetParamAsCoinsOrDefault() {
 	}
 }
 
-func (s *TestSuite) TestToCoinsOrDefault() {
+func (s *KeeperTestSuite) Test_toCoinsOrDefault() {
 	cz := func(coins string) sdk.Coins {
 		rv, err := sdk.ParseCoinsNormalized(coins)
 		s.Require().NoError(err, "ParseCoinsNormalized(%q)", coins)
@@ -2501,7 +2501,7 @@ func (s *TestSuite) TestToCoinsOrDefault() {
 	}
 }
 
-func (s *TestSuite) TestToAccAddrs() {
+func (s *KeeperTestSuite) Test_toAccAddrs() {
 	tests := []struct {
 		name   string
 		addrs  []string
