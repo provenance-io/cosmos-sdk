@@ -9,40 +9,45 @@ import (
 
 // InitGenesis updates this keeper's store using the provided GenesisState.
 func (k Keeper) InitGenesis(origCtx sdk.Context, genState *sanction.GenesisState) {
+	if genState == nil {
+		return
+	}
+
 	// We don't want the events from this, so use a context with a throw-away event manager.
 	ctx := origCtx.WithEventManager(sdk.NewEventManager())
 	if err := k.SetParams(ctx, genState.Params); err != nil {
-		panic(err)
+		panic(fmt.Errorf("error setting params: %w", err))
 	}
 
 	toSanction, err := toAccAddrs(genState.SanctionedAddresses)
 	if err != nil {
+		// toAccAddrs has enough context to the error, no need to add more.
 		panic(err)
 	}
 	err = k.SanctionAddresses(ctx, toSanction...)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("error sanctioning addresses: %w", err))
 	}
 
-	for _, entry := range genState.TemporaryEntries {
+	for i, entry := range genState.TemporaryEntries {
 		var addr sdk.AccAddress
 		addr, err = sdk.AccAddressFromBech32(entry.Address)
-		if addr != nil {
-			panic(err)
+		if err != nil {
+			panic(fmt.Errorf("invalid temp entry[%d]: invalid address: %w", i, err))
 		}
 		switch entry.Status {
 		case sanction.TEMP_STATUS_SANCTIONED:
 			err = k.AddTemporarySanction(ctx, entry.ProposalId, addr)
 			if err != nil {
-				panic(err)
+				panic(fmt.Errorf("error adding temp entry[%d]: sanction: %w", i, err))
 			}
 		case sanction.TEMP_STATUS_UNSANCTIONED:
 			err = k.AddTemporaryUnsanction(ctx, entry.ProposalId, addr)
 			if err != nil {
-				panic(err)
+				panic(fmt.Errorf("error adding temp entry[%d]: unsanction: %w", i, err))
 			}
 		default:
-			panic(fmt.Errorf("unknown temporary status: %s", entry.Status))
+			panic(fmt.Errorf("invalid temp entry[%d]: invalid status: %s", i, entry.Status))
 		}
 	}
 }
