@@ -56,11 +56,10 @@ func (k Keeper) proposalGovHook(ctx sdk.Context, proposalID uint64) {
 		propStatus = proposal.Status
 	}
 
-	for _, propMsg := range proposal.Messages {
-		msg := k.unwrapLegacyGovPropMsg(propMsg)
+	for _, msg := range proposal.Messages {
 		if k.isModuleGovHooksMsgURL(msg.TypeUrl) {
 			switch propStatus {
-			case govv1.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD, govv1.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD:
+			case govv1.StatusDepositPeriod, govv1.StatusVotingPeriod:
 				// If the deposit is over the (non-zero) minimum, add temporary entries for the addrs.
 				makeTemps := false
 				minDeposit := k.getImmediateMinDeposit(ctx, msg)
@@ -96,23 +95,11 @@ func (k Keeper) proposalGovHook(ctx sdk.Context, proposalID uint64) {
 	}
 }
 
-// unwrapLegacyGovPropMsg checks if the provided msg is a /cosmos.gov.v1.MsgExecLegacyContent.
-// If it isn't, it's returned.
-// If it is, it's unpacked, and it's .Content is returned.
-func (k Keeper) unwrapLegacyGovPropMsg(msg *codectypes.Any) *codectypes.Any {
-	if msg.TypeUrl != k.msgExecLegacyContentTypeURL {
-		return msg
-	}
-	var newMsg *govv1.MsgExecLegacyContent
-	if err := k.cdc.UnpackAny(msg, &newMsg); err != nil {
-		panic(err)
-	}
-	return newMsg.Content
-}
-
 // isModuleGovHooksMsgURL returns true if the provided URL is one that these gov hooks care about.
 // Warning, it's assumed that lazyLoadMsgTypeURLs() has been called prior to invoking this method.
 func (k Keeper) isModuleGovHooksMsgURL(url string) bool {
+	// Note: We don't need to care about one of ours being wrapped in a MsgExecLegacyContent,
+	// because ours don't implement the old v1beta1.Content interface, and thus can't be wrapped as such.
 	return url == k.msgSanctionTypeURL || url == k.msgUnsanctionTypeURL
 }
 
@@ -120,9 +107,12 @@ func (k Keeper) isModuleGovHooksMsgURL(url string) bool {
 // If it's a type we don't care about, returns nil.
 // Warning, it's assumed that lazyLoadMsgTypeURLs() has been called prior to invoking this method.
 func (k Keeper) getMsgAddresses(msg *codectypes.Any) []sdk.AccAddress {
+	if msg == nil {
+		return nil
+	}
 	switch msg.TypeUrl {
 	case k.msgSanctionTypeURL:
-		var msgSanction sanction.MsgSanction
+		var msgSanction *sanction.MsgSanction
 		if err := k.cdc.UnpackAny(msg, &msgSanction); err != nil {
 			panic(err)
 		}
@@ -132,7 +122,7 @@ func (k Keeper) getMsgAddresses(msg *codectypes.Any) []sdk.AccAddress {
 		}
 		return addrs
 	case k.msgUnsanctionTypeURL:
-		var msgUnsanction sanction.MsgUnsanction
+		var msgUnsanction *sanction.MsgUnsanction
 		if err := k.cdc.UnpackAny(msg, &msgUnsanction); err != nil {
 			panic(err)
 		}
@@ -149,11 +139,13 @@ func (k Keeper) getMsgAddresses(msg *codectypes.Any) []sdk.AccAddress {
 // If the msg isn't of a type we care about, returns empty coins.
 // Warning, it's assumed that lazyLoadMsgTypeURLs() has been called prior to invoking this method.
 func (k Keeper) getImmediateMinDeposit(ctx sdk.Context, msg *codectypes.Any) sdk.Coins {
-	switch msg.TypeUrl {
-	case k.msgSanctionTypeURL:
-		return k.GetImmediateSanctionMinDeposit(ctx)
-	case k.msgUnsanctionTypeURL:
-		return k.GetImmediateUnsanctionMinDeposit(ctx)
+	if msg != nil {
+		switch msg.TypeUrl {
+		case k.msgSanctionTypeURL:
+			return k.GetImmediateSanctionMinDeposit(ctx)
+		case k.msgUnsanctionTypeURL:
+			return k.GetImmediateUnsanctionMinDeposit(ctx)
+		}
 	}
 	return sdk.Coins{}
 }
