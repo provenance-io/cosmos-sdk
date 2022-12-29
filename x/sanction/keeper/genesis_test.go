@@ -1,16 +1,10 @@
 package keeper_test
 
 import (
-	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/suite"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
-
-	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/sanction"
 	"github.com/cosmos/cosmos-sdk/x/sanction/keeper"
@@ -18,104 +12,15 @@ import (
 )
 
 type GenesisTestSuite struct {
-	suite.Suite
-
-	app       *simapp.SimApp
-	sdkCtx    sdk.Context
-	stdlibCtx context.Context
-	keeper    keeper.Keeper
-	govKeeper *MockGovKeeper
-
-	blockTime time.Time
+	BaseTestSuite
 }
 
 func (s *GenesisTestSuite) SetupTest() {
-	s.blockTime = tmtime.Now()
-	s.app = simapp.Setup(s.T(), false)
-	s.sdkCtx = s.app.BaseApp.NewContext(false, tmproto.Header{}).WithBlockHeader(tmproto.Header{Time: s.blockTime})
-	s.stdlibCtx = sdk.WrapSDKContext(s.sdkCtx)
-	s.govKeeper = NewMockGovKeeper()
-	s.keeper = s.app.SanctionKeeper.OnlyTestsWithGovKeeper(s.govKeeper)
+	s.BaseSetup()
 }
 
 func TestGenesisTestSuite(t *testing.T) {
 	suite.Run(t, new(GenesisTestSuite))
-}
-
-func (s *GenesisTestSuite) reqOKSetParams(params *sanction.Params) {
-	s.T().Helper()
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
-		return s.keeper.SetParams(s.sdkCtx, params)
-	}, "SetParams")
-}
-
-// reqOKAddPermSanct calls SanctionAddresses, making sure it doesn't panic and doesn't return an error.
-func (s *GenesisTestSuite) reqOKAddPermSanct(addrArgNames string, addrs ...sdk.AccAddress) {
-	s.T().Helper()
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
-		return s.keeper.SanctionAddresses(s.sdkCtx, addrs...)
-	}, "SanctionAddresses(%s)", addrArgNames)
-}
-
-// reqOKAddPermUnsanct calls UnsanctionAddresses, making sure it doesn't panic and doesn't return an error.
-func (s *GenesisTestSuite) reqOKAddPermUnsanct(addrArgNames string, addrs ...sdk.AccAddress) {
-	s.T().Helper()
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
-		return s.keeper.UnsanctionAddresses(s.sdkCtx, addrs...)
-	}, "UnsanctionAddresses(%s)", addrArgNames)
-}
-
-// reqOKAddTempSanct calls AddTemporarySanction, making sure it doesn't panic and doesn't return an error.
-func (s *GenesisTestSuite) reqOKAddTempSanct(id uint64, addrArgNames string, addrs ...sdk.AccAddress) {
-	s.T().Helper()
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
-		return s.keeper.AddTemporarySanction(s.sdkCtx, id, addrs...)
-	}, "AddTemporarySanction(%d, %s)", id, addrArgNames)
-}
-
-// reqOKAddTempUnsanct calls AddTemporaryUnsanction, making sure it doesn't panic and doesn't return an error.
-func (s *GenesisTestSuite) reqOKAddTempUnsanct(id uint64, addrArgNames string, addrs ...sdk.AccAddress) {
-	s.T().Helper()
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
-		return s.keeper.AddTemporaryUnsanction(s.sdkCtx, id, addrs...)
-	}, "AddTemporaryUnsanction(%d, %s)", id, addrArgNames)
-}
-
-// reqOKDelAddrTemp calls DeleteAddrTempEntries, making sure it doesn't panic.
-func (s *GenesisTestSuite) reqOKDelAddrTemp(addrArgNames string, addrs ...sdk.AccAddress) {
-	s.T().Helper()
-	s.Require().NotPanics(func() {
-		s.keeper.DeleteAddrTempEntries(s.sdkCtx, addrs...)
-	}, "DeleteAddrTempEntries(%s)", addrArgNames)
-}
-
-// reqOKDelPropTemp calls DeleteGovPropTempEntries, making sure it doesn't panic.
-func (s *GenesisTestSuite) reqOKDelPropTemp(id uint64) {
-	s.Require().NotPanics(func() {
-		s.keeper.DeleteGovPropTempEntries(s.sdkCtx, id)
-	}, "DeleteGovPropTempEntries(%d)", id)
-}
-
-func (s *GenesisTestSuite) clearState() {
-	var keysToDelete [][]byte
-	store := s.sdkCtx.KVStore(s.keeper.OnlyTestsGetStoreKey())
-	iter := store.Iterator(nil, nil)
-	closeIter := func() {
-		if iter != nil {
-			s.Require().NoError(iter.Close(), "iter.Close")
-			iter = nil
-		}
-	}
-	defer closeIter()
-
-	for ; iter.Valid(); iter.Next() {
-		keysToDelete = append(keysToDelete, iter.Key())
-	}
-	closeIter()
-
-	for _, key := range keysToDelete {
-		store.Delete(key)
-	}
 }
 
 // exportAndCheck calls ExportGenesis, making sure it doesn't panic,
@@ -126,7 +31,7 @@ func (s *GenesisTestSuite) exportAndCheck(expected *sanction.GenesisState) bool 
 
 	var actual *sanction.GenesisState
 	testFunc := func() {
-		actual = s.keeper.ExportGenesis(s.sdkCtx)
+		actual = s.Keeper.ExportGenesis(s.SdkCtx)
 	}
 	s.Require().NotPanics(testFunc, "ExportGenesis")
 	if s.Assert().Equal(expected, actual, "ExportGenesis result") {
@@ -191,13 +96,13 @@ func (s *GenesisTestSuite) TestKeeper_InitGenesis() {
 		{
 			name: "nil gen state stuff already in state",
 			setup: func(s *GenesisTestSuite) {
-				s.reqOKSetParams(&sanction.Params{
+				s.ReqOKSetParams(&sanction.Params{
 					ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("snap", 4)),
 					ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("pop", 6)),
 				})
-				s.reqOKAddPermSanct("addr1", addr1)
-				s.reqOKAddTempSanct(55, "addr2", addr2)
-				s.reqOKAddTempUnsanct(111, "addr3", addr3)
+				s.ReqOKAddPermSanct("addr1", addr1)
+				s.ReqOKAddTempSanct(55, "addr2", addr2)
+				s.ReqOKAddTempUnsanct(111, "addr3", addr3)
 			},
 			genState: nil,
 			expExport: &sanction.GenesisState{
@@ -266,13 +171,13 @@ func (s *GenesisTestSuite) TestKeeper_InitGenesis() {
 		{
 			name: "filled gen state other stuff already in state",
 			setup: func(s *GenesisTestSuite) {
-				s.reqOKSetParams(&sanction.Params{
+				s.ReqOKSetParams(&sanction.Params{
 					ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("oops", 954845)),
 					ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("wrong", 6)),
 				})
-				s.reqOKAddPermSanct("addr2, addr4, addr6, addr8", addr2, addr4, addr6, addr8)
-				s.reqOKAddTempSanct(99, "addr3, addr5", addr3, addr5)
-				s.reqOKAddTempUnsanct(12, "addr7, addr2, addr6", addr7, addr2, addr6)
+				s.ReqOKAddPermSanct("addr2, addr4, addr6, addr8", addr2, addr4, addr6, addr8)
+				s.ReqOKAddTempSanct(99, "addr3, addr5", addr3, addr5)
+				s.ReqOKAddTempUnsanct(12, "addr7, addr2, addr6", addr7, addr2, addr6)
 			},
 			genState: &sanction.GenesisState{
 				Params: &sanction.Params{
@@ -324,7 +229,7 @@ func (s *GenesisTestSuite) TestKeeper_InitGenesis() {
 		{
 			name: "nil params",
 			setup: func(s *GenesisTestSuite) {
-				s.reqOKSetParams(&sanction.Params{
+				s.ReqOKSetParams(&sanction.Params{
 					ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("these", 3302), sdk.NewInt64Coin("should", 9)),
 					ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("goaway", 551515)),
 				})
@@ -518,15 +423,15 @@ func (s *GenesisTestSuite) TestKeeper_InitGenesis() {
 
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
-			s.clearState()
+			s.ClearState()
 			if tc.setup != nil {
 				tc.setup(s)
 			}
 
 			em := sdk.NewEventManager()
-			ctx := s.sdkCtx.WithEventManager(em)
+			ctx := s.SdkCtx.WithEventManager(em)
 			testFuncInit := func() {
-				s.keeper.InitGenesis(ctx, tc.genState)
+				s.Keeper.InitGenesis(ctx, tc.genState)
 			}
 			testutil.RequirePanicContents(s.T(), tc.expPanic, testFuncInit, "InitGenesis")
 			events := em.Events()
@@ -539,7 +444,7 @@ func (s *GenesisTestSuite) TestKeeper_InitGenesis() {
 }
 
 func (s *GenesisTestSuite) TestKeeper_ExportGenesis() {
-	s.clearState()
+	s.ClearState()
 
 	addr1 := sdk.AccAddress("1st_export_test_addr")
 	addr2 := sdk.AccAddress("2nd_export_test_addr")
@@ -617,17 +522,17 @@ func (s *GenesisTestSuite) TestKeeper_ExportGenesis() {
 		}
 
 		testutil.AssertNotPanicsNoError(s.T(), func() error {
-			return s.keeper.SetParams(s.sdkCtx, expected.Params)
+			return s.Keeper.SetParams(s.SdkCtx, expected.Params)
 		}, "SetParams")
-		s.reqOKAddPermSanct("addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8", addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8)
-		s.reqOKAddTempSanct(1, "addr1, addr5", addr1, addr5)
-		s.reqOKAddTempUnsanct(1, "addr2, addr6", addr2, addr6)
-		s.reqOKAddTempSanct(2, "addr3, addr5, addr7", addr3, addr5, addr7)
-		s.reqOKAddTempUnsanct(2, "addr4, addr6, addr8", addr4, addr6, addr8)
-		s.reqOKAddTempUnsanct(3, "addr3", addr3)
-		s.reqOKAddTempSanct(4, "addr4", addr4)
-		s.reqOKAddTempSanct(47, "addr7, addr8", addr7, addr8)
-		s.reqOKAddTempUnsanct(88, "addr7, addr8", addr7, addr8)
+		s.ReqOKAddPermSanct("addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8", addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8)
+		s.ReqOKAddTempSanct(1, "addr1, addr5", addr1, addr5)
+		s.ReqOKAddTempUnsanct(1, "addr2, addr6", addr2, addr6)
+		s.ReqOKAddTempSanct(2, "addr3, addr5, addr7", addr3, addr5, addr7)
+		s.ReqOKAddTempUnsanct(2, "addr4, addr6, addr8", addr4, addr6, addr8)
+		s.ReqOKAddTempUnsanct(3, "addr3", addr3)
+		s.ReqOKAddTempSanct(4, "addr4", addr4)
+		s.ReqOKAddTempSanct(47, "addr7, addr8", addr7, addr8)
+		s.ReqOKAddTempUnsanct(88, "addr7, addr8", addr7, addr8)
 
 		s.exportAndCheck(expected)
 	})
@@ -660,9 +565,9 @@ func (s *GenesisTestSuite) TestKeeper_ExportGenesis() {
 			},
 		}
 
-		store := s.sdkCtx.KVStore(s.keeper.OnlyTestsGetStoreKey())
+		store := s.SdkCtx.KVStore(s.Keeper.OnlyTestsGetStoreKey())
 		s.Require().NotPanics(func() {
-			s.keeper.OnlyTestsDeleteParam(store, keeper.ParamNameImmediateUnsanctionMinDeposit)
+			s.Keeper.OnlyTestsDeleteParam(store, keeper.ParamNameImmediateUnsanctionMinDeposit)
 		}, "deleting the ParamNameImmediateUnsanctionMinDeposit param entry")
 		// Note: Not using UnsanctionAddresses here since I want to keep the temp entries for these addrs.
 		s.Require().NotPanics(func() {
@@ -671,8 +576,8 @@ func (s *GenesisTestSuite) TestKeeper_ExportGenesis() {
 				store.Delete(key)
 			}
 		}, "deleting sanctioned addr entries for addr2, addr4, addr6, addr8")
-		s.reqOKDelAddrTemp("addr5, addr7", addr5, addr7)
-		s.reqOKDelPropTemp(2)
+		s.ReqOKDelAddrTemp("addr5, addr7", addr5, addr7)
+		s.ReqOKDelPropTemp(2)
 
 		s.exportAndCheck(expected)
 	})
@@ -689,23 +594,23 @@ func (s *GenesisTestSuite) TestKeeper_GetAllSanctionedAddresses() {
 	addr8 := sdk.AccAddress("8th_get_all_perm_address_in_test")
 
 	// Add some temporary sanctions to help ensure they don't matter here.
-	s.reqOKAddTempSanct(1, "addr1, addr5", addr1, addr5)
-	s.reqOKAddTempUnsanct(1, "addr2, addr6", addr2, addr6)
-	s.reqOKAddTempSanct(2, "addr1, addr3, addr5, addr7", addr1, addr3, addr5, addr7)
-	s.reqOKAddTempUnsanct(2, "addr2, addr4, addr6, addr8", addr2, addr4, addr6, addr8)
-	s.reqOKAddTempUnsanct(3, "addr3", addr3)
-	s.reqOKAddTempSanct(4, "addr4", addr4)
-	s.reqOKAddTempSanct(47, "addr7, addr8", addr7, addr8)
-	s.reqOKAddTempUnsanct(88, "addr7, addr8", addr7, addr8)
+	s.ReqOKAddTempSanct(1, "addr1, addr5", addr1, addr5)
+	s.ReqOKAddTempUnsanct(1, "addr2, addr6", addr2, addr6)
+	s.ReqOKAddTempSanct(2, "addr1, addr3, addr5, addr7", addr1, addr3, addr5, addr7)
+	s.ReqOKAddTempUnsanct(2, "addr2, addr4, addr6, addr8", addr2, addr4, addr6, addr8)
+	s.ReqOKAddTempUnsanct(3, "addr3", addr3)
+	s.ReqOKAddTempSanct(4, "addr4", addr4)
+	s.ReqOKAddTempSanct(47, "addr7, addr8", addr7, addr8)
+	s.ReqOKAddTempUnsanct(88, "addr7, addr8", addr7, addr8)
 	// Then delete a few in the really off chance that matters in here.
-	s.reqOKDelAddrTemp("addr1", addr1)
-	s.reqOKDelAddrTemp("addr2", addr2)
-	s.reqOKDelPropTemp(2)
+	s.ReqOKDelAddrTemp("addr1", addr1)
+	s.ReqOKDelAddrTemp("addr2", addr2)
+	s.ReqOKDelPropTemp(2)
 
 	s.Run("no entries", func() {
 		var actual []string
 		testFunc := func() {
-			actual = s.keeper.GetAllSanctionedAddresses(s.sdkCtx)
+			actual = s.Keeper.GetAllSanctionedAddresses(s.SdkCtx)
 		}
 		s.Require().NotPanics(testFunc, "GetAllSanctionedAddresses")
 		s.Assert().Empty(actual, "GetAllSanctionedAddresses result")
@@ -713,11 +618,11 @@ func (s *GenesisTestSuite) TestKeeper_GetAllSanctionedAddresses() {
 
 	s.Run("one entry", func() {
 		expected := []string{addr2.String()}
-		s.reqOKAddPermSanct("addr2", addr2)
+		s.ReqOKAddPermSanct("addr2", addr2)
 
 		var actual []string
 		testFunc := func() {
-			actual = s.keeper.GetAllSanctionedAddresses(s.sdkCtx)
+			actual = s.Keeper.GetAllSanctionedAddresses(s.SdkCtx)
 		}
 		s.Require().NotPanics(testFunc, "GetAllSanctionedAddresses")
 		s.Assert().Equal(expected, actual, "GetAllSanctionedAddresses result")
@@ -735,11 +640,11 @@ func (s *GenesisTestSuite) TestKeeper_GetAllSanctionedAddresses() {
 			addr8.String(),
 		}
 		// Note: addr2 was sanctioned in the "one entry" test.
-		s.reqOKAddPermSanct("addr1, addr3, addr4, addr5, addr6, addr7, addr8", addr1, addr3, addr4, addr5, addr6, addr7, addr8)
+		s.ReqOKAddPermSanct("addr1, addr3, addr4, addr5, addr6, addr7, addr8", addr1, addr3, addr4, addr5, addr6, addr7, addr8)
 
 		var actual []string
 		testFunc := func() {
-			actual = s.keeper.GetAllSanctionedAddresses(s.sdkCtx)
+			actual = s.Keeper.GetAllSanctionedAddresses(s.SdkCtx)
 		}
 		s.Require().NotPanics(testFunc, "GetAllSanctionedAddresses")
 		s.Assert().Equal(expected, actual, "GetAllSanctionedAddresses result")
@@ -754,11 +659,11 @@ func (s *GenesisTestSuite) TestKeeper_GetAllSanctionedAddresses() {
 			addr8.String(),
 		}
 
-		s.reqOKAddPermUnsanct("addr1, addr3, addr5, addr7", addr1, addr3, addr5, addr7)
+		s.ReqOKAddPermUnsanct("addr1, addr3, addr5, addr7", addr1, addr3, addr5, addr7)
 
 		var actual []string
 		testFunc := func() {
-			actual = s.keeper.GetAllSanctionedAddresses(s.sdkCtx)
+			actual = s.Keeper.GetAllSanctionedAddresses(s.SdkCtx)
 		}
 		s.Require().NotPanics(testFunc, "GetAllSanctionedAddresses")
 		s.Assert().Equal(expected, actual, "GetAllSanctionedAddresses result")
@@ -776,14 +681,14 @@ func (s *GenesisTestSuite) TestKeeper_GetAllTemporaryEntries() {
 	addr8 := sdk.AccAddress("8th_get_all_temp_address_in_test")
 
 	// Set permanent sanctions for the even addresses to help ensure they don't matter here.
-	s.reqOKAddPermSanct("addr2, addr4, addr6, addr8", addr2, addr4, addr6, addr8)
+	s.ReqOKAddPermSanct("addr2, addr4, addr6, addr8", addr2, addr4, addr6, addr8)
 	// Unsanction the odd addrs just in case in the really off chance it does weird things in here.
-	s.reqOKAddPermUnsanct("addr1, addr3, addr5, addr7", addr1, addr3, addr5, addr7)
+	s.ReqOKAddPermUnsanct("addr1, addr3, addr5, addr7", addr1, addr3, addr5, addr7)
 
 	s.Run("no entries", func() {
 		var actual []*sanction.TemporaryEntry
 		testFunc := func() {
-			actual = s.keeper.GetAllTemporaryEntries(s.sdkCtx)
+			actual = s.Keeper.GetAllTemporaryEntries(s.SdkCtx)
 		}
 		s.Require().NotPanics(testFunc, "GetAllTemporaryEntries")
 		s.Assert().Empty(actual, "GetAllTemporaryEntries result")
@@ -793,11 +698,11 @@ func (s *GenesisTestSuite) TestKeeper_GetAllTemporaryEntries() {
 		expected := []*sanction.TemporaryEntry{
 			{Address: addr2.String(), ProposalId: 2, Status: sanction.TEMP_STATUS_SANCTIONED},
 		}
-		s.reqOKAddTempSanct(2, "addr2", addr2)
+		s.ReqOKAddTempSanct(2, "addr2", addr2)
 
 		var actual []*sanction.TemporaryEntry
 		testFunc := func() {
-			actual = s.keeper.GetAllTemporaryEntries(s.sdkCtx)
+			actual = s.Keeper.GetAllTemporaryEntries(s.SdkCtx)
 		}
 		s.Require().NotPanics(testFunc, "GetAllTemporaryEntries")
 		s.Assert().Equal(expected, actual, "GetAllTemporaryEntries result")
@@ -850,23 +755,23 @@ func (s *GenesisTestSuite) TestKeeper_GetAllTemporaryEntries() {
 			{Address: addr8.String(), ProposalId: 15, Status: sanction.TEMP_STATUS_UNSANCTIONED},
 		}
 
-		s.reqOKAddTempSanct(1, "addr1, addr3", addr1, addr3)
-		s.reqOKAddTempUnsanct(1, "addr2, addr4", addr2, addr4)
+		s.ReqOKAddTempSanct(1, "addr1, addr3", addr1, addr3)
+		s.ReqOKAddTempUnsanct(1, "addr2, addr4", addr2, addr4)
 		// Note that the prop 2, addr2 sanction was already set in the "one entry" test.
-		s.reqOKAddTempSanct(2, "addr5", addr5)
-		s.reqOKAddTempUnsanct(2, "addr1", addr1)
-		s.reqOKAddTempSanct(3, "addr1, addr5", addr1, addr5)
-		s.reqOKAddTempUnsanct(3, "addr2, addr6", addr2, addr6)
-		s.reqOKAddTempSanct(4, "addr5", addr5)
-		s.reqOKAddTempUnsanct(4, "addr6", addr6)
-		s.reqOKAddTempUnsanct(5, "addr6", addr6)
-		s.reqOKAddTempSanct(6, "addr5", addr5)
-		s.reqOKAddTempSanct(10, "addr7", addr7)
-		s.reqOKAddTempUnsanct(15, "addr8", addr8)
+		s.ReqOKAddTempSanct(2, "addr5", addr5)
+		s.ReqOKAddTempUnsanct(2, "addr1", addr1)
+		s.ReqOKAddTempSanct(3, "addr1, addr5", addr1, addr5)
+		s.ReqOKAddTempUnsanct(3, "addr2, addr6", addr2, addr6)
+		s.ReqOKAddTempSanct(4, "addr5", addr5)
+		s.ReqOKAddTempUnsanct(4, "addr6", addr6)
+		s.ReqOKAddTempUnsanct(5, "addr6", addr6)
+		s.ReqOKAddTempSanct(6, "addr5", addr5)
+		s.ReqOKAddTempSanct(10, "addr7", addr7)
+		s.ReqOKAddTempUnsanct(15, "addr8", addr8)
 
 		var actual []*sanction.TemporaryEntry
 		testFunc := func() {
-			actual = s.keeper.GetAllTemporaryEntries(s.sdkCtx)
+			actual = s.Keeper.GetAllTemporaryEntries(s.SdkCtx)
 		}
 		s.Require().NotPanics(testFunc, "GetAllTemporaryEntries")
 		s.Assert().Equal(expected, actual, "GetAllTemporaryEntries result")
@@ -894,12 +799,12 @@ func (s *GenesisTestSuite) TestKeeper_GetAllTemporaryEntries() {
 			{Address: addr8.String(), ProposalId: 15, Status: sanction.TEMP_STATUS_UNSANCTIONED},
 		}
 
-		s.reqOKDelAddrTemp("addr1", addr1)
-		s.reqOKDelPropTemp(3)
+		s.ReqOKDelAddrTemp("addr1", addr1)
+		s.ReqOKDelPropTemp(3)
 
 		var actual []*sanction.TemporaryEntry
 		testFunc := func() {
-			actual = s.keeper.GetAllTemporaryEntries(s.sdkCtx)
+			actual = s.Keeper.GetAllTemporaryEntries(s.SdkCtx)
 		}
 		s.Require().NotPanics(testFunc, "GetAllTemporaryEntries")
 		s.Assert().Equal(expected, actual, "GetAllTemporaryEntries result")
