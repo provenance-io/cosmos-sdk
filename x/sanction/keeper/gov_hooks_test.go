@@ -46,7 +46,7 @@ func (s *GovHooksTestSuite) TestKeeper_AfterProposalSubmission() {
 		Status: 5555,
 	}
 
-	expPanic := "unknown governance proposal status: [5555]"
+	expPanic := "invalid governance proposal status: [5555]"
 	testFunc := func() {
 		s.Keeper.AfterProposalSubmission(s.SdkCtx, govPropID)
 	}
@@ -78,7 +78,7 @@ func (s *GovHooksTestSuite) TestKeeper_AfterProposalDeposit() {
 		Status: 4434,
 	}
 
-	expPanic := "unknown governance proposal status: [4434]"
+	expPanic := "invalid governance proposal status: [4434]"
 	testFunc := func() {
 		s.Keeper.AfterProposalDeposit(s.SdkCtx, govPropID, sdk.AccAddress("this doesn't matter"))
 	}
@@ -135,7 +135,7 @@ func (s *GovHooksTestSuite) TestKeeper_AfterProposalFailedMinDeposit() {
 		Status: 3275,
 	}
 
-	expPanic := "unknown governance proposal status: [3275]"
+	expPanic := "invalid governance proposal status: [3275]"
 	testFunc := func() {
 		s.Keeper.AfterProposalFailedMinDeposit(s.SdkCtx, govPropID)
 	}
@@ -167,7 +167,7 @@ func (s *GovHooksTestSuite) TestKeeper_AfterProposalVotingPeriodEnded() {
 		Status: 99,
 	}
 
-	expPanic := "unknown governance proposal status: [99]"
+	expPanic := "invalid governance proposal status: [99]"
 	testFunc := func() {
 		s.Keeper.AfterProposalVotingPeriodEnded(s.SdkCtx, govPropID)
 	}
@@ -179,8 +179,8 @@ func (s *GovHooksTestSuite) TestKeeper_AfterProposalVotingPeriodEnded() {
 	}
 }
 
-// TODO[1046]: proposalGovHook(ctx sdk.Context, proposalID uint64)
 func (s *GovHooksTestSuite) TestKeeper_proposalGovHook() {
+	// Make it easy to use a different proposal id for each test.
 	lastPropID := uint64(0)
 	nextPropID := func() uint64 {
 		lastPropID += 1
@@ -200,6 +200,7 @@ func (s *GovHooksTestSuite) TestKeeper_proposalGovHook() {
 	addr5 := sdk.AccAddress("5th_hooks_test_addr")
 	addr6 := sdk.AccAddress("6th_hooks_test_addr")
 
+	// nonEmptyState creates a new GenesisState with a few things in it.
 	nonEmptyState := func(govPropID uint64) *sanction.GenesisState {
 		return &sanction.GenesisState{
 			Params: &sanction.Params{
@@ -208,12 +209,60 @@ func (s *GovHooksTestSuite) TestKeeper_proposalGovHook() {
 			},
 			SanctionedAddresses: []string{addr3.String(), addr4.String()},
 			TemporaryEntries: []*sanction.TemporaryEntry{
+				newTempEntry(addr4, govPropID+1, true),
 				newTempEntry(addr5, govPropID, true),
+				newTempEntry(addr6, govPropID, false),
+				newTempEntry(addr6, govPropID+2, true),
+			},
+		}
+	}
+	// cleanupStateIni creates a new GenesisState with entries that are expected to be deleted during a test.
+	cleanupStateIni := func(govPropID uint64) *sanction.GenesisState {
+		return &sanction.GenesisState{
+			Params: &sanction.Params{
+				ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("nesanct", int64(govPropID-1))),
+				ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("neusanct", int64(govPropID+1))),
+			},
+			SanctionedAddresses: []string{addr3.String(), addr4.String()},
+			TemporaryEntries: []*sanction.TemporaryEntry{
+				newTempEntry(addr1, 1, true),
+				newTempEntry(addr1, 50000, false),
+				newTempEntry(addr3, govPropID, false),
+				newTempEntry(addr4, govPropID, false),
+				newTempEntry(addr5, govPropID-1, false),
+				newTempEntry(addr5, govPropID, true),
+				newTempEntry(addr5, govPropID+1, true),
+				newTempEntry(addr6, govPropID-1, true),
 				newTempEntry(addr6, govPropID, true),
+				newTempEntry(addr6, govPropID+1, false),
+			},
+		}
+	}
+	// cleanupStateExp creates a new GenesisState that is a cleanupStateIni, but without the entries expected to be deleted.
+	cleanupStateExp := func(govPropID uint64) *sanction.GenesisState {
+		return &sanction.GenesisState{
+			Params: &sanction.Params{
+				ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("nesanct", int64(govPropID-1))),
+				ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("neusanct", int64(govPropID+1))),
+			},
+			SanctionedAddresses: []string{addr3.String(), addr4.String()},
+			TemporaryEntries: []*sanction.TemporaryEntry{
+				newTempEntry(addr1, 1, true),
+				newTempEntry(addr1, 50000, false),
+				newTempEntry(addr5, govPropID-1, false),
+				newTempEntry(addr5, govPropID+1, true),
+				newTempEntry(addr6, govPropID-1, true),
+				newTempEntry(addr6, govPropID+1, false),
 			},
 		}
 	}
 
+	// Create some Any wrapped messages for easier proposal definitions.
+	otherAny := s.NewAny(&govv1.MsgVote{
+		ProposalId: 99887766,
+		Voter:      "voter addr that should not matter",
+		Option:     govv1.OptionAbstain,
+	})
 	updateParamsAny := s.NewAny(&sanction.MsgUpdateParams{
 		Params: &sanction.Params{
 			ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("ismdcoin", 59)),
@@ -229,316 +278,813 @@ func (s *GovHooksTestSuite) TestKeeper_proposalGovHook() {
 		Addresses: []string{addr1.String(), addr3.String()},
 		Authority: "spendyagainy",
 	})
-	otherAny1 := s.NewAny(&govv1.MsgExecLegacyContent{
-		Content:   sanctionAny,
-		Authority: "legacywrapping",
+	// Note: In normal operation, it shouldn't be possible to end up with a governance proposal
+	// containing a MsgExecLegacyContent sanction or unsanction; they don't implement Content.
+	legWrapSanctAny := s.NewAny(&govv1.MsgExecLegacyContent{
+		Content: s.NewAny(&sanction.MsgSanction{
+			Addresses: []string{addr5.String(), addr6.String()},
+			Authority: "notgonnadoit",
+		}),
+		Authority: "legacywrappingsanct",
 	})
-	otherAny2 := s.NewAny(&govv1.MsgExecLegacyContent{
-		Content:   sanctionAny,
-		Authority: "legacywrapping",
+	legWrapUnsanctAny := s.NewAny(&govv1.MsgExecLegacyContent{
+		Content: s.NewAny(&sanction.MsgUnsanction{
+			Addresses: []string{addr4.String(), addr6.String()},
+			Authority: "justignoreme",
+		}),
+		Authority: "legacywrappingunsanct",
 	})
 
-	tests := []struct {
+	// Define several proposal message sets to commonly use in tests.
+	messageSets := []struct {
+		name   string
+		msgs   []*codectypes.Any
+		boring bool // boring = true means none of the msgs should cause any changes.
+	}{
+		{name: "sanction", msgs: []*codectypes.Any{sanctionAny}},
+		{name: "unsanction", msgs: []*codectypes.Any{unsanctionAny}},
+		{name: "other", msgs: []*codectypes.Any{otherAny}, boring: true},
+		{name: "update params", msgs: []*codectypes.Any{updateParamsAny}, boring: true},
+		{name: "legacy wrapped sanction", msgs: []*codectypes.Any{legWrapSanctAny}, boring: true},
+		{name: "legacy wrapped unsanction", msgs: []*codectypes.Any{legWrapUnsanctAny}, boring: true},
+		{name: "sanction unsanction", msgs: []*codectypes.Any{sanctionAny, unsanctionAny}},
+		{name: "unsanction sanction", msgs: []*codectypes.Any{unsanctionAny, sanctionAny}},
+		{name: "three ignorable messages", msgs: []*codectypes.Any{legWrapSanctAny, updateParamsAny, legWrapSanctAny}, boring: true},
+		{name: "three messages sanction x x", msgs: []*codectypes.Any{sanctionAny, updateParamsAny, otherAny}},
+		{name: "three messages unsanction x x", msgs: []*codectypes.Any{unsanctionAny, updateParamsAny, otherAny}},
+		{name: "three messages x sanction x", msgs: []*codectypes.Any{otherAny, sanctionAny, legWrapUnsanctAny}},
+		{name: "three messages x unsanction x", msgs: []*codectypes.Any{otherAny, unsanctionAny, legWrapUnsanctAny}},
+		{name: "three message x x sanction", msgs: []*codectypes.Any{updateParamsAny, legWrapUnsanctAny, sanctionAny}},
+		{name: "three message x x unsanction", msgs: []*codectypes.Any{updateParamsAny, legWrapSanctAny, unsanctionAny}},
+	}
+
+	type testCase struct {
 		name       string
 		proposalID uint64
 		iniState   *sanction.GenesisState
 		proposal   *govv1.Proposal
 		expState   *sanction.GenesisState
 		expPanic   []string
-	}{
-		// prop status unknown -> panic if a message of interest is in the proposal
-		{
-			name:       "unknown prop status on other message",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny1},
-				Status:   482,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "unknown prop status on update params",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{updateParamsAny},
-				Status:   23948,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "unknown prop status on sanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{sanctionAny},
-				Status:   45897439,
-			},
-			expState: nonEmptyState(curPropID()),
-			expPanic: []string{"unknown governance proposal status: [45897439]"},
-		},
-		{
-			name:       "unknown prop status on unsanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{unsanctionAny},
-				Status:   640958983,
-			},
-			expState: nonEmptyState(curPropID()),
-			expPanic: []string{"unknown governance proposal status: [640958983]"},
-		},
-		{
-			name:       "unknown prop status on three ignorable messages",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny1, updateParamsAny, otherAny2},
-				Status:   39834323,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "unknown prop status on three messages second is sanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny2, sanctionAny, otherAny1},
-				Status:   49494994,
-			},
-			expState: nonEmptyState(curPropID()),
-			expPanic: []string{"unknown governance proposal status: [49494994]"},
-		},
-		{
-			name:       "unknown prop status on three messages second is unsanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny2, unsanctionAny, otherAny1},
-				Status:   2525252,
-			},
-			expState: nonEmptyState(curPropID()),
-			expPanic: []string{"unknown governance proposal status: [2525252]"},
-		},
-
-		// prop status unspecified -> panic if a message of interest is in the proposal
-		{
-			name:       "unspecified prop status on other message",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny2},
-				Status:   govv1.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "unspecified prop status on update params",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{updateParamsAny},
-				Status:   govv1.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "unspecified prop status on sanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{sanctionAny},
-				Status:   govv1.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED,
-			},
-			expState: nonEmptyState(curPropID()),
-			expPanic: []string{"unknown governance proposal status: [PROPOSAL_STATUS_UNSPECIFIED]"},
-		},
-		{
-			name:       "unspecified prop status on unsanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{unsanctionAny},
-				Status:   govv1.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED,
-			},
-			expState: nonEmptyState(curPropID()),
-			expPanic: []string{"unknown governance proposal status: [PROPOSAL_STATUS_UNSPECIFIED]"},
-		},
-		{
-			name:       "unknown prop status on three ignorable messages",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny1, updateParamsAny, otherAny2},
-				Status:   govv1.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "unknown prop status on three messages second is sanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny2, sanctionAny, otherAny1},
-				Status:   govv1.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED,
-			},
-			expState: nonEmptyState(curPropID()),
-			expPanic: []string{"unknown governance proposal status: [PROPOSAL_STATUS_UNSPECIFIED]"},
-		},
-		{
-			name:       "unknown prop status on three messages second is unsanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny1, unsanctionAny, otherAny2},
-				Status:   govv1.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED,
-			},
-			expState: nonEmptyState(curPropID()),
-			expPanic: []string{"unknown governance proposal status: [PROPOSAL_STATUS_UNSPECIFIED]"},
-		},
-
-		// prop passed -> nothing happens in any case.
-		{
-			name:       "passed on other message",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny1},
-				Status:   govv1.StatusPassed,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "passed on update params",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{updateParamsAny},
-				Status:   govv1.StatusPassed,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "passed on sanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{sanctionAny},
-				Status:   govv1.StatusPassed,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "passed on unsanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{unsanctionAny},
-				Status:   govv1.StatusPassed,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "passed on three ignorable messages",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny2, updateParamsAny, otherAny1},
-				Status:   govv1.StatusPassed,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "passed on three messages last is sanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny1, updateParamsAny, sanctionAny},
-				Status:   govv1.StatusPassed,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "passed on three messages last is unsanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{otherAny2, updateParamsAny, unsanctionAny},
-				Status:   govv1.StatusPassed,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
-		{
-			name:       "passed on three messages sanction other unsanction",
-			proposalID: nextPropID(),
-			iniState:   nonEmptyState(curPropID()),
-			proposal: &govv1.Proposal{
-				Id:       curPropID(),
-				Messages: []*codectypes.Any{sanctionAny, otherAny2, unsanctionAny},
-				Status:   govv1.StatusPassed,
-			},
-			expState: nonEmptyState(curPropID()),
-		},
 	}
 
-	// Prop status situations to test:
-	// Done: unknown prop status -> panic
-	// Done: prop status = ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED -> panic
-	// Done: prop passed -> nothing happens (make sure state isn't changed)
-	// prop rejected ->  it's temp entries are deleted.
-	// prop failed ->  it's temp entries are deleted.
-	// prop not found -> it's temp entries are deleted.
-	// prop StatusDepositPeriod -> more stuff
-	// prop StatusVotingPeriod -> more stuff
+	tests := []testCase{}
 
-	// more stuff:
-	//   min deposit = 0 -> nothing happens
-	//   deposit < min deposit -> nothing happens
-	//   deposit == min deposit -> temp entries added.
-	//   deposit > min deposit -> temp entries added.
+	// prop status unknown -> panic
+	for _, msgs := range messageSets {
+		tests = append(tests, testCase{
+			name:       "unknown prop status on " + msgs.name,
+			proposalID: nextPropID(),
+			iniState:   nonEmptyState(curPropID()),
+			proposal: &govv1.Proposal{
+				Id:       curPropID(),
+				Messages: msgs.msgs,
+				Status:   govv1.ProposalStatus(curPropID() + 5000),
+			},
+			expState: nonEmptyState(curPropID()),
+			expPanic: []string{fmt.Sprintf("invalid governance proposal status: [%d]", curPropID()+5000)},
+		})
+	}
 
-	// There are 5 message types I'd like to involve in these tests:
-	// 1) MsgSanction -> the above stuff, temp entries = sanction
-	// 2) MsgUnsanction -> the above stuff, temp entries = unsanction
-	// 3) MsgUpdateParams -> the above stuff, but nothing happens on any of it.
-	// 4) MsgExecLegacyContent with a MsgSanction -> the above stuff, but nothing happens on any of it.
-	// 5) MsgExecLegacyContent with a MsgUnsanction -> the above stuff, but nothing happens on any of it.
+	// prop status unspecified -> panic
+	for _, msgs := range messageSets {
+		tests = append(tests, testCase{
+			name:       "unspecified prop status on " + msgs.name,
+			proposalID: nextPropID(),
+			iniState:   nonEmptyState(curPropID()),
+			proposal: &govv1.Proposal{
+				Id:       curPropID(),
+				Messages: msgs.msgs,
+				Status:   govv1.ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED,
+			},
+			expState: nonEmptyState(curPropID()),
+			expPanic: []string{"invalid governance proposal status: [PROPOSAL_STATUS_UNSPECIFIED]"},
+		})
+	}
 
-	// Then, just to make it complicated, I want to test combos of those messages:
-	// A), [1, 2] = all the stuff from just 1 and just 2, in order though, so have a temp unsanction from 2 overwrite a temp sanction added by 1.
-	// B), [2, 1] = same as A, but the temp sanction overwrites the temp unsanction.
-	// C), [1, 1] = all sanctions from both
-	// D), [2, 2] = all unsanctions from both
-	// E), [3, 1] = 1 still happens
-	// F), [1, 3] = 1 still happens
-	// G), [1, 5] = make 5 undo 1 and make sure it is ignored.
-	// G), [2, 4] = make 4 undo 2 and make sure it is ignored.
-	// H), [1, 1, 1, 1, 1] = make sure they all happen.
+	// prop passed -> nothing happens in any case.
+	for _, msgs := range messageSets {
+		tests = append(tests, testCase{
+			name:       "passed on " + msgs.name,
+			proposalID: nextPropID(),
+			iniState:   nonEmptyState(curPropID()),
+			proposal: &govv1.Proposal{
+				Id:       curPropID(),
+				Messages: msgs.msgs,
+				Status:   govv1.StatusPassed,
+			},
+			expState: nonEmptyState(curPropID()),
+		})
+	}
 
+	// not found -> it's temp entries are deleted. No need to do this for each message set since there's no proposal.
+	tests = append(tests, testCase{
+		name:       "not found",
+		proposalID: nextPropID(),
+		iniState:   cleanupStateIni(curPropID()),
+		proposal:   nil,
+		expState:   cleanupStateExp(curPropID()),
+	})
+
+	// prop rejected, failed -> it's temp entries are deleted.
+	for _, status := range []govv1.ProposalStatus{govv1.StatusRejected, govv1.StatusFailed} {
+		var baseName string
+		switch status {
+		case govv1.StatusRejected:
+			baseName = "rejected"
+		case govv1.StatusFailed:
+			baseName = "failed"
+		default:
+			s.FailNow("unhandled status in setup: %s", status)
+		}
+		for _, msgs := range messageSets {
+			tests = append(tests, testCase{
+				name:       baseName + " on " + msgs.name,
+				proposalID: nextPropID(),
+				iniState:   cleanupStateIni(curPropID()),
+				proposal: &govv1.Proposal{
+					Id:       curPropID(),
+					Messages: msgs.msgs,
+					Status:   status,
+				},
+				expState: cleanupStateExp(curPropID()),
+			})
+		}
+	}
+
+	// prop status deposit period or voting period -> depends on the deposit
+	for _, status := range []govv1.ProposalStatus{govv1.StatusDepositPeriod, govv1.StatusVotingPeriod} {
+		var baseName string
+		switch status {
+		case govv1.StatusDepositPeriod:
+			baseName = "deposit period"
+		case govv1.StatusVotingPeriod:
+			baseName = "voting period"
+		default:
+			s.FailNow("unhandled status in setup: %s", status)
+		}
+
+		// min deposit = 0 -> nothing happens
+		for _, msgs := range messageSets {
+			state := nonEmptyState(nextPropID())
+			dep := sdk.Coins{}
+			for _, c := range state.Params.ImmediateSanctionMinDeposit.Add(state.Params.ImmediateUnsanctionMinDeposit...) {
+				dep = dep.Add(sdk.NewCoin(c.Denom, c.Amount.AddRaw(100)))
+			}
+			state.Params.ImmediateSanctionMinDeposit = nil
+			state.Params.ImmediateUnsanctionMinDeposit = nil
+			tests = append(tests, testCase{
+				name:       baseName + " min dep = 0 on " + msgs.name,
+				proposalID: curPropID(),
+				iniState:   state,
+				proposal: &govv1.Proposal{
+					Id:           curPropID(),
+					Messages:     msgs.msgs,
+					Status:       status,
+					TotalDeposit: dep,
+				},
+				expState: state,
+			})
+		}
+
+		// deposit < min deposit -> nothing happens
+		for _, msgs := range messageSets {
+			state := nonEmptyState(nextPropID())
+			dep := sdk.Coins{}
+			for _, c := range state.Params.ImmediateSanctionMinDeposit.Add(state.Params.ImmediateUnsanctionMinDeposit...) {
+				if c.Amount.GT(sdk.NewInt(1)) {
+					dep = dep.Add(sdk.NewCoin(c.Denom, c.Amount.SubRaw(1)))
+				}
+			}
+			tests = append(tests, testCase{
+				name:       baseName + " dep < min dep on " + msgs.name,
+				proposalID: curPropID(),
+				iniState:   state,
+				proposal: &govv1.Proposal{
+					Id:           curPropID(),
+					Messages:     msgs.msgs,
+					Status:       status,
+					TotalDeposit: dep,
+				},
+				expState: state,
+			})
+		}
+
+		// deposit == min deposit or depoist > min deposit -> temp entries added for non-boring msgs.
+		mods := []struct {
+			name   string
+			amount sdk.Int
+		}{
+			{name: " deposit = min", amount: sdk.NewInt(0)},
+			{name: " deposit > min", amount: sdk.NewInt(1)},
+		}
+		for _, mod := range mods {
+			// Using all the messageSets for this would be to complex (just duplicating the code I'm trying to test).
+			// Plus, there's a couple extra cases to account for here.
+			// So define them verbosely here.
+			// The deposit will be added to each proposal before being added to the tests.
+			newTests := []testCase{
+				{
+					name:       baseName + mod.name + " on sanction",
+					proposalID: nextPropID(),
+					iniState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("jsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: nil,
+						},
+						SanctionedAddresses: []string{addr1.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr6, curPropID(), false),
+						},
+					},
+					proposal: &govv1.Proposal{
+						Id: curPropID(),
+						Messages: []*codectypes.Any{s.NewAny(&sanction.MsgSanction{
+							Addresses: []string{addr1.String(), addr4.String()},
+							Authority: "whatever",
+						})},
+						Status: status,
+					},
+					expState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("jsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: nil,
+						},
+						SanctionedAddresses: []string{addr1.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr1, curPropID(), true),
+							newTempEntry(addr4, curPropID(), true),
+							newTempEntry(addr6, curPropID(), false),
+						},
+					},
+				},
+				{
+					name:       baseName + mod.name + " on unsanction",
+					proposalID: nextPropID(),
+					iniState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   nil,
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("junsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+					proposal: &govv1.Proposal{
+						Id: curPropID(),
+						Messages: []*codectypes.Any{s.NewAny(&sanction.MsgUnsanction{
+							Addresses: []string{addr2.String(), addr5.String()},
+							Authority: "whatever",
+						})},
+						Status: status,
+					},
+					expState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   nil,
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("junsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr2, curPropID(), false),
+							newTempEntry(addr5, curPropID(), false),
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+				},
+				{
+					name:       baseName + mod.name + " on sanction sanction",
+					proposalID: nextPropID(),
+					iniState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("jsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: nil,
+						},
+						SanctionedAddresses: []string{addr1.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr6, curPropID(), false),
+						},
+					},
+					proposal: &govv1.Proposal{
+						Id: curPropID(),
+						Messages: []*codectypes.Any{
+							s.NewAny(&sanction.MsgSanction{
+								Addresses: []string{addr1.String(), addr4.String()},
+								Authority: "whatever",
+							}),
+							s.NewAny(&sanction.MsgSanction{
+								Addresses: []string{addr3.String()},
+								Authority: "whatever",
+							}),
+						},
+						Status: status,
+					},
+					expState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("jsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: nil,
+						},
+						SanctionedAddresses: []string{addr1.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr1, curPropID(), true),
+							newTempEntry(addr3, curPropID(), true),
+							newTempEntry(addr4, curPropID(), true),
+							newTempEntry(addr6, curPropID(), false),
+						},
+					},
+				},
+				{
+					name:       baseName + mod.name + " on unsanction unsanction",
+					proposalID: nextPropID(),
+					iniState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   nil,
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("junsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+					proposal: &govv1.Proposal{
+						Id: curPropID(),
+						Messages: []*codectypes.Any{
+							s.NewAny(&sanction.MsgUnsanction{
+								Addresses: []string{addr2.String(), addr5.String()},
+								Authority: "whatever",
+							}),
+							s.NewAny(&sanction.MsgUnsanction{
+								Addresses: []string{addr3.String()},
+								Authority: "whatever",
+							}),
+						},
+						Status: status,
+					},
+					expState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   nil,
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("junsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr2, curPropID(), false),
+							newTempEntry(addr3, curPropID(), false),
+							newTempEntry(addr5, curPropID(), false),
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+				},
+				{
+					name:       baseName + mod.name + " on sanction unsanction",
+					proposalID: nextPropID(),
+					iniState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("bsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("bunsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr1.String(), addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+					proposal: &govv1.Proposal{
+						Id: curPropID(),
+						Messages: []*codectypes.Any{
+							s.NewAny(&sanction.MsgSanction{
+								Addresses: []string{addr1.String(), addr4.String()},
+								Authority: "whatever1",
+							}),
+							s.NewAny(&sanction.MsgUnsanction{
+								Addresses: []string{addr2.String(), addr5.String()},
+								Authority: "whatever2",
+							}),
+						},
+						Status: status,
+					},
+					expState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("bsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("bunsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr1.String(), addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr1, curPropID(), true),
+							newTempEntry(addr2, curPropID(), false),
+							newTempEntry(addr4, curPropID(), true),
+							newTempEntry(addr5, curPropID(), false),
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+				},
+				{
+					name:       baseName + mod.name + " on unsanction sanction",
+					proposalID: nextPropID(),
+					iniState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("bsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("bunsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr1.String(), addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+					proposal: &govv1.Proposal{
+						Id: curPropID(),
+						Messages: []*codectypes.Any{
+							s.NewAny(&sanction.MsgUnsanction{
+								Addresses: []string{addr2.String(), addr5.String()},
+								Authority: "whatever2",
+							}),
+							s.NewAny(&sanction.MsgSanction{
+								Addresses: []string{addr1.String(), addr4.String()},
+								Authority: "whatever1",
+							}),
+						},
+						Status: status,
+					},
+					expState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("bsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("bunsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr1.String(), addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr1, curPropID(), true),
+							newTempEntry(addr2, curPropID(), false),
+							newTempEntry(addr4, curPropID(), true),
+							newTempEntry(addr5, curPropID(), false),
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+				},
+				{
+					name:       baseName + mod.name + " on sanction x",
+					proposalID: nextPropID(),
+					iniState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("jsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: nil,
+						},
+						SanctionedAddresses: []string{addr1.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr6, curPropID(), false),
+						},
+					},
+					proposal: &govv1.Proposal{
+						Id: curPropID(),
+						Messages: []*codectypes.Any{
+							s.NewAny(&sanction.MsgSanction{
+								Addresses: []string{addr1.String(), addr4.String()},
+								Authority: "whatever",
+							}),
+							updateParamsAny,
+						},
+						Status: status,
+					},
+					expState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("jsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: nil,
+						},
+						SanctionedAddresses: []string{addr1.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr1, curPropID(), true),
+							newTempEntry(addr4, curPropID(), true),
+							newTempEntry(addr6, curPropID(), false),
+						},
+					},
+				},
+				{
+					name:       baseName + mod.name + " on x sanction",
+					proposalID: nextPropID(),
+					iniState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("jsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: nil,
+						},
+						SanctionedAddresses: []string{addr1.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr6, curPropID(), false),
+						},
+					},
+					proposal: &govv1.Proposal{
+						Id: curPropID(),
+						Messages: []*codectypes.Any{
+							updateParamsAny,
+							s.NewAny(&sanction.MsgSanction{
+								Addresses: []string{addr1.String(), addr4.String()},
+								Authority: "whatever",
+							}),
+						},
+						Status: status,
+					},
+					expState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("jsanct", int64(curPropID()))),
+							ImmediateUnsanctionMinDeposit: nil,
+						},
+						SanctionedAddresses: []string{addr1.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr1, curPropID(), true),
+							newTempEntry(addr4, curPropID(), true),
+							newTempEntry(addr6, curPropID(), false),
+						},
+					},
+				},
+				{
+					name:       baseName + mod.name + " on unsanction x",
+					proposalID: nextPropID(),
+					iniState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   nil,
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("junsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+					proposal: &govv1.Proposal{
+						Id: curPropID(),
+						Messages: []*codectypes.Any{
+							s.NewAny(&sanction.MsgUnsanction{
+								Addresses: []string{addr2.String(), addr5.String()},
+								Authority: "whatever",
+							}),
+							legWrapSanctAny,
+						},
+						Status: status,
+					},
+					expState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   nil,
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("junsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr2, curPropID(), false),
+							newTempEntry(addr5, curPropID(), false),
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+				},
+				{
+					name:       baseName + mod.name + " on x unsanction",
+					proposalID: nextPropID(),
+					iniState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   nil,
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("junsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+					proposal: &govv1.Proposal{
+						Id: curPropID(),
+						Messages: []*codectypes.Any{
+							otherAny,
+							s.NewAny(&sanction.MsgUnsanction{
+								Addresses: []string{addr2.String(), addr5.String()},
+								Authority: "whatever",
+							}),
+						},
+						Status: status,
+					},
+					expState: &sanction.GenesisState{
+						Params: &sanction.Params{
+							ImmediateSanctionMinDeposit:   nil,
+							ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("junsanct", int64(curPropID()))),
+						},
+						SanctionedAddresses: []string{addr2.String()},
+						TemporaryEntries: []*sanction.TemporaryEntry{
+							newTempEntry(addr2, curPropID(), false),
+							newTempEntry(addr5, curPropID(), false),
+							newTempEntry(addr6, curPropID(), true),
+						},
+					},
+				},
+			}
+
+			for _, tc := range newTests {
+				dep := sdk.Coins{}
+				for _, c := range tc.iniState.Params.ImmediateSanctionMinDeposit.Add(tc.iniState.Params.ImmediateUnsanctionMinDeposit...) {
+					dep = dep.Add(sdk.NewCoin(c.Denom, c.Amount.Add(mod.amount)))
+				}
+				tc.proposal.TotalDeposit = dep
+				tests = append(tests, tc)
+			}
+
+			// Now add all the boring message sets since they shouldn't do anything.
+			for _, msgs := range messageSets {
+				if msgs.boring {
+					state := nonEmptyState(nextPropID())
+					dep := sdk.Coins{}
+					for _, c := range state.Params.ImmediateSanctionMinDeposit.Add(state.Params.ImmediateUnsanctionMinDeposit...) {
+						dep = dep.Add(sdk.NewCoin(c.Denom, c.Amount.Add(mod.amount)))
+					}
+					tests = append(tests, testCase{
+						name:       baseName + mod.name + " on " + msgs.name,
+						proposalID: curPropID(),
+						iniState:   state,
+						proposal: &govv1.Proposal{
+							Id:           curPropID(),
+							Messages:     msgs.msgs,
+							Status:       status,
+							TotalDeposit: dep,
+						},
+						expState: state,
+					})
+				}
+			}
+		}
+
+		// A few cases where the deposit is enough for one message but not another.
+		// only enough deposit for sanction, sanction unsanction
+		tests = append(tests, testCase{
+			name:       baseName + " sanct < dep < unsanct on sanction unsanction ",
+			proposalID: nextPropID(),
+			iniState: &sanction.GenesisState{
+				Params: &sanction.Params{
+					ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("bothcoin", 5)),
+					ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("bothcoin", 6)),
+				},
+				SanctionedAddresses: []string{addr1.String(), addr2.String()},
+				TemporaryEntries: []*sanction.TemporaryEntry{
+					newTempEntry(addr6, curPropID(), false),
+				},
+			},
+			proposal: &govv1.Proposal{
+				Id: curPropID(),
+				Messages: []*codectypes.Any{
+					s.NewAny(&sanction.MsgSanction{
+						Addresses: []string{addr1.String(), addr4.String()},
+						Authority: "whatever",
+					}),
+					s.NewAny(&sanction.MsgUnsanction{
+						Addresses: []string{addr2.String(), addr5.String()},
+						Authority: "whatever",
+					}),
+				},
+				Status:       status,
+				TotalDeposit: sdk.NewCoins(sdk.NewInt64Coin("bothcoin", 5)),
+			},
+			expState: &sanction.GenesisState{
+				Params: &sanction.Params{
+					ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("bothcoin", 5)),
+					ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("bothcoin", 6)),
+				},
+				SanctionedAddresses: []string{addr1.String(), addr2.String()},
+				TemporaryEntries: []*sanction.TemporaryEntry{
+					newTempEntry(addr1, curPropID(), true),
+					newTempEntry(addr4, curPropID(), true),
+					newTempEntry(addr6, curPropID(), false),
+				},
+			},
+		})
+		// only enough deposit for sanction, unsanction sanction
+		tests = append(tests, testCase{
+			name:       baseName + " sanct < dep < unsanct on unsanction sanction ",
+			proposalID: nextPropID(),
+			iniState: &sanction.GenesisState{
+				Params: &sanction.Params{
+					ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("twocoin", 5)),
+					ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("twocoin", 6)),
+				},
+				SanctionedAddresses: []string{addr1.String(), addr2.String()},
+				TemporaryEntries: []*sanction.TemporaryEntry{
+					newTempEntry(addr6, curPropID(), false),
+				},
+			},
+			proposal: &govv1.Proposal{
+				Id: curPropID(),
+				Messages: []*codectypes.Any{
+					s.NewAny(&sanction.MsgUnsanction{
+						Addresses: []string{addr2.String(), addr5.String()},
+						Authority: "whatever",
+					}),
+					s.NewAny(&sanction.MsgSanction{
+						Addresses: []string{addr1.String(), addr4.String()},
+						Authority: "whatever",
+					}),
+				},
+				Status:       status,
+				TotalDeposit: sdk.NewCoins(sdk.NewInt64Coin("twocoin", 5)),
+			},
+			expState: &sanction.GenesisState{
+				Params: &sanction.Params{
+					ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("twocoin", 5)),
+					ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("twocoin", 6)),
+				},
+				SanctionedAddresses: []string{addr1.String(), addr2.String()},
+				TemporaryEntries: []*sanction.TemporaryEntry{
+					newTempEntry(addr1, curPropID(), true),
+					newTempEntry(addr4, curPropID(), true),
+					newTempEntry(addr6, curPropID(), false),
+				},
+			},
+		})
+		// only enough deposit for unsanction, sanction unsanction
+		tests = append(tests, testCase{
+			name:       baseName + " unsanct < dep < sanct on sanction unsanction ",
+			proposalID: nextPropID(),
+			iniState: &sanction.GenesisState{
+				Params: &sanction.Params{
+					ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("twincoin", 6)),
+					ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("twincoin", 5)),
+				},
+				SanctionedAddresses: []string{addr1.String(), addr2.String()},
+				TemporaryEntries: []*sanction.TemporaryEntry{
+					newTempEntry(addr6, curPropID(), false),
+				},
+			},
+			proposal: &govv1.Proposal{
+				Id: curPropID(),
+				Messages: []*codectypes.Any{
+					s.NewAny(&sanction.MsgSanction{
+						Addresses: []string{addr1.String(), addr4.String()},
+						Authority: "whatever",
+					}),
+					s.NewAny(&sanction.MsgUnsanction{
+						Addresses: []string{addr2.String(), addr5.String()},
+						Authority: "whatever",
+					}),
+				},
+				Status:       status,
+				TotalDeposit: sdk.NewCoins(sdk.NewInt64Coin("twincoin", 5)),
+			},
+			expState: &sanction.GenesisState{
+				Params: &sanction.Params{
+					ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("twincoin", 6)),
+					ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("twincoin", 5)),
+				},
+				SanctionedAddresses: []string{addr1.String(), addr2.String()},
+				TemporaryEntries: []*sanction.TemporaryEntry{
+					newTempEntry(addr2, curPropID(), false),
+					newTempEntry(addr5, curPropID(), false),
+					newTempEntry(addr6, curPropID(), false),
+				},
+			},
+		})
+		// only enough deposit for unsanction, unsanction sanction
+		tests = append(tests, testCase{
+			name:       baseName + " unsanct < dep < sanct on unsanction sanction ",
+			proposalID: nextPropID(),
+			iniState: &sanction.GenesisState{
+				Params: &sanction.Params{
+					ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("duocoin", 6)),
+					ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("duocoin", 5)),
+				},
+				SanctionedAddresses: []string{addr1.String(), addr2.String()},
+				TemporaryEntries: []*sanction.TemporaryEntry{
+					newTempEntry(addr6, curPropID(), false),
+				},
+			},
+			proposal: &govv1.Proposal{
+				Id: curPropID(),
+				Messages: []*codectypes.Any{
+					s.NewAny(&sanction.MsgUnsanction{
+						Addresses: []string{addr2.String(), addr5.String()},
+						Authority: "whatever",
+					}),
+					s.NewAny(&sanction.MsgSanction{
+						Addresses: []string{addr1.String(), addr4.String()},
+						Authority: "whatever",
+					}),
+				},
+				Status:       status,
+				TotalDeposit: sdk.NewCoins(sdk.NewInt64Coin("duocoin", 5)),
+			},
+			expState: &sanction.GenesisState{
+				Params: &sanction.Params{
+					ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin("duocoin", 6)),
+					ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin("duocoin", 5)),
+				},
+				SanctionedAddresses: []string{addr1.String(), addr2.String()},
+				TemporaryEntries: []*sanction.TemporaryEntry{
+					newTempEntry(addr2, curPropID(), false),
+					newTempEntry(addr5, curPropID(), false),
+					newTempEntry(addr6, curPropID(), false),
+				},
+			},
+		})
+	}
+
+	// sanity check on tests names since there's probably a lot of copy/pasting being done in here.
+	names := map[string]bool{}
 	for _, tc := range tests {
-		s.Run(tc.name, func() {
+		if names[tc.name] {
+			s.FailNow("test name duplicated: " + tc.name)
+		}
+		names[tc.name] = true
+	}
+
+	// Finally.... run the tests.
+	for i, tc := range tests {
+		// Including the index in the name since a) most names are from concatenation, and
+		// b) so it's easier to change the loop to tests[5:6] to isolate and troubleshoot a single test of interest.
+		s.Run(fmt.Sprintf("%03d %s", i, tc.name), func() {
 			s.ClearState()
 			if tc.iniState != nil {
 				s.Require().NotPanics(func() {
