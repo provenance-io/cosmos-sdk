@@ -23,40 +23,6 @@ func TestGenesisTestSuite(t *testing.T) {
 	suite.Run(t, new(GenesisTestSuite))
 }
 
-// exportAndCheck calls ExportGenesis, making sure it doesn't panic,
-// then makes sure the result is as expected.
-// Returns true if everything is okay.
-func (s *GenesisTestSuite) exportAndCheck(expected *sanction.GenesisState) bool {
-	s.T().Helper()
-
-	var actual *sanction.GenesisState
-	testFunc := func() {
-		actual = s.Keeper.ExportGenesis(s.SdkCtx)
-	}
-	s.Require().NotPanics(testFunc, "ExportGenesis")
-	if s.Assert().Equal(expected, actual, "ExportGenesis result") {
-		return true
-	}
-	if expected != nil && actual != nil {
-		// Okay, it failed, make assertions on each field to hopefully help highlight the differences.
-		if !s.Assert().Equal(expected.Params, actual.Params, "ExportGenesis result Params") && expected.Params != nil && actual.Params != nil {
-			s.Assert().Equal(expected.Params.ImmediateSanctionMinDeposit.String(),
-				actual.Params.ImmediateSanctionMinDeposit.String(),
-				"ExportGenesis result Params.ImmediateSanctionMinDeposit")
-			s.Assert().Equal(expected.Params.ImmediateUnsanctionMinDeposit.String(),
-				actual.Params.ImmediateUnsanctionMinDeposit.String(),
-				"ExportGenesis result Params.ImmediateUnsanctionMinDeposit")
-		}
-		s.Assert().Equal(expected.SanctionedAddresses,
-			actual.SanctionedAddresses,
-			"ExportGenesis result SanctionedAddresses")
-		s.Assert().Equal(expected.TemporaryEntries,
-			actual.TemporaryEntries,
-			"ExportGenesis result TemporaryEntries")
-	}
-	return false
-}
-
 func (s *GenesisTestSuite) TestKeeper_InitGenesis() {
 	// Set some different (hopefully unique) default param values.
 	origSanctMinDep := sanction.DefaultImmediateSanctionMinDeposit
@@ -437,7 +403,7 @@ func (s *GenesisTestSuite) TestKeeper_InitGenesis() {
 			events := em.Events()
 			s.Assert().Empty(events, "events emitted during InitGenesis")
 			if tc.expExport != nil {
-				s.exportAndCheck(tc.expExport)
+				s.ExportAndCheck(tc.expExport)
 			}
 		})
 	}
@@ -475,7 +441,7 @@ func (s *GenesisTestSuite) TestKeeper_ExportGenesis() {
 			TemporaryEntries:    nil,
 		}
 
-		s.exportAndCheck(expected)
+		s.ExportAndCheck(expected)
 	})
 
 	s.Run("a little of everything in state", func() {
@@ -534,7 +500,7 @@ func (s *GenesisTestSuite) TestKeeper_ExportGenesis() {
 		s.ReqOKAddTempSanct(47, "addr7, addr8", addr7, addr8)
 		s.ReqOKAddTempUnsanct(88, "addr7, addr8", addr7, addr8)
 
-		s.exportAndCheck(expected)
+		s.ExportAndCheck(expected)
 	})
 
 	s.Run("with some entries removed", func() {
@@ -565,7 +531,7 @@ func (s *GenesisTestSuite) TestKeeper_ExportGenesis() {
 			},
 		}
 
-		store := s.SdkCtx.KVStore(s.Keeper.OnlyTestsGetStoreKey())
+		store := s.GetStore()
 		s.Require().NotPanics(func() {
 			s.Keeper.OnlyTestsDeleteParam(store, keeper.ParamNameImmediateUnsanctionMinDeposit)
 		}, "deleting the ParamNameImmediateUnsanctionMinDeposit param entry")
@@ -579,7 +545,7 @@ func (s *GenesisTestSuite) TestKeeper_ExportGenesis() {
 		s.ReqOKDelAddrTemp("addr5, addr7", addr5, addr7)
 		s.ReqOKDelPropTemp(2)
 
-		s.exportAndCheck(expected)
+		s.ExportAndCheck(expected)
 	})
 }
 

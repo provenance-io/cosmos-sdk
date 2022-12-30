@@ -917,7 +917,7 @@ func (s *KeeperTestSuite) TestKeeper_AddTemporaryUnsanction() {
 }
 
 func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
-	store := s.SdkCtx.KVStore(s.Keeper.OnlyTestsGetStoreKey())
+	store := s.GetStore()
 	// Add a few random entries with weird values so they're easy to identify.
 	randAddr1 := sdk.AccAddress{0, 0, 0, 0, 0}
 	randAddr2 := s.addr1[:len(s.addr1)-1]
@@ -1813,7 +1813,7 @@ func (s *KeeperTestSuite) TestKeeper_GetSetParams() {
 	sanction.DefaultImmediateSanctionMinDeposit = sdk.NewCoins(sdk.NewInt64Coin("sanct", 93))
 	sanction.DefaultImmediateUnsanctionMinDeposit = sdk.NewCoins(sdk.NewInt64Coin("usanct", 49))
 
-	store := s.SdkCtx.KVStore(s.Keeper.OnlyTestsGetStoreKey())
+	store := s.GetStore()
 	s.Require().NotPanics(func() {
 		s.Keeper.OnlyTestsDeleteParam(store, keeper.ParamNameImmediateSanctionMinDeposit)
 	}, "deleteParam(%q)", keeper.ParamNameImmediateSanctionMinDeposit)
@@ -1938,7 +1938,7 @@ func (s *KeeperTestSuite) TestKeeper_IterateParams() {
 		value string
 	}
 
-	store := s.SdkCtx.KVStore(s.Keeper.OnlyTestsGetStoreKey())
+	store := s.GetStore()
 	s.Require().NotPanics(func() {
 		s.Keeper.OnlyTestsDeleteParam(store, keeper.ParamNameImmediateSanctionMinDeposit)
 	}, "deleteParam(%q)", keeper.ParamNameImmediateSanctionMinDeposit)
@@ -2040,7 +2040,7 @@ func (s *KeeperTestSuite) TestKeeper_GetImmediateSanctionMinDeposit() {
 		delete bool
 	}
 
-	store := s.SdkCtx.KVStore(s.Keeper.OnlyTestsGetStoreKey())
+	store := s.GetStore()
 	testFuncSetSanct := func() {
 		s.Keeper.OnlyTestsSetParam(store, keeper.ParamNameImmediateUnsanctionMinDeposit, "98unsanct")
 	}
@@ -2128,7 +2128,7 @@ func (s *KeeperTestSuite) TestKeeper_GetImmediateUnsanctionMinDeposit() {
 		delete bool
 	}
 
-	store := s.SdkCtx.KVStore(s.Keeper.OnlyTestsGetStoreKey())
+	store := s.GetStore()
 	testFuncSetSanct := func() {
 		s.Keeper.OnlyTestsSetParam(store, keeper.ParamNameImmediateSanctionMinDeposit, "99sanct")
 	}
@@ -2193,7 +2193,7 @@ func (s *KeeperTestSuite) TestKeeper_GetImmediateUnsanctionMinDeposit() {
 }
 
 func (s *KeeperTestSuite) TestKeeper_getSetDeleteParam() {
-	store := s.SdkCtx.KVStore(s.Keeper.OnlyTestsGetStoreKey())
+	store := s.GetStore()
 	var toDelete []string
 
 	newParamName := "new param"
@@ -2370,7 +2370,7 @@ func (s *KeeperTestSuite) TestKeeper_getParamAsCoinsOrDefault() {
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
 			if tc.setFirst {
-				store := s.SdkCtx.KVStore(s.Keeper.OnlyTestsGetStoreKey())
+				store := s.GetStore()
 				s.Keeper.OnlyTestsSetParam(store, tc.param, tc.setTo)
 				defer func() {
 					s.Keeper.OnlyTestsDeleteParam(store, tc.param)

@@ -62,10 +62,15 @@ func (s *BaseTestSuite) BaseSetup() {
 	s.Keeper = s.App.SanctionKeeper.OnlyTestsWithGovKeeper(s.GovKeeper)
 }
 
+// GetStore gets the sanction module's store.
+func (s *BaseTestSuite) GetStore() sdk.KVStore {
+	return s.SdkCtx.KVStore(s.Keeper.OnlyTestsGetStoreKey())
+}
+
 // ClearState deletes all entries in the sanction store.
 func (s *BaseTestSuite) ClearState() {
 	var keysToDelete [][]byte
-	store := s.SdkCtx.KVStore(s.Keeper.OnlyTestsGetStoreKey())
+	store := s.GetStore()
 	iter := store.Iterator(nil, nil)
 	closeIter := func() {
 		if iter != nil {
@@ -184,4 +189,38 @@ func (s *BaseTestSuite) CustomAny(typeValue proto.Message, value proto.Message) 
 		rv.TypeUrl = "/" + proto.MessageName(typeValue)
 	}
 	return rv
+}
+
+// ExportAndCheck calls ExportGenesis, making sure it doesn't panic,
+// then makes sure the result is as expected.
+// Returns true if everything is okay.
+func (s *BaseTestSuite) ExportAndCheck(expected *sanction.GenesisState) bool {
+	s.T().Helper()
+
+	var actual *sanction.GenesisState
+	testFunc := func() {
+		actual = s.Keeper.ExportGenesis(s.SdkCtx)
+	}
+	s.Require().NotPanics(testFunc, "ExportGenesis")
+	if s.Assert().Equal(expected, actual, "ExportGenesis result") {
+		return true
+	}
+	if expected != nil && actual != nil {
+		// Okay, it failed, make assertions on each field to hopefully help highlight the differences.
+		if !s.Assert().Equal(expected.Params, actual.Params, "ExportGenesis result Params") && expected.Params != nil && actual.Params != nil {
+			s.Assert().Equal(expected.Params.ImmediateSanctionMinDeposit.String(),
+				actual.Params.ImmediateSanctionMinDeposit.String(),
+				"ExportGenesis result Params.ImmediateSanctionMinDeposit")
+			s.Assert().Equal(expected.Params.ImmediateUnsanctionMinDeposit.String(),
+				actual.Params.ImmediateUnsanctionMinDeposit.String(),
+				"ExportGenesis result Params.ImmediateUnsanctionMinDeposit")
+		}
+		s.Assert().Equal(expected.SanctionedAddresses,
+			actual.SanctionedAddresses,
+			"ExportGenesis result SanctionedAddresses")
+		s.Assert().Equal(expected.TemporaryEntries,
+			actual.TemporaryEntries,
+			"ExportGenesis result TemporaryEntries")
+	}
+	return false
 }
