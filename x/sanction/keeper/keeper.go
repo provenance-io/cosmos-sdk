@@ -129,11 +129,11 @@ func (k Keeper) addTempEntries(ctx sdk.Context, value byte, govPropID uint64, ad
 		}
 		key := CreateTemporaryKey(addr, govPropID)
 		store.Set(key, val)
+		indKey := CreateProposalTempIndexKey(govPropID, addr)
+		store.Set(indKey, val)
 		if err := ctx.EventManager().EmitTypedEvent(NewTempEvent(value, addr)); err != nil {
 			return err
 		}
-		indKey := CreateProposalTempIndexKey(govPropID, addr)
-		store.Set(indKey, val)
 	}
 	return nil
 }
@@ -155,17 +155,19 @@ func (k Keeper) getLatestTempEntry(store sdk.KVStore, addr sdk.AccAddress) []byt
 
 // DeleteGovPropTempEntries deletes the temporary entries for the given proposal id.
 func (k Keeper) DeleteGovPropTempEntries(ctx sdk.Context, govPropID uint64) {
-	var addrs []sdk.AccAddress
-	k.IterateProposalIndexEntries(ctx, &govPropID, func(govPropID uint64, addr sdk.AccAddress) (stop bool) {
-		addrs = append(addrs, addr)
+	var toRemove [][]byte
+	k.IterateProposalIndexEntries(ctx, &govPropID, func(cbGovPropID uint64, cbAddr sdk.AccAddress) bool {
+		toRemove = append(toRemove,
+			CreateTemporaryKey(cbAddr, cbGovPropID),
+			CreateProposalTempIndexKey(cbGovPropID, cbAddr),
+		)
 		return false
 	})
-	store := ctx.KVStore(k.storeKey)
-	for _, addr := range addrs {
-		key1 := CreateTemporaryKey(addr, govPropID)
-		store.Delete(key1)
-		key2 := CreateProposalTempIndexKey(govPropID, addr)
-		store.Delete(key2)
+	if len(toRemove) > 0 {
+		store := ctx.KVStore(k.storeKey)
+		for _, key := range toRemove {
+			store.Delete(key)
+		}
 	}
 }
 
@@ -175,10 +177,10 @@ func (k Keeper) DeleteAddrTempEntries(ctx sdk.Context, addrs ...sdk.AccAddress) 
 		return
 	}
 	var toRemove [][]byte
-	callback := func(cbAddr sdk.AccAddress, govPropId uint64, _ bool) bool {
+	callback := func(cbAddr sdk.AccAddress, cbGovPropId uint64, _ bool) bool {
 		toRemove = append(toRemove,
-			CreateTemporaryKey(cbAddr, govPropId),
-			CreateProposalTempIndexKey(govPropId, cbAddr),
+			CreateTemporaryKey(cbAddr, cbGovPropId),
+			CreateProposalTempIndexKey(cbGovPropId, cbAddr),
 		)
 		return false
 	}
@@ -187,9 +189,11 @@ func (k Keeper) DeleteAddrTempEntries(ctx sdk.Context, addrs ...sdk.AccAddress) 
 			k.IterateTemporaryEntries(ctx, addr, callback)
 		}
 	}
-	store := ctx.KVStore(k.storeKey)
-	for _, key := range toRemove {
-		store.Delete(key)
+	if len(toRemove) > 0 {
+		store := ctx.KVStore(k.storeKey)
+		for _, key := range toRemove {
+			store.Delete(key)
+		}
 	}
 }
 
