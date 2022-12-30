@@ -96,7 +96,7 @@ func (k Keeper) proposalGovHook(ctx sdk.Context, proposalID uint64) {
 	case govv1.StatusPassed:
 		// Nothing to do. The processing of the proposal message does everything that's needed.
 	default:
-		panic(fmt.Errorf("unknown governance proposal status: [%s]", proposal.Status))
+		panic(fmt.Errorf("invalid governance proposal status: [%s]", proposal.Status))
 	}
 }
 
