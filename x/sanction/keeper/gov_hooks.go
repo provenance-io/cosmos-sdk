@@ -48,18 +48,17 @@ const (
 // What needs to be done always depends on the status of the proposal.
 // So while some hooks are probably only called when a proposal has a certain status, it's safer to just always do this.
 func (k Keeper) proposalGovHook(ctx sdk.Context, proposalID uint64) {
-	// A proposal can sometimes be deleted if it failed in a certain way.
-	// So if the proposal can't be found, treat it as failed.
+	// A proposal can sometimes be deleted. In such cases, we still need to do some stuff.
 	propStatus := propStatusNotFound
 	proposal, found := k.govKeeper.GetProposal(ctx, proposalID)
 	if found {
 		propStatus = proposal.Status
 	}
 
-	for _, msg := range proposal.Messages {
-		if k.isModuleGovHooksMsgURL(msg.TypeUrl) {
-			switch propStatus {
-			case govv1.StatusDepositPeriod, govv1.StatusVotingPeriod:
+	switch propStatus {
+	case govv1.StatusDepositPeriod, govv1.StatusVotingPeriod:
+		for _, msg := range proposal.Messages {
+			if k.isModuleGovHooksMsgURL(msg.TypeUrl) {
 				// If the deposit is over the (non-zero) minimum, add temporary entries for the addrs.
 				makeTemps := false
 				minDeposit := k.getImmediateMinDeposit(ctx, msg)
@@ -83,15 +82,21 @@ func (k Keeper) proposalGovHook(ctx sdk.Context, proposalID uint64) {
 						panic(err)
 					}
 				}
-			case govv1.StatusRejected, govv1.StatusFailed, propStatusNotFound:
-				// Delete only the temporary entries that were associated with this proposal.
-				k.DeleteGovPropTempEntries(ctx, proposalID)
-			case govv1.StatusPassed:
-				// Nothing to do. The processing of the proposal message should have done everything that's needed.
-			default:
-				panic(fmt.Errorf("unknown governance proposal status: [%s]", proposal.Status))
 			}
 		}
+	case govv1.StatusRejected, govv1.StatusFailed, propStatusNotFound:
+		// Delete only the temporary entries that were associated with this proposal.
+		// We do this for all proposals, regardless of whether they have a sanction or unsanction message.
+		// A) When the proposal isn't found, there's no way we can know what messages it had.
+		// B) This code is simpler than trying to not call DeleteGovPropTempEntries when not needed.
+		// C) The extra processing from calling DeleteGovPropTempEntries is probably on par with what's needed
+		//    to not always call it.
+		// D) There's no risk of this deleting anything that shouldn't be deleted.
+		k.DeleteGovPropTempEntries(ctx, proposalID)
+	case govv1.StatusPassed:
+		// Nothing to do. The processing of the proposal message does everything that's needed.
+	default:
+		panic(fmt.Errorf("unknown governance proposal status: [%s]", proposal.Status))
 	}
 }
 
