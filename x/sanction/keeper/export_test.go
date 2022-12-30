@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/sanction"
@@ -83,4 +84,24 @@ func (k Keeper) OnlyTestsSetParam(store sdk.KVStore, name, value string) {
 // OnlyTestsDeleteParam, for unit tests, exposes this keeper's deleteParam function.
 func (k Keeper) OnlyTestsDeleteParam(store sdk.KVStore, name string) {
 	k.deleteParam(store, name)
+}
+
+// OnlyTestsProposalGovHook, for unit tests, exposes this keeper's proposalGovHook function.
+func (k Keeper) OnlyTestsProposalGovHook(ctx sdk.Context, proposalID uint64) {
+	k.proposalGovHook(ctx, proposalID)
+}
+
+// OnlyTestsIsModuleGovHooksMsgURL, for unit tests, exposes this keeper's isModuleGovHooksMsgURL function.
+func (k Keeper) OnlyTestsIsModuleGovHooksMsgURL(url string) bool {
+	return k.isModuleGovHooksMsgURL(url)
+}
+
+// OnlyTestsGetMsgAddresses, for unit tests, exposes this keeper's getMsgAddresses function.
+func (k Keeper) OnlyTestsGetMsgAddresses(msg *codectypes.Any) []sdk.AccAddress {
+	return k.getMsgAddresses(msg)
+}
+
+// OnlyTestsGetImmediateMinDeposit, for unit tests, exposes this keeper's getImmediateMinDeposit function.
+func (k Keeper) OnlyTestsGetImmediateMinDeposit(ctx sdk.Context, msg *codectypes.Any) sdk.Coins {
+	return k.getImmediateMinDeposit(ctx, msg)
 }
