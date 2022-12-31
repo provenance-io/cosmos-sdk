@@ -14,7 +14,7 @@ var _ sanction.MsgServer = Keeper{}
 
 func (k Keeper) Sanction(goCtx context.Context, req *sanction.MsgSanction) (*sanction.MsgSanctionResponse, error) {
 	if req.Authority != k.authority {
-		return nil, gov.ErrInvalidSigner.Wrapf("expected %s got %s", k.authority, req.Authority)
+		return nil, gov.ErrInvalidSigner.Wrapf("expected %q got %q", k.authority, req.Authority)
 	}
 
 	toSanction, err := toAccAddrs(req.Addresses)
@@ -33,7 +33,7 @@ func (k Keeper) Sanction(goCtx context.Context, req *sanction.MsgSanction) (*san
 
 func (k Keeper) Unsanction(goCtx context.Context, req *sanction.MsgUnsanction) (*sanction.MsgUnsanctionResponse, error) {
 	if req.Authority != k.authority {
-		return nil, gov.ErrInvalidSigner.Wrapf("expected %s got %s", k.authority, req.Authority)
+		return nil, gov.ErrInvalidSigner.Wrapf("expected %q got %q", k.authority, req.Authority)
 	}
 
 	toUnsanction, err := toAccAddrs(req.Addresses)
@@ -52,13 +52,13 @@ func (k Keeper) Unsanction(goCtx context.Context, req *sanction.MsgUnsanction) (
 
 func (k Keeper) UpdateParams(goCtx context.Context, req *sanction.MsgUpdateParams) (*sanction.MsgUpdateParamsResponse, error) {
 	if req.Authority != k.authority {
-		return nil, gov.ErrInvalidSigner.Wrapf("expected %s got %s", k.authority, req.Authority)
+		return nil, gov.ErrInvalidSigner.Wrapf("expected %q got %q", k.authority, req.Authority)
 	}
 
 	if req.Params != nil {
 		err := req.Params.ValidateBasic()
 		if err != nil {
-			return nil, errors.ErrInvalidParams
+			return nil, errors.ErrInvalidParams.Wrap(err.Error())
 		}
 	}
 
