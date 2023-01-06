@@ -28,3 +28,15 @@ func (k *MockGovKeeper) GetProposal(_ sdk.Context, proposalID uint64) (govv1.Pro
 	prop, ok := k.GetProposalReturns[proposalID]
 	return prop, ok
 }
+
+func (k *MockGovKeeper) GetDepositParams(_ sdk.Context) govv1.DepositParams {
+	return govv1.DefaultParams().DepositParams
+}
+
+func (k *MockGovKeeper) GetVotingParams(_ sdk.Context) govv1.VotingParams {
+	return govv1.DefaultParams().VotingParams
+}
+
+func (k *MockGovKeeper) GetProposalID(_ sdk.Context) (uint64, error) {
+	return 1, nil
+}

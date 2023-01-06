@@ -33,10 +33,11 @@ type AppModule struct {
 	keeper     keeper.Keeper
 	accKeeper  sanction.AccountKeeper
 	bankKeeper sanction.BankKeeper
+	govKeeper  sanction.GovKeeper
 	registry   cdctypes.InterfaceRegistry
 }
 
-func NewAppModule(cdc codec.Codec, sanctionKeeper keeper.Keeper, accKeeper sanction.AccountKeeper, bankKeeper sanction.BankKeeper, registry cdctypes.InterfaceRegistry) AppModule {
+func NewAppModule(cdc codec.Codec, sanctionKeeper keeper.Keeper, accKeeper sanction.AccountKeeper, bankKeeper sanction.BankKeeper, govKeeper sanction.GovKeeper, registry cdctypes.InterfaceRegistry) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{cdc: cdc},
 		keeper:         sanctionKeeper,
@@ -147,11 +148,16 @@ func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
 // ProposalContents returns all the sanction content functions used to
 // simulate governance proposals.
 func (am AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
+	// This is for stuff that uses the v1beta1 gov module's Content interface.
+	// This module use the v1 gov stuff, though, so there's nothing to do here.
+	// It's all handled in the WeightedOperations.
 	return nil
 }
 
 // RandomizedParams creates randomized sanction param changes for the simulator.
 func (AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
+	// While the x/sanction module does have "Params", it doesn't use the x/params module.
+	// So there's nothing to return here.
 	return nil
 }
 
@@ -164,6 +170,6 @@ func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
 	return simulation.WeightedOperations(
 		simState.AppParams, simState.Cdc,
-		am.accKeeper, am.bankKeeper, am.keeper, am.cdc,
+		am.accKeeper, am.bankKeeper, am.govKeeper, am.keeper, am.cdc,
 	)
 }

@@ -22,4 +22,7 @@ type BankKeeper interface {
 
 type GovKeeper interface {
 	GetProposal(ctx sdk.Context, proposalID uint64) (govv1.Proposal, bool)
+	GetDepositParams(ctx sdk.Context) govv1.DepositParams
+	GetVotingParams(ctx sdk.Context) govv1.VotingParams
+	GetProposalID(ctx sdk.Context) (uint64, error)
 }
