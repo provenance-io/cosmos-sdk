@@ -15,8 +15,12 @@ const (
 	SanctionParams      = "sanction-params"
 )
 
+// RandomSanctionedAddresses randomly selects accounts to be sanctioned.
+//
+// Each account has a:
+// * 20% chance of being sanctioned,
+// * 80% chance of being ignored.
 func RandomSanctionedAddresses(r *rand.Rand, accounts []simtypes.Account) []string {
-	// each account has a 20% chance of being sanctioned
 	var rv []string
 	for _, acct := range accounts {
 		if r.Int63n(5) == 0 {
@@ -26,8 +30,13 @@ func RandomSanctionedAddresses(r *rand.Rand, accounts []simtypes.Account) []stri
 	return rv
 }
 
+// RandomTempEntries randomly selects accounts to be temporarily sanctioned/unsanctioned.
+//
+// Each account has a:
+// * 10% chance of having a temp sanction,
+// * 10% chance of having a temp unsanction,
+// * 80% chance of being ignored.
 func RandomTempEntries(r *rand.Rand, accounts []simtypes.Account) []*sanction.TemporaryEntry {
-	// Each account has a 10% chance of a temp sanction, 10% chance of temp unsanction, or 80% of nothing.
 	var rv []*sanction.TemporaryEntry
 	for _, acct := range accounts {
 		switch r.Int63n(10) {
@@ -48,13 +57,25 @@ func RandomTempEntries(r *rand.Rand, accounts []simtypes.Account) []*sanction.Te
 	return rv
 }
 
+// RandomParams generates randomized parameters for the sanction module.
+//
+// ImmediateSanctionMinDeposit and ImmediateUnsanctionMinDeposit are decided individually.
+// Each has a:
+// * 20% chance of being empty/zero.
+// * 80% chance of being between 1 and 1000 (inclusive) of the default bond denom.
 func RandomParams(r *rand.Rand) *sanction.Params {
-	return &sanction.Params{
-		ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, r.Int63n(1_000_000_000))),
-		ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, r.Int63n(1_000_000_000))),
+	rv := &sanction.Params{}
+	if r.Int63n(5) != 0 {
+		rv.ImmediateSanctionMinDeposit = sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, r.Int63n(1_000)+1))
 	}
+	if r.Int63n(5) != 0 {
+		rv.ImmediateUnsanctionMinDeposit = sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, r.Int63n(1_000)+1))
+	}
+	return rv
 }
 
+// RandomizedGenState creates a randomized sanction genesis state and adds it to the
+// provided simState's GenState map.
 func RandomizedGenState(simState *module.SimulationState) {
 	genState := &sanction.GenesisState{}
 
