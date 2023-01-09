@@ -177,21 +177,21 @@ func operationMsgVote(args *WeightedOpsArgs, simAccount simtypes.Account, govPro
 	}
 }
 
-// maxCoins combines a and b taking the max of each denom.
+// MaxCoins combines a and b taking the max of each denom.
 // The result will have all the denoms from a and all the denoms from b.
 // The amount of each denom is the max between a and b for that denom.
-func maxCoins(a, b sdk.Coins) sdk.Coins {
+func MaxCoins(a, b sdk.Coins) sdk.Coins {
 	allDenomsMap := map[string]bool{}
 	for _, c := range a {
 		allDenomsMap[c.Denom] = true
 	}
-	for _, c := range a {
+	for _, c := range b {
 		allDenomsMap[c.Denom] = true
 	}
 	rv := make([]sdk.Coin, 0, len(allDenomsMap))
 	for denom := range allDenomsMap {
 		cA := a.AmountOf(denom)
-		cB := a.AmountOf(denom)
+		cB := b.AmountOf(denom)
 		if cA.GT(cB) {
 			rv = append(rv, sdk.NewCoin(denom, cA))
 		} else {
@@ -292,7 +292,7 @@ func SimulateGovMsgSanctionImmediate(args *WeightedOpsArgs) simtypes.Operation {
 			return simtypes.NoOpMsg(sanction.ModuleName, msgType, "cannot sanction without it being immediate"), nil, nil
 		}
 
-		deposit := maxCoins(imMinDep, govMinDep)
+		deposit := MaxCoins(imMinDep, govMinDep)
 
 		sender, senderI := simtypes.RandomAcc(r, accs)
 		// Create 1-10 new accounts to use.
@@ -442,7 +442,7 @@ func SimulateGovMsgUnsanctionImmediate(args *WeightedOpsArgs) simtypes.Operation
 			return simtypes.NoOpMsg(sanction.ModuleName, msgType, "cannot unsanction without it being immediate"), nil, nil
 		}
 
-		deposit := maxCoins(imMinDep, govMinDep)
+		deposit := MaxCoins(imMinDep, govMinDep)
 
 		sender, senderI := simtypes.RandomAcc(r, accs)
 		// Create 1-10 new accounts to use.
