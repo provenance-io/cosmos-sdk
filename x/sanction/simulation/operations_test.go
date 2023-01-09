@@ -1,17 +1,23 @@
 package simulation_test
 
 import (
+	"math/rand"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/bank/testutil"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	"github.com/cosmos/cosmos-sdk/x/sanction"
 	"github.com/cosmos/cosmos-sdk/x/sanction/simulation"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"math/rand"
-	"testing"
 )
 
 type SimTestSuite struct {
@@ -46,9 +52,84 @@ func (s *SimTestSuite) SetupTest() {
 	s.ctx = s.app.BaseApp.NewContext(false, tmproto.Header{})
 }
 
-// TODO[1046]: WeightedOperations
+func (s *SimTestSuite) setSanctionParamsAboveGovDeposit() {
+	sancParams := &sanction.Params{
+		ImmediateSanctionMinDeposit:   nil,
+		ImmediateUnsanctionMinDeposit: nil,
+	}
+
+	for _, coin := range s.app.GovKeeper.GetDepositParams(s.ctx).MinDeposit {
+		sanctCoin := sdk.NewCoin(coin.Denom, coin.Amount.AddRaw(5))
+		unsanctCoin := sdk.NewCoin(coin.Denom, coin.Amount.AddRaw(10))
+		sancParams.ImmediateSanctionMinDeposit = sancParams.ImmediateSanctionMinDeposit.Add(sanctCoin)
+		sancParams.ImmediateUnsanctionMinDeposit = sancParams.ImmediateUnsanctionMinDeposit.Add(unsanctCoin)
+	}
+
+	if sancParams.ImmediateSanctionMinDeposit.IsZero() {
+		sancParams.ImmediateSanctionMinDeposit = sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 5)}
+	}
+	if sancParams.ImmediateUnsanctionMinDeposit.IsZero() {
+		sancParams.ImmediateUnsanctionMinDeposit = sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 5)}
+	}
+
+	s.Require().NoError(s.app.SanctionKeeper.SetParams(s.ctx, sancParams), "SanctionKeeper.SetParams")
+}
+
+func (s *SimTestSuite) TestWeightedOperations() {
+	s.setSanctionParamsAboveGovDeposit()
+
+	govPropType := sdk.MsgTypeURL(&govv1.MsgSubmitProposal{})
+
+	expected := []struct {
+		comment string
+		weight  int
+	}{
+		{comment: "sanction", weight: simulation.DefaultWeightSanction},
+		{comment: "immediate sanction", weight: simulation.DefaultWeightSanctionImmediate},
+		{comment: "unsanction", weight: simulation.DefaultWeightUnsanction},
+		{comment: "immediate unsanction", weight: simulation.DefaultWeightUnsanctionImmediate},
+		{comment: "update params", weight: simulation.DefaultWeightUpdateParams},
+	}
+
+	weightedOps := simulation.WeightedOperations(
+		make(simtypes.AppParams), s.app.AppCodec(), codec.NewProtoCodec(s.app.InterfaceRegistry()),
+		s.app.AccountKeeper, s.app.BankKeeper, s.app.GovKeeper, s.app.SanctionKeeper,
+	)
+
+	s.Require().Len(weightedOps, len(expected), "weighted ops")
+
+	accountCount := 10
+	r := rand.New(rand.NewSource(1))
+	accs := s.getTestingAccounts(r, accountCount)
+
+	for i, actual := range weightedOps {
+		exp := expected[i]
+		s.Run(exp.comment, func() {
+			var operationMsg simtypes.OperationMsg
+			var futureOps []simtypes.FutureOperation
+			var err error
+			testFunc := func() {
+				operationMsg, futureOps, err = actual.Op()(r, s.app.BaseApp, s.ctx, accs, "")
+			}
+			s.Require().NotPanics(testFunc, "calling op")
+			s.Assert().NoError(err, "op error")
+			s.Assert().Equal(exp.weight, actual.Weight(), "op weight")
+			s.Assert().True(operationMsg.OK, "op msg ok")
+			s.Assert().Equal(exp.comment, operationMsg.Comment, "op msg comment")
+			s.Assert().Equal("gov", operationMsg.Route, "op msg route")
+			s.Assert().Equal(govPropType, operationMsg.Name, "op msg name")
+			s.Assert().Len(futureOps, accountCount, "future ops")
+		})
+	}
+}
+
+// TODO[1046]: SendGovMsg
+// TODO[1046]: OperationMsgVote
 
 func TestMaxCoins(t *testing.T) {
+	// Not using SimTestSuite for this one since it doesn't need the infrastructure.
+
+	// cz is a short way to convert a string to Coins.
 	cz := func(coins string) sdk.Coins {
 		rv, err := sdk.ParseCoinsNormalized(coins)
 		require.NoError(t, err, "ParseCoinsNormalized(%q)", coins)
@@ -134,7 +215,7 @@ func TestMaxCoins(t *testing.T) {
 			exp:  cz("2acoin,2share"),
 		},
 		{
-			name: "two denoms vs one denom smaller",
+			name: "two denoms vs one denom larger",
 			a:    cz("2acoin,2share"),
 			b:    cz("3share"),
 			exp:  cz("2acoin,3share"),
