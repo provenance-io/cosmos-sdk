@@ -6,7 +6,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/simapp/helpers"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
@@ -40,11 +39,10 @@ type WeightedOpsArgs struct {
 	bk        sanction.BankKeeper
 	gk        sanction.GovKeeper
 	sk        *keeper.Keeper
-	appCdc    cdctypes.AnyUnpacker
 }
 
-// sendGovMsgArgs holds all the args available and needed for sending a gov msg.
-type sendGovMsgArgs struct {
+// SendGovMsgArgs holds all the args available and needed for sending a gov msg.
+type SendGovMsgArgs struct {
 	r       *rand.Rand
 	app     *baseapp.BaseApp
 	ctx     sdk.Context
@@ -58,7 +56,7 @@ type sendGovMsgArgs struct {
 
 func WeightedOperations(
 	appParams simtypes.AppParams, cdc codec.JSONCodec,
-	ak sanction.AccountKeeper, bk sanction.BankKeeper, gk sanction.GovKeeper, sk keeper.Keeper, appCdc cdctypes.AnyUnpacker,
+	ak sanction.AccountKeeper, bk sanction.BankKeeper, gk sanction.GovKeeper, sk keeper.Keeper,
 ) simulation.WeightedOperations {
 	args := &WeightedOpsArgs{
 		appParams: appParams,
@@ -66,8 +64,7 @@ func WeightedOperations(
 		ak:        ak,
 		bk:        bk,
 		gk:        gk,
-		sk:        &keeper.Keeper{},
-		appCdc:    appCdc,
+		sk:        &sk,
 	}
 
 	var (
@@ -98,9 +95,9 @@ func WeightedOperations(
 	}
 }
 
-// sendGovMsg sends a msg as a gov prop.
+// SendGovMsg sends a msg as a gov prop.
 // It returns whether to skip the rest, an operation message, and any error encountered.
-func sendGovMsg(wopArgs *WeightedOpsArgs, args *sendGovMsgArgs) (bool, simtypes.OperationMsg, error) {
+func SendGovMsg(wopArgs *WeightedOpsArgs, args *SendGovMsgArgs) (bool, simtypes.OperationMsg, error) {
 	msgType := sdk.MsgTypeURL(args.msg)
 	msgAny, err := codectypes.NewAnyWithValue(args.msg)
 	if err != nil {
@@ -150,8 +147,8 @@ func sendGovMsg(wopArgs *WeightedOpsArgs, args *sendGovMsgArgs) (bool, simtypes.
 	return false, simtypes.NewOperationMsg(args.msg, true, "", nil), nil
 }
 
-// operationMsgVote returns an operation that casts a yes vote on a gov prop from an account.
-func operationMsgVote(args *WeightedOpsArgs, simAccount simtypes.Account, govPropID uint64, vote govv1.VoteOption) simtypes.Operation {
+// OperationMsgVote returns an operation that casts a yes vote on a gov prop from an account.
+func OperationMsgVote(args *WeightedOpsArgs, simAccount simtypes.Account, govPropID uint64, vote govv1.VoteOption) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context,
 		accs []simtypes.Account, chainID string,
@@ -239,7 +236,7 @@ func SimulateGovMsgSanction(args *WeightedOpsArgs) simtypes.Operation {
 			msg.Addresses = append(msg.Addresses, acct.Address.String())
 		}
 
-		skip, opMsg, err := sendGovMsg(args, &sendGovMsgArgs{
+		skip, opMsg, err := SendGovMsg(args, &SendGovMsgArgs{
 			r:       r,
 			app:     app,
 			ctx:     ctx,
@@ -262,7 +259,7 @@ func SimulateGovMsgSanction(args *WeightedOpsArgs) simtypes.Operation {
 			whenVote := ctx.BlockHeader().Time.Add(time.Duration(r.Int63n(int64(votingPeriod.Seconds()))) * time.Second)
 			fops[i] = simtypes.FutureOperation{
 				BlockTime: whenVote,
-				Op:        operationMsgVote(args, acct, proposalID, govv1.OptionYes),
+				Op:        OperationMsgVote(args, acct, proposalID, govv1.OptionYes),
 			}
 		}
 
@@ -315,7 +312,7 @@ func SimulateGovMsgSanctionImmediate(args *WeightedOpsArgs) simtypes.Operation {
 			msg.Addresses = append(msg.Addresses, acct.Address.String())
 		}
 
-		skip, opMsg, err := sendGovMsg(args, &sendGovMsgArgs{
+		skip, opMsg, err := SendGovMsg(args, &SendGovMsgArgs{
 			r:       r,
 			app:     app,
 			ctx:     ctx,
@@ -343,7 +340,7 @@ func SimulateGovMsgSanctionImmediate(args *WeightedOpsArgs) simtypes.Operation {
 			whenVote := ctx.BlockHeader().Time.Add(time.Duration(r.Int63n(int64(votingPeriod.Seconds()))) * time.Second)
 			fops[i] = simtypes.FutureOperation{
 				BlockTime: whenVote,
-				Op:        operationMsgVote(args, acct, proposalID, vote),
+				Op:        OperationMsgVote(args, acct, proposalID, vote),
 			}
 		}
 
@@ -389,7 +386,7 @@ func SimulateGovMsgUnsanction(args *WeightedOpsArgs) simtypes.Operation {
 			msg.Addresses = append(msg.Addresses, acct.Address.String())
 		}
 
-		skip, opMsg, err := sendGovMsg(args, &sendGovMsgArgs{
+		skip, opMsg, err := SendGovMsg(args, &SendGovMsgArgs{
 			r:       r,
 			app:     app,
 			ctx:     ctx,
@@ -412,7 +409,7 @@ func SimulateGovMsgUnsanction(args *WeightedOpsArgs) simtypes.Operation {
 			whenVote := ctx.BlockHeader().Time.Add(time.Duration(r.Int63n(int64(votingPeriod.Seconds()))) * time.Second)
 			fops[i] = simtypes.FutureOperation{
 				BlockTime: whenVote,
-				Op:        operationMsgVote(args, acct, proposalID, govv1.OptionYes),
+				Op:        OperationMsgVote(args, acct, proposalID, govv1.OptionYes),
 			}
 		}
 
@@ -465,7 +462,7 @@ func SimulateGovMsgUnsanctionImmediate(args *WeightedOpsArgs) simtypes.Operation
 			msg.Addresses = append(msg.Addresses, acct.Address.String())
 		}
 
-		skip, opMsg, err := sendGovMsg(args, &sendGovMsgArgs{
+		skip, opMsg, err := SendGovMsg(args, &SendGovMsgArgs{
 			r:       r,
 			app:     app,
 			ctx:     ctx,
@@ -493,7 +490,7 @@ func SimulateGovMsgUnsanctionImmediate(args *WeightedOpsArgs) simtypes.Operation
 			whenVote := ctx.BlockHeader().Time.Add(time.Duration(r.Int63n(int64(votingPeriod.Seconds()))) * time.Second)
 			fops[i] = simtypes.FutureOperation{
 				BlockTime: whenVote,
-				Op:        operationMsgVote(args, acct, proposalID, vote),
+				Op:        OperationMsgVote(args, acct, proposalID, vote),
 			}
 		}
 
@@ -516,7 +513,7 @@ func SimulateGovMsgUpdateParams(args *WeightedOpsArgs) simtypes.Operation {
 			Authority: args.sk.GetAuthority(),
 		}
 
-		skip, opMsg, err := sendGovMsg(args, &sendGovMsgArgs{
+		skip, opMsg, err := SendGovMsg(args, &SendGovMsgArgs{
 			r:       r,
 			app:     app,
 			ctx:     ctx,
@@ -539,7 +536,7 @@ func SimulateGovMsgUpdateParams(args *WeightedOpsArgs) simtypes.Operation {
 			whenVote := ctx.BlockHeader().Time.Add(time.Duration(r.Int63n(int64(votingPeriod.Seconds()))) * time.Second)
 			fops[i] = simtypes.FutureOperation{
 				BlockTime: whenVote,
-				Op:        operationMsgVote(args, acct, proposalID, govv1.OptionYes),
+				Op:        OperationMsgVote(args, acct, proposalID, govv1.OptionYes),
 			}
 		}
 

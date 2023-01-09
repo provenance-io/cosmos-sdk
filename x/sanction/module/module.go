@@ -170,6 +170,6 @@ func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
 	return simulation.WeightedOperations(
 		simState.AppParams, simState.Cdc,
-		am.accKeeper, am.bankKeeper, am.govKeeper, am.keeper, am.cdc,
+		am.accKeeper, am.bankKeeper, am.govKeeper, am.keeper,
 	)
 }
