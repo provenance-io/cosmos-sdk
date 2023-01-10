@@ -149,14 +149,44 @@ func TestMaxCoins(t *testing.T) {
 			exp:  sdk.Coins{},
 		},
 		{
+			name: "nil empty",
+			a:    nil,
+			b:    sdk.Coins{},
+			exp:  sdk.Coins{},
+		},
+		{
+			name: "empty nil",
+			a:    sdk.Coins{},
+			b:    nil,
+			exp:  sdk.Coins{},
+		},
+		{
+			name: "empty empty",
+			a:    sdk.Coins{},
+			b:    sdk.Coins{},
+			exp:  sdk.Coins{},
+		},
+		{
 			name: "one denom nil",
 			a:    cz("5acoin"),
 			b:    nil,
 			exp:  cz("5acoin"),
 		},
 		{
+			name: "one denom empty",
+			a:    cz("5acoin"),
+			b:    sdk.Coins{},
+			exp:  cz("5acoin"),
+		},
+		{
 			name: "nil one denom",
 			a:    nil,
+			b:    cz("3bcoin"),
+			exp:  cz("3bcoin"),
+		},
+		{
+			name: "empty one denom",
+			a:    sdk.Coins{},
 			b:    cz("3bcoin"),
 			exp:  cz("3bcoin"),
 		},
@@ -167,10 +197,28 @@ func TestMaxCoins(t *testing.T) {
 			exp:  cz("1aone,2atwo"),
 		},
 		{
+			name: "two denoms empty",
+			a:    cz("1aone,2atwo"),
+			b:    sdk.Coins{},
+			exp:  cz("1aone,2atwo"),
+		},
+		{
 			name: "nil two denoms",
 			a:    nil,
 			b:    cz("4bone,5btwo"),
 			exp:  cz("4bone,5btwo"),
+		},
+		{
+			name: "empty two denoms",
+			a:    sdk.Coins{},
+			b:    cz("4bone,5btwo"),
+			exp:  cz("4bone,5btwo"),
+		},
+		{
+			name: "different denoms",
+			a:    cz("99acoin"),
+			b:    cz("101bcoin"),
+			exp:  cz("99acoin,101bcoin"),
 		},
 		{
 			name: "both have same denom a bigger",
@@ -189,12 +237,6 @@ func TestMaxCoins(t *testing.T) {
 			a:    cz("3aonecoin,8atwocoin"),
 			b:    cz("4bonecoin,9btwocoin"),
 			exp:  cz("3aonecoin,8atwocoin,4bonecoin,9btwocoin"),
-		},
-		{
-			name: "each has multiple denoms only one is common a bigger",
-			a:    cz("9aonlycoin,22sharecoin"),
-			b:    cz("6bonlycoin,21sharecoin,7bonlytwo"),
-			exp:  cz("9aonlycoin,6bonlycoin,7bonlytwo,22sharecoin"),
 		},
 		{
 			name: "one denom smaller vs two denoms",
@@ -219,6 +261,18 @@ func TestMaxCoins(t *testing.T) {
 			a:    cz("2acoin,2share"),
 			b:    cz("3share"),
 			exp:  cz("2acoin,3share"),
+		},
+		{
+			name: "multiple denoms one shared a bigger",
+			a:    cz("9aonlycoin,22sharecoin"),
+			b:    cz("6bonlycoin,7bonlytwo,21sharecoin"),
+			exp:  cz("9aonlycoin,6bonlycoin,7bonlytwo,22sharecoin"),
+		},
+		{
+			name: "multiple denoms one shared b bigger",
+			a:    cz("9aonlycoin,22sharecoin"),
+			b:    cz("6bonlycoin,7bonlytwo,23sharecoin"),
+			exp:  cz("9aonlycoin,6bonlycoin,7bonlytwo,23sharecoin"),
 		},
 	}
 
