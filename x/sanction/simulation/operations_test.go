@@ -85,6 +85,14 @@ func (s *SimTestSuite) setSanctionParamsAboveGovDeposit() {
 	s.Require().NoError(s.app.SanctionKeeper.SetParams(s.ctx, sancParams), "SanctionKeeper.SetParams")
 }
 
+func (s *SimTestSuite) getLastGovProp() *govv1.Proposal {
+	props := s.app.GovKeeper.GetProposals(s.ctx)
+	if len(props) == 0 {
+		return nil
+	}
+	return props[len(props)-1]
+}
+
 func (s *SimTestSuite) TestWeightedOperations() {
 	s.setSanctionParamsAboveGovDeposit()
 
@@ -285,9 +293,8 @@ func (s *SimTestSuite) TestSendGovMsg() {
 				// If we don't expect a skip, and we didn't get one,
 				// get the last gov prop and make sure it's the one we just sent.
 				expMsgs := []sdk.Msg{tc.msg}
-				props := s.app.GovKeeper.GetProposals(s.ctx)
-				if s.Assert().NotEmpty(props, "GovKeeper.GetProposals result should at least have the entry we just tried to create") {
-					prop := props[len(props)-1]
+				prop := s.getLastGovProp()
+				if s.Assert().NotNil(prop, "last gov prop") {
 					msgs, err := prop.GetMsgs()
 					if s.Assert().NoError(err, "error from prop.GetMsgs() on the last gov prop") {
 						s.Assert().Equal(expMsgs, msgs, "messages in the last gov prop")
@@ -298,7 +305,203 @@ func (s *SimTestSuite) TestSendGovMsg() {
 	}
 }
 
-// TODO[1046]: OperationMsgVote
+func (s *SimTestSuite) TestOperationMsgVote() {
+	s.setSanctionParamsAboveGovDeposit()
+
+	// I don't think the ChainID matters in here, but just for consistency...
+	chainID := "test-op-msg-vote"
+
+	sancParams := s.app.SanctionKeeper.GetParams(s.ctx)
+	sanctMinDep := sancParams.ImmediateSanctionMinDeposit
+	unsanctMinDep := sancParams.ImmediateUnsanctionMinDeposit
+
+	r := rand.New(rand.NewSource(1))
+	accounts := s.getTestingAccounts(r, 10)
+
+	// Create a couple gov props that we can vote on.
+	// Note that I'm sending enough deposit for them to be immediate.
+	// That shouldn't come into play, but if weird things are happening in here....
+	wopArgs := simulation.WeightedOpsArgs{
+		AppParams:  make(simtypes.AppParams),
+		JSONCodec:  s.app.AppCodec(),
+		ProtoCodec: codec.NewProtoCodec(s.app.InterfaceRegistry()),
+		AK:         s.app.AccountKeeper,
+		BK:         s.app.BankKeeper,
+		GK:         s.app.GovKeeper,
+		SK:         &s.app.SanctionKeeper,
+	}
+	var skip bool
+	var opMsg simtypes.OperationMsg
+	var err error
+	testSendGovSanct := func() {
+		skip, opMsg, err = simulation.SendGovMsg(&simulation.SendGovMsgArgs{
+			WeightedOpsArgs: wopArgs,
+			R:               r,
+			App:             s.app.BaseApp,
+			Ctx:             s.ctx,
+			Accs:            accounts,
+			ChainID:         chainID,
+			Sender:          accounts[0],
+			Msg: &sanction.MsgSanction{
+				Addresses: []string{accounts[8].Address.String(), accounts[9].Address.String()},
+				Authority: s.app.SanctionKeeper.GetAuthority(),
+			},
+			Deposit: sanctMinDep,
+			Comment: "sanction",
+		})
+	}
+	testSendGovUnsanct := func() {
+		skip, opMsg, err = simulation.SendGovMsg(&simulation.SendGovMsgArgs{
+			WeightedOpsArgs: wopArgs,
+			R:               r,
+			App:             s.app.BaseApp,
+			Ctx:             s.ctx,
+			Accs:            accounts,
+			ChainID:         chainID,
+			Sender:          accounts[0],
+			Msg: &sanction.MsgUnsanction{
+				Addresses: []string{accounts[6].Address.String(), accounts[7].Address.String()},
+				Authority: s.app.SanctionKeeper.GetAuthority(),
+			},
+			Deposit: unsanctMinDep,
+			Comment: "unsanction",
+		})
+	}
+
+	s.Require().NotPanics(testSendGovSanct, "SendGovMsg with MsgSanction")
+	s.Require().NoError(err, "SendGovMsg with MsgSanction result error")
+	s.Require().False(skip, "SendGovMsg with MsgSanction result skip")
+	s.Require().Equal("sanction", opMsg.Comment, "SendGovMsg with MsgSanction result op msg comment")
+	govPropSanct := s.getLastGovProp()
+
+	s.Require().NotPanics(testSendGovUnsanct, "SendGovMsg with MsgUnsanction")
+	s.Require().NoError(err, "SendGovMsg with MsgUnsanction result error")
+	s.Require().False(skip, "SendGovMsg with MsgUnsanction result skip")
+	s.Require().Equal("unsanction", opMsg.Comment, "SendGovMsg with MsgUnsanction result op msg comment")
+	govPropUnsanct := s.getLastGovProp()
+
+	tests := []struct {
+		name            string
+		voter           simtypes.Account
+		govPropID       uint64
+		vote            govv1.VoteOption
+		comment         string
+		expInErr        []string
+		expOpMsgOK      bool
+		expOpMsgRoute   string
+		expOpMsgName    string
+		expOpMsgComment string
+	}{
+		{
+			name: "gen and deliver returns error",
+			voter: simtypes.Account{
+				PrivKey: accounts[1].PrivKey,
+				PubKey:  accounts[0].PubKey,
+				Address: accounts[0].Address,
+				ConsKey: accounts[1].ConsKey,
+			},
+			govPropID:       govPropSanct.Id,
+			vote:            govv1.OptionYes,
+			comment:         "this should be ignored",
+			expInErr:        []string{"pubKey does not match signer address", "invalid pubkey"},
+			expOpMsgOK:      false,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgVote{}),
+			expOpMsgComment: "unable to deliver tx",
+		},
+		{
+			name:            "sanction yes",
+			voter:           accounts[0],
+			govPropID:       govPropSanct.Id,
+			vote:            govv1.OptionYes,
+			comment:         "sanction-yes",
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgVote{}),
+			expOpMsgComment: "sanction-yes",
+		},
+		{
+			name:            "sanction no",
+			voter:           accounts[1],
+			govPropID:       govPropSanct.Id,
+			vote:            govv1.OptionNo,
+			comment:         "sanction-no",
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgVote{}),
+			expOpMsgComment: "sanction-no",
+		},
+		{
+			name:            "unsanction yes",
+			voter:           accounts[0],
+			govPropID:       govPropUnsanct.Id,
+			vote:            govv1.OptionYes,
+			comment:         "unsanction-yes",
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgVote{}),
+			expOpMsgComment: "unsanction-yes",
+		},
+		{
+			name:            "unsanction no",
+			voter:           accounts[1],
+			govPropID:       govPropUnsanct.Id,
+			vote:            govv1.OptionNo,
+			comment:         "unsanction-no",
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgVote{}),
+			expOpMsgComment: "unsanction-no",
+		},
+		{
+			// Since we sent enough deposit to make it immediate,
+			// accounts[9] should have at least a temp sanction.
+			// So it shouldn't be able to pay the fees on any message.
+			name:            "attempt to vote from a sanctioned account",
+			voter:           accounts[9],
+			govPropID:       govPropSanct.Id,
+			vote:            govv1.OptionNo,
+			comment:         "don't sanction me bro",
+			expInErr:        []string{"account is sanctioned", "insufficient funds"},
+			expOpMsgOK:      false,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgVote{}),
+			expOpMsgComment: "unable to deliver tx",
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			var op simtypes.Operation
+			testFunc := func() {
+				op = simulation.OperationMsgVote(&wopArgs, tc.voter, tc.govPropID, tc.vote, tc.comment)
+			}
+			s.Require().NotPanics(testFunc, "OperationMsgVote")
+			var fops []simtypes.FutureOperation
+			testOp := func() {
+				opMsg, fops, err = op(rand.New(rand.NewSource(1)), s.app.BaseApp, s.ctx, accounts, chainID)
+			}
+			s.Require().NotPanics(testOp, "calling Operation returned by OperationMsgVote")
+			testutil.AssertErrorContents(s.T(), err, tc.expInErr, "op error")
+			s.Assert().Equal(tc.expOpMsgOK, opMsg.OK, "op msg ok")
+			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "op msg route")
+			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "op msg name")
+			s.Assert().Equal(tc.expOpMsgComment, opMsg.Comment, "op msg comment")
+			if tc.expOpMsgOK && opMsg.OK {
+				// If we were expecting a success and there was a success,
+				// get the prop again and check that the vote went through.
+				vote, found := s.app.GovKeeper.GetVote(s.ctx, tc.govPropID, tc.voter.Address)
+				if s.Assert().True(found, "GetVote(%d) found bool", tc.govPropID) {
+					if s.Assert().Len(vote.Options, 1, "vote options") {
+						s.Assert().Equal(tc.vote, vote.Options[0].Option, "vote option")
+						s.Assert().Equal("1.000000000000000000", vote.Options[0].Weight, "vote option weight")
+					}
+				}
+			}
+			s.Assert().Empty(fops, "future ops")
+		})
+	}
+}
 
 func TestMaxCoins(t *testing.T) {
 	// Not using SimTestSuite for this one since it doesn't need the infrastructure.
