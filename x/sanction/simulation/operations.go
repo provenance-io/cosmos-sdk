@@ -288,6 +288,13 @@ func SimulateGovMsgSanctionImmediate(args *WeightedOpsArgs) simtypes.Operation {
 		}
 		msgType := sdk.MsgTypeURL(msg)
 
+		// Decide early what whether we're going to vote yes or no on this.
+		// By doing it early, we use r before anything else can, which makes testing easier.
+		vote := govv1.OptionYes
+		if r.Intn(2) == 0 {
+			vote = govv1.OptionNo
+		}
+
 		// Make sure an immediate sanction is possible.
 		imMinDep := args.sk.GetImmediateSanctionMinDeposit(ctx)
 		if imMinDep.IsZero() {
@@ -343,11 +350,6 @@ func SimulateGovMsgSanctionImmediate(args *WeightedOpsArgs) simtypes.Operation {
 		}
 
 		proposalID, err := args.gk.GetProposalID(ctx)
-
-		vote := govv1.OptionYes
-		if r.Intn(2) == 0 {
-			vote = govv1.OptionNo
-		}
 
 		votingPeriod := args.gk.GetVotingParams(ctx).VotingPeriod
 		fops := make([]simtypes.FutureOperation, len(accs))
@@ -446,6 +448,13 @@ func SimulateGovMsgUnsanctionImmediate(args *WeightedOpsArgs) simtypes.Operation
 		}
 		msgType := sdk.MsgTypeURL(msg)
 
+		// Decide early what whether we're going to vote yes or no on this.
+		// By doing it early, we use r before anything else can, which makes testing easier.
+		vote := govv1.OptionYes
+		if r.Intn(2) == 0 {
+			vote = govv1.OptionNo
+		}
+
 		// Make sure an immediate unsanction is possible.
 		imMinDep := args.sk.GetImmediateUnsanctionMinDeposit(ctx)
 		if imMinDep.IsZero() {
@@ -501,11 +510,6 @@ func SimulateGovMsgUnsanctionImmediate(args *WeightedOpsArgs) simtypes.Operation
 		}
 
 		proposalID, err := args.gk.GetProposalID(ctx)
-
-		vote := govv1.OptionYes
-		if r.Intn(2) == 0 {
-			vote = govv1.OptionNo
-		}
 
 		votingPeriod := args.gk.GetVotingParams(ctx).VotingPeriod
 		fops := make([]simtypes.FutureOperation, len(accs))
