@@ -155,11 +155,6 @@ func (s *SimTestSuite) TestSendGovMsg() {
 		acctOneBalancePlusOne = acctOneBalancePlusOne.Add(sdk.NewCoin(c.Denom, c.Amount.AddRaw(1)))
 	}
 
-	msgSanction := &sanction.MsgSanction{
-		Addresses: []string{accounts[4].Address.String(), accounts[5].Address.String()},
-		Authority: s.app.SanctionKeeper.GetAuthority(),
-	}
-
 	tests := []struct {
 		name            string
 		sender          simtypes.Account
@@ -173,26 +168,32 @@ func (s *SimTestSuite) TestSendGovMsg() {
 		expInErr        []string
 	}{
 		{
-			name:            "no spendable coins",
-			sender:          acctZero,
-			msg:             msgSanction,
+			name:   "no spendable coins",
+			sender: acctZero,
+			msg: &sanction.MsgSanction{
+				Addresses: []string{accounts[4].Address.String(), accounts[5].Address.String()},
+				Authority: s.app.SanctionKeeper.GetAuthority(),
+			},
 			deposit:         sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 5)},
 			comment:         "should not matter",
 			expSkip:         true,
 			expOpMsgRoute:   "sanction",
-			expOpMsgName:    sdk.MsgTypeURL(msgSanction),
+			expOpMsgName:    sdk.MsgTypeURL(&sanction.MsgSanction{}),
 			expOpMsgComment: "sender has no spendable coins",
 			expInErr:        nil,
 		},
 		{
-			name:            "not enough coins for deposit",
-			sender:          acctOne,
-			msg:             msgSanction,
+			name:   "not enough coins for deposit",
+			sender: acctOne,
+			msg: &sanction.MsgSanction{
+				Addresses: []string{accounts[5].Address.String(), accounts[6].Address.String()},
+				Authority: s.app.SanctionKeeper.GetAuthority(),
+			},
 			deposit:         acctOneBalancePlusOne,
 			comment:         "should not be this",
 			expSkip:         true,
 			expOpMsgRoute:   "sanction",
-			expOpMsgName:    sdk.MsgTypeURL(msgSanction),
+			expOpMsgName:    sdk.MsgTypeURL(&sanction.MsgSanction{}),
 			expOpMsgComment: "sender has insufficient balance to cover deposit",
 			expInErr:        nil,
 		},
@@ -216,24 +217,30 @@ func (s *SimTestSuite) TestSendGovMsg() {
 				Address: acctOne.Address,
 				ConsKey: accounts[0].ConsKey,
 			},
-			msg:             msgSanction,
+			msg: &sanction.MsgSanction{
+				Addresses: []string{accounts[6].Address.String(), accounts[7].Address.String()},
+				Authority: s.app.SanctionKeeper.GetAuthority(),
+			},
 			deposit:         acctOneBalance,
 			comment:         "this should be ignored",
 			expSkip:         true,
 			expOpMsgRoute:   "sanction",
-			expOpMsgName:    "/cosmos.gov.v1.MsgSubmitProposal",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
 			expOpMsgComment: "unable to deliver tx",
 			expInErr:        []string{"pubKey does not match signer address", "invalid pubkey"},
 		},
 		{
-			name:            "all good",
-			sender:          accounts[1],
-			msg:             msgSanction,
+			name:   "all good",
+			sender: accounts[1],
+			msg: &sanction.MsgSanction{
+				Addresses: []string{accounts[2].Address.String(), accounts[3].Address.String()},
+				Authority: s.app.SanctionKeeper.GetAuthority(),
+			},
 			deposit:         sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 5)},
 			comment:         "this is a test comment",
 			expSkip:         false,
 			expOpMsgRoute:   "gov",
-			expOpMsgName:    "/cosmos.gov.v1.MsgSubmitProposal",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
 			expOpMsgComment: "this is a test comment",
 			expInErr:        nil,
 		},
@@ -274,6 +281,19 @@ func (s *SimTestSuite) TestSendGovMsg() {
 			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "SendGovMsg result op msg route")
 			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "SendGovMsg result op msg name")
 			s.Assert().Equal(tc.expOpMsgComment, opMsg.Comment, "SendGovMsg result op msg comment")
+			if !tc.expSkip && !skip {
+				// If we don't expect a skip, and we didn't get one,
+				// get the last gov prop and make sure it's the one we just sent.
+				expMsgs := []sdk.Msg{tc.msg}
+				props := s.app.GovKeeper.GetProposals(s.ctx)
+				if s.Assert().NotEmpty(props, "GovKeeper.GetProposals result should at least have the entry we just tried to create") {
+					prop := props[len(props)-1]
+					msgs, err := prop.GetMsgs()
+					if s.Assert().NoError(err, "error from prop.GetMsgs() on the last gov prop") {
+						s.Assert().Equal(expMsgs, msgs, "messages in the last gov prop")
+					}
+				}
+			}
 		})
 	}
 }
