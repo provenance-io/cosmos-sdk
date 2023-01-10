@@ -150,12 +150,12 @@ func SendGovMsg(args *SendGovMsgArgs) (bool, simtypes.OperationMsg, error) {
 }
 
 // OperationMsgVote returns an operation that casts a yes vote on a gov prop from an account.
-func OperationMsgVote(args *WeightedOpsArgs, simAccount simtypes.Account, govPropID uint64, vote govv1.VoteOption, comment string) simtypes.Operation {
+func OperationMsgVote(args *WeightedOpsArgs, voter simtypes.Account, govPropID uint64, vote govv1.VoteOption, comment string) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context,
 		accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
-		msg := govv1.NewMsgVote(simAccount.Address, govPropID, vote, "")
+		msg := govv1.NewMsgVote(voter.Address, govPropID, vote, "")
 
 		txCtx := simulation.OperationInput{
 			R:               r,
@@ -166,7 +166,7 @@ func OperationMsgVote(args *WeightedOpsArgs, simAccount simtypes.Account, govPro
 			MsgType:         msg.Type(),
 			CoinsSpentInMsg: sdk.Coins{},
 			Context:         ctx,
-			SimAccount:      simAccount,
+			SimAccount:      voter,
 			AccountKeeper:   args.AK,
 			Bankkeeper:      args.BK,
 			ModuleName:      sanction.ModuleName,
