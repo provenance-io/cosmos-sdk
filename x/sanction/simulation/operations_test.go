@@ -14,10 +14,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/bank/testutil"
+	bankutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/sanction"
 	"github.com/cosmos/cosmos-sdk/x/sanction/simulation"
+	"github.com/cosmos/cosmos-sdk/x/sanction/testutil"
 )
 
 type SimTestSuite struct {
@@ -31,27 +32,36 @@ func TestSimTestSuite(t *testing.T) {
 	suite.Run(t, new(SimTestSuite))
 }
 
-func (s *SimTestSuite) getTestingAccounts(r *rand.Rand, n int) []simtypes.Account {
-	accounts := simtypes.RandomAccounts(r, n)
+func (s *SimTestSuite) SetupTest() {
+	s.app = simapp.Setup(s.T(), false)
+	s.ctx = s.app.BaseApp.NewContext(false, tmproto.Header{})
+}
 
-	initAmt := sdk.TokensFromConsensusPower(200, sdk.DefaultPowerReduction)
+// getTestingAccounts creates testing accounts with a default balance.
+func (s *SimTestSuite) getTestingAccounts(r *rand.Rand, count int) []simtypes.Account {
+	return s.getTestingAccountsWithPower(r, count, 200)
+}
+
+// getTestingAccountsWithPower creates new accounts with the specified power (coins amount).
+func (s *SimTestSuite) getTestingAccountsWithPower(r *rand.Rand, count int, power int64) []simtypes.Account {
+	accounts := simtypes.RandomAccounts(r, count)
+
+	initAmt := sdk.TokensFromConsensusPower(power, sdk.DefaultPowerReduction)
 	initCoins := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, initAmt))
 
 	// add coins to the accounts
 	for _, account := range accounts {
 		acc := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, account.Address)
 		s.app.AccountKeeper.SetAccount(s.ctx, acc)
-		s.Require().NoError(testutil.FundAccount(s.app.BankKeeper, s.ctx, account.Address, initCoins))
+		s.Require().NoError(bankutil.FundAccount(s.app.BankKeeper, s.ctx, account.Address, initCoins))
 	}
 
 	return accounts
 }
 
-func (s *SimTestSuite) SetupTest() {
-	s.app = simapp.Setup(s.T(), false)
-	s.ctx = s.app.BaseApp.NewContext(false, tmproto.Header{})
-}
-
+// setSanctionParamsAboveGovDeposit looks up the x/gov min deposit and sets the
+// sanction params to be larger by 5 (for sanction) and 10 (for unsanction).
+// If there's no gov min dep, sets params to 5stake and 10stake respectively.
 func (s *SimTestSuite) setSanctionParamsAboveGovDeposit() {
 	sancParams := &sanction.Params{
 		ImmediateSanctionMinDeposit:   nil,
@@ -69,7 +79,7 @@ func (s *SimTestSuite) setSanctionParamsAboveGovDeposit() {
 		sancParams.ImmediateSanctionMinDeposit = sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 5)}
 	}
 	if sancParams.ImmediateUnsanctionMinDeposit.IsZero() {
-		sancParams.ImmediateUnsanctionMinDeposit = sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 5)}
+		sancParams.ImmediateUnsanctionMinDeposit = sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 10)}
 	}
 
 	s.Require().NoError(s.app.SanctionKeeper.SetParams(s.ctx, sancParams), "SanctionKeeper.SetParams")
@@ -112,6 +122,7 @@ func (s *SimTestSuite) TestWeightedOperations() {
 				operationMsg, futureOps, err = actual.Op()(r, s.app.BaseApp, s.ctx, accs, "")
 			}
 			s.Require().NotPanics(testFunc, "calling op")
+			s.T().Logf("operationMsg.Msg: %s", operationMsg.Msg)
 			s.Assert().NoError(err, "op error")
 			s.Assert().Equal(exp.weight, actual.Weight(), "op weight")
 			s.Assert().True(operationMsg.OK, "op msg ok")
@@ -119,11 +130,154 @@ func (s *SimTestSuite) TestWeightedOperations() {
 			s.Assert().Equal("gov", operationMsg.Route, "op msg route")
 			s.Assert().Equal(govPropType, operationMsg.Name, "op msg name")
 			s.Assert().Len(futureOps, accountCount, "future ops")
+			// Note: As of writing this, the content of operationMsg.Msg comes from MsgSubmitProposal.GetSignBytes.
+			// But for some reason, it's also wrapped in '{"type":"{msg.Type}","value":"{msg.GetSignBytes}"}'.
+			// The sign bytes are json, but the MsgSubmitProposal.Messages field's json marshals as just the value
+			// instead of the Any that it is (i.e. there's no type_url). That makes it impossible to know from
+			// that operationMsg.Msg field what type of messages are in the proposal Messages.
+			// For this specific case, both MsgSanction and MsgUnsanction look exactly the same,
+			// it's just: '{"addresses":[...]}'
+			// So, long story short (too late), there's nothing worthwhile to check in the operationMsg.Msg field.
 		})
 	}
 }
 
-// TODO[1046]: SendGovMsg
+func (s *SimTestSuite) TestSendGovMsg() {
+	r := rand.New(rand.NewSource(1))
+	accounts := s.getTestingAccounts(r, 10)
+	accounts = append(accounts, s.getTestingAccountsWithPower(r, 1, 0)...)
+	accounts = append(accounts, s.getTestingAccountsWithPower(r, 1, 1)...)
+	acctZero := accounts[len(accounts)-2]
+	acctOne := accounts[len(accounts)-1]
+	acctOneBalance := s.app.BankKeeper.SpendableCoins(s.ctx, acctOne.Address)
+	var acctOneBalancePlusOne sdk.Coins
+	for _, c := range acctOneBalance {
+		acctOneBalancePlusOne = acctOneBalancePlusOne.Add(sdk.NewCoin(c.Denom, c.Amount.AddRaw(1)))
+	}
+
+	msgSanction := &sanction.MsgSanction{
+		Addresses: []string{accounts[4].Address.String(), accounts[5].Address.String()},
+		Authority: s.app.SanctionKeeper.GetAuthority(),
+	}
+
+	tests := []struct {
+		name            string
+		sender          simtypes.Account
+		msg             sdk.Msg
+		deposit         sdk.Coins
+		comment         string
+		expSkip         bool
+		expOpMsgRoute   string
+		expOpMsgName    string
+		expOpMsgComment string
+		expInErr        []string
+	}{
+		{
+			name:            "no spendable coins",
+			sender:          acctZero,
+			msg:             msgSanction,
+			deposit:         sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 5)},
+			comment:         "should not matter",
+			expSkip:         true,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    sdk.MsgTypeURL(msgSanction),
+			expOpMsgComment: "sender has no spendable coins",
+			expInErr:        nil,
+		},
+		{
+			name:            "not enough coins for deposit",
+			sender:          acctOne,
+			msg:             msgSanction,
+			deposit:         acctOneBalancePlusOne,
+			comment:         "should not be this",
+			expSkip:         true,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    sdk.MsgTypeURL(msgSanction),
+			expOpMsgComment: "sender has insufficient balance to cover deposit",
+			expInErr:        nil,
+		},
+		{
+			name:            "nil msg",
+			sender:          accounts[0],
+			msg:             nil,
+			deposit:         sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 5)},
+			comment:         "will not get returned",
+			expSkip:         true,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    "/",
+			expOpMsgComment: "wrapping MsgSanction as Any",
+			expInErr:        []string{"Expecting non nil value to create a new Any", "failed packing protobuf message to Any"},
+		},
+		{
+			name: "gen and deliver returns error",
+			sender: simtypes.Account{
+				PrivKey: accounts[0].PrivKey,
+				PubKey:  acctOne.PubKey,
+				Address: acctOne.Address,
+				ConsKey: accounts[0].ConsKey,
+			},
+			msg:             msgSanction,
+			deposit:         acctOneBalance,
+			comment:         "this should be ignored",
+			expSkip:         true,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    "/cosmos.gov.v1.MsgSubmitProposal",
+			expOpMsgComment: "unable to deliver tx",
+			expInErr:        []string{"pubKey does not match signer address", "invalid pubkey"},
+		},
+		{
+			name:            "all good",
+			sender:          accounts[1],
+			msg:             msgSanction,
+			deposit:         sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 5)},
+			comment:         "this is a test comment",
+			expSkip:         false,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    "/cosmos.gov.v1.MsgSubmitProposal",
+			expOpMsgComment: "this is a test comment",
+			expInErr:        nil,
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			args := &simulation.SendGovMsgArgs{
+				WeightedOpsArgs: simulation.WeightedOpsArgs{
+					AppParams:  make(simtypes.AppParams),
+					JSONCodec:  s.app.AppCodec(),
+					ProtoCodec: codec.NewProtoCodec(s.app.InterfaceRegistry()),
+					AK:         s.app.AccountKeeper,
+					BK:         s.app.BankKeeper,
+					GK:         s.app.GovKeeper,
+					SK:         &s.app.SanctionKeeper,
+				},
+				R:       rand.New(rand.NewSource(1)),
+				App:     s.app.BaseApp,
+				Ctx:     s.ctx,
+				Accs:    accounts,
+				ChainID: "send-gov-test",
+				Sender:  tc.sender,
+				Msg:     tc.msg,
+				Deposit: tc.deposit,
+				Comment: tc.comment,
+			}
+
+			var skip bool
+			var opMsg simtypes.OperationMsg
+			var err error
+			testFunc := func() {
+				skip, opMsg, err = simulation.SendGovMsg(args)
+			}
+			s.Require().NotPanics(testFunc, "SendGovMsg")
+			testutil.AssertErrorContents(s.T(), err, tc.expInErr, "SendGovMsg error")
+			s.Assert().Equal(tc.expSkip, skip, "SendGovMsg result skip bool")
+			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "SendGovMsg result op msg route")
+			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "SendGovMsg result op msg name")
+			s.Assert().Equal(tc.expOpMsgComment, opMsg.Comment, "SendGovMsg result op msg comment")
+		})
+	}
+}
+
 // TODO[1046]: OperationMsgVote
 
 func TestMaxCoins(t *testing.T) {
