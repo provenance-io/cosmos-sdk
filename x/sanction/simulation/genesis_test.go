@@ -116,10 +116,19 @@ func TestRandomizer(t *testing.T) {
 		return rv
 	}
 
-	t.Run("values used in RandomParams", func(t *testing.T) {
+	t.Run("values used in RandomParams default seed", func(t *testing.T) {
 		expectedRands := []int64{0, 1, 821}
 
 		r := rand.New(rand.NewSource(getSeedValue()))
+		actualRands := randomParamsRands(r)
+		assert.Equal(t, expectedRands, actualRands, "random numbers generated")
+	})
+
+	t.Run("values used in RandomParams seed 100", func(t *testing.T) {
+		// A little crossover here. This knowledge is useful in the operations tests for updating params.
+		expectedRands := []int64{3, 24, 4, 39}
+
+		r := rand.New(rand.NewSource(100))
 		actualRands := randomParamsRands(r)
 		assert.Equal(t, expectedRands, actualRands, "random numbers generated")
 	})
