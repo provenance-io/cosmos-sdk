@@ -263,6 +263,9 @@ func SimulateGovMsgSanction(args *WeightedOpsArgs) simtypes.Operation {
 		}
 
 		proposalID, err := args.GK.GetProposalID(ctx)
+		if err != nil {
+			return opMsg, nil, err
+		}
 
 		votingPeriod := args.GK.GetVotingParams(ctx).VotingPeriod
 		fops := make([]simtypes.FutureOperation, len(accs))
@@ -350,6 +353,9 @@ func SimulateGovMsgSanctionImmediate(args *WeightedOpsArgs) simtypes.Operation {
 		}
 
 		proposalID, err := args.GK.GetProposalID(ctx)
+		if err != nil {
+			return opMsg, nil, err
+		}
 
 		votingPeriod := args.GK.GetVotingParams(ctx).VotingPeriod
 		fops := make([]simtypes.FutureOperation, len(accs))
@@ -423,6 +429,9 @@ func SimulateGovMsgUnsanction(args *WeightedOpsArgs) simtypes.Operation {
 		}
 
 		proposalID, err := args.GK.GetProposalID(ctx)
+		if err != nil {
+			return opMsg, nil, err
+		}
 
 		votingPeriod := args.GK.GetVotingParams(ctx).VotingPeriod
 		fops := make([]simtypes.FutureOperation, len(accs))
@@ -510,6 +519,9 @@ func SimulateGovMsgUnsanctionImmediate(args *WeightedOpsArgs) simtypes.Operation
 		}
 
 		proposalID, err := args.GK.GetProposalID(ctx)
+		if err != nil {
+			return opMsg, nil, err
+		}
 
 		votingPeriod := args.GK.GetVotingParams(ctx).VotingPeriod
 		fops := make([]simtypes.FutureOperation, len(accs))
@@ -560,6 +572,9 @@ func SimulateGovMsgUpdateParams(args *WeightedOpsArgs) simtypes.Operation {
 		}
 
 		proposalID, err := args.GK.GetProposalID(ctx)
+		if err != nil {
+			return opMsg, nil, err
+		}
 
 		votingPeriod := args.GK.GetVotingParams(ctx).VotingPeriod
 		fops := make([]simtypes.FutureOperation, len(accs))
