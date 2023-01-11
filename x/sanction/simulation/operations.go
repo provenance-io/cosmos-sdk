@@ -224,7 +224,7 @@ func SimulateGovMsgSanction(args *WeightedOpsArgs) simtypes.Operation {
 
 		sender, senderI := simtypes.RandomAcc(r, accs)
 		// Create 1-10 new accounts to use.
-		acctsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
+		accsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
 		// If there are 20 or more accounts, pick a random one for each 20.
 		if len(accs) >= 20 {
 			valsUsed := map[int]bool{senderI: true}
@@ -233,13 +233,13 @@ func SimulateGovMsgSanction(args *WeightedOpsArgs) simtypes.Operation {
 					acct, v := simtypes.RandomAcc(r, accs)
 					if !valsUsed[v] {
 						valsUsed[v] = true
-						acctsToUse = append(acctsToUse, acct)
+						accsToUse = append(accsToUse, acct)
 						break
 					}
 				}
 			}
 		}
-		for _, acct := range acctsToUse {
+		for _, acct := range accsToUse {
 			msg.Addresses = append(msg.Addresses, acct.Address.String())
 		}
 
@@ -291,30 +291,26 @@ func SimulateGovMsgSanctionImmediate(args *WeightedOpsArgs) simtypes.Operation {
 		}
 		msgType := sdk.MsgTypeURL(msg)
 
-		// Decide early what whether we're going to vote yes or no on this.
-		// By doing it early, we use R before anything else can, which makes testing easier.
+		// Decide early whether we're going to vote yes or no on this.
+		// By doing it early, we use R before anything else, which makes testing easier.
 		vote := govv1.OptionYes
 		if r.Intn(2) == 0 {
 			vote = govv1.OptionNo
 		}
 
-		// Make sure an immediate sanction is possible.
+		// Get the governance and immediate sanction min deposits and make sure immediate is possible.
+		govMinDep := sdk.NewCoins(args.GK.GetDepositParams(ctx).MinDeposit...)
 		imMinDep := args.SK.GetImmediateSanctionMinDeposit(ctx)
 		if imMinDep.IsZero() {
 			return simtypes.NoOpMsg(sanction.ModuleName, msgType, "immediate sanction min deposit is zero"), nil, nil
 		}
 
-		// Get the governance min deposit needed.
-		govMinDep := sdk.NewCoins(args.GK.GetDepositParams(ctx).MinDeposit...)
-		if !imMinDep.IsZero() && govMinDep.IsAllGTE(imMinDep) {
-			return simtypes.NoOpMsg(sanction.ModuleName, msgType, "cannot sanction without it being immediate"), nil, nil
-		}
-
+		// The deposit needs to be >= both the gov min dep and im min dep.
 		deposit := MaxCoins(imMinDep, govMinDep)
 
 		sender, senderI := simtypes.RandomAcc(r, accs)
 		// Create 1-10 new accounts to use.
-		acctsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
+		accsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
 		// If there are 20 or more accounts, pick a random one for each 20.
 		if len(accs) >= 20 {
 			valsUsed := map[int]bool{senderI: true}
@@ -323,13 +319,13 @@ func SimulateGovMsgSanctionImmediate(args *WeightedOpsArgs) simtypes.Operation {
 					acct, v := simtypes.RandomAcc(r, accs)
 					if !valsUsed[v] {
 						valsUsed[v] = true
-						acctsToUse = append(acctsToUse, acct)
+						accsToUse = append(accsToUse, acct)
 						break
 					}
 				}
 			}
 		}
-		for _, acct := range acctsToUse {
+		for _, acct := range accsToUse {
 			msg.Addresses = append(msg.Addresses, acct.Address.String())
 		}
 
@@ -390,7 +386,7 @@ func SimulateGovMsgUnsanction(args *WeightedOpsArgs) simtypes.Operation {
 
 		sender, senderI := simtypes.RandomAcc(r, accs)
 		// Create 1-10 new accounts to use.
-		acctsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
+		accsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
 		// If there are 20 or more accounts, pick a random one for each 20.
 		if len(accs) >= 20 {
 			valsUsed := map[int]bool{senderI: true}
@@ -399,13 +395,13 @@ func SimulateGovMsgUnsanction(args *WeightedOpsArgs) simtypes.Operation {
 					acct, v := simtypes.RandomAcc(r, accs)
 					if !valsUsed[v] {
 						valsUsed[v] = true
-						acctsToUse = append(acctsToUse, acct)
+						accsToUse = append(accsToUse, acct)
 						break
 					}
 				}
 			}
 		}
-		for _, acct := range acctsToUse {
+		for _, acct := range accsToUse {
 			msg.Addresses = append(msg.Addresses, acct.Address.String())
 		}
 
@@ -457,30 +453,26 @@ func SimulateGovMsgUnsanctionImmediate(args *WeightedOpsArgs) simtypes.Operation
 		}
 		msgType := sdk.MsgTypeURL(msg)
 
-		// Decide early what whether we're going to vote yes or no on this.
-		// By doing it early, we use R before anything else can, which makes testing easier.
+		// Decide early whether we're going to vote yes or no on this.
+		// By doing it early, we use R before anything else, which makes testing easier.
 		vote := govv1.OptionYes
 		if r.Intn(2) == 0 {
 			vote = govv1.OptionNo
 		}
 
-		// Make sure an immediate unsanction is possible.
+		// Get the governance and immediate sanction min deposits and make sure immediate is possible.
+		govMinDep := sdk.NewCoins(args.GK.GetDepositParams(ctx).MinDeposit...)
 		imMinDep := args.SK.GetImmediateUnsanctionMinDeposit(ctx)
 		if imMinDep.IsZero() {
 			return simtypes.NoOpMsg(sanction.ModuleName, msgType, "immediate unsanction min deposit is zero"), nil, nil
 		}
 
-		// Get the governance min deposit needed.
-		govMinDep := sdk.NewCoins(args.GK.GetDepositParams(ctx).MinDeposit...)
-		if !imMinDep.IsZero() && govMinDep.IsAllGTE(imMinDep) {
-			return simtypes.NoOpMsg(sanction.ModuleName, msgType, "cannot unsanction without it being immediate"), nil, nil
-		}
-
+		// The deposit needs to be >= both the gov min dep and im min dep.
 		deposit := MaxCoins(imMinDep, govMinDep)
 
 		sender, senderI := simtypes.RandomAcc(r, accs)
 		// Create 1-10 new accounts to use.
-		acctsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
+		accsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
 		// If there are 20 or more accounts, pick a random one for each 20.
 		if len(accs) >= 20 {
 			valsUsed := map[int]bool{senderI: true}
@@ -489,13 +481,13 @@ func SimulateGovMsgUnsanctionImmediate(args *WeightedOpsArgs) simtypes.Operation
 					acct, v := simtypes.RandomAcc(r, accs)
 					if !valsUsed[v] {
 						valsUsed[v] = true
-						acctsToUse = append(acctsToUse, acct)
+						accsToUse = append(accsToUse, acct)
 						break
 					}
 				}
 			}
 		}
-		for _, acct := range acctsToUse {
+		for _, acct := range accsToUse {
 			msg.Addresses = append(msg.Addresses, acct.Address.String())
 		}
 
