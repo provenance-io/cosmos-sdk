@@ -86,6 +86,7 @@ func (s *SimTestSuite) setSanctionParamsAboveGovDeposit() {
 	s.Require().NoError(s.app.SanctionKeeper.SetParams(s.ctx, sancParams), "SanctionKeeper.SetParams")
 }
 
+// getLastGovProp gets the last gov prop to be submitted.
 func (s *SimTestSuite) getLastGovProp() *govv1.Proposal {
 	props := s.app.GovKeeper.GetProposals(s.ctx)
 	if len(props) == 0 {
@@ -94,6 +95,7 @@ func (s *SimTestSuite) getLastGovProp() *govv1.Proposal {
 	return props[len(props)-1]
 }
 
+// getWeightedOpsArgs creates a standard WeightedOpsArgs.
 func (s *SimTestSuite) getWeightedOpsArgs() simulation.WeightedOpsArgs {
 	return simulation.WeightedOpsArgs{
 		AppParams:  make(simtypes.AppParams),
