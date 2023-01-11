@@ -537,12 +537,14 @@ func SimulateGovMsgUpdateParams(args *WeightedOpsArgs) simtypes.Operation {
 		// Get the governance min deposit needed.
 		govMinDep := sdk.NewCoins(args.GK.GetDepositParams(ctx).MinDeposit...)
 
-		sender, _ := simtypes.RandomAcc(r, accs)
-
+		// Pick the random params first, so R isn't used for anything else before,
+		// which makes testing easier.
 		msg := &sanction.MsgUpdateParams{
 			Params:    RandomParams(r),
 			Authority: args.SK.GetAuthority(),
 		}
+
+		sender, _ := simtypes.RandomAcc(r, accs)
 
 		msgArgs := &SendGovMsgArgs{
 			WeightedOpsArgs: *args,
