@@ -3,6 +3,7 @@ package simulation_test
 import (
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -91,6 +92,18 @@ func (s *SimTestSuite) getLastGovProp() *govv1.Proposal {
 		return nil
 	}
 	return props[len(props)-1]
+}
+
+func (s *SimTestSuite) getWeightedOpsArgs() simulation.WeightedOpsArgs {
+	return simulation.WeightedOpsArgs{
+		AppParams:  make(simtypes.AppParams),
+		JSONCodec:  s.app.AppCodec(),
+		ProtoCodec: codec.NewProtoCodec(s.app.InterfaceRegistry()),
+		AK:         s.app.AccountKeeper,
+		BK:         s.app.BankKeeper,
+		GK:         s.app.GovKeeper,
+		SK:         &s.app.SanctionKeeper,
+	}
 }
 
 func (s *SimTestSuite) TestWeightedOperations() {
@@ -257,24 +270,16 @@ func (s *SimTestSuite) TestSendGovMsg() {
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
 			args := &simulation.SendGovMsgArgs{
-				WeightedOpsArgs: simulation.WeightedOpsArgs{
-					AppParams:  make(simtypes.AppParams),
-					JSONCodec:  s.app.AppCodec(),
-					ProtoCodec: codec.NewProtoCodec(s.app.InterfaceRegistry()),
-					AK:         s.app.AccountKeeper,
-					BK:         s.app.BankKeeper,
-					GK:         s.app.GovKeeper,
-					SK:         &s.app.SanctionKeeper,
-				},
-				R:       rand.New(rand.NewSource(1)),
-				App:     s.app.BaseApp,
-				Ctx:     s.ctx,
-				Accs:    accounts,
-				ChainID: "send-gov-test",
-				Sender:  tc.sender,
-				Msg:     tc.msg,
-				Deposit: tc.deposit,
-				Comment: tc.comment,
+				WeightedOpsArgs: s.getWeightedOpsArgs(),
+				R:               rand.New(rand.NewSource(1)),
+				App:             s.app.BaseApp,
+				Ctx:             s.ctx,
+				Accs:            accounts,
+				ChainID:         "send-gov-test",
+				Sender:          tc.sender,
+				Msg:             tc.msg,
+				Deposit:         tc.deposit,
+				Comment:         tc.comment,
 			}
 
 			var skip bool
@@ -321,21 +326,12 @@ func (s *SimTestSuite) TestOperationMsgVote() {
 	// Create a couple gov props that we can vote on.
 	// Note that I'm sending enough deposit for them to be immediate.
 	// That shouldn't come into play, but if weird things are happening in here....
-	wopArgs := simulation.WeightedOpsArgs{
-		AppParams:  make(simtypes.AppParams),
-		JSONCodec:  s.app.AppCodec(),
-		ProtoCodec: codec.NewProtoCodec(s.app.InterfaceRegistry()),
-		AK:         s.app.AccountKeeper,
-		BK:         s.app.BankKeeper,
-		GK:         s.app.GovKeeper,
-		SK:         &s.app.SanctionKeeper,
-	}
 	var skip bool
 	var opMsg simtypes.OperationMsg
 	var err error
 	testSendGovSanct := func() {
 		skip, opMsg, err = simulation.SendGovMsg(&simulation.SendGovMsgArgs{
-			WeightedOpsArgs: wopArgs,
+			WeightedOpsArgs: s.getWeightedOpsArgs(),
 			R:               r,
 			App:             s.app.BaseApp,
 			Ctx:             s.ctx,
@@ -352,7 +348,7 @@ func (s *SimTestSuite) TestOperationMsgVote() {
 	}
 	testSendGovUnsanct := func() {
 		skip, opMsg, err = simulation.SendGovMsg(&simulation.SendGovMsgArgs{
-			WeightedOpsArgs: wopArgs,
+			WeightedOpsArgs: s.getWeightedOpsArgs(),
 			R:               r,
 			App:             s.app.BaseApp,
 			Ctx:             s.ctx,
@@ -469,6 +465,8 @@ func (s *SimTestSuite) TestOperationMsgVote() {
 			expOpMsgComment: "unable to deliver tx",
 		},
 	}
+
+	wopArgs := s.getWeightedOpsArgs()
 
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
@@ -665,8 +663,477 @@ func TestMaxCoins(t *testing.T) {
 	}
 }
 
-// TODO[1046]: SimulateGovMsgSanction
+func (s *SimTestSuite) TestSimulateGovMsgSanction() {
+	chainID := "test-simulate-gov-msg-Sanction"
+	votingPeriod := 2 * time.Minute
+	depositPeriod := 1 * time.Second
+	govMinDep := sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, 3))
+	sanctMinDep := sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, 7))
+	unsanctMinDep := sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, 10))
+
+	// resetParams resets the params to what they values defined above.
+	resetParams := func(t *testing.T) {
+		require.NotPanics(t, func() {
+			s.app.GovKeeper.SetVotingParams(s.ctx, govv1.VotingParams{VotingPeriod: &votingPeriod})
+		}, "gov SetVotingParams")
+		require.NotPanics(t, func() {
+			s.app.GovKeeper.SetDepositParams(s.ctx, govv1.DepositParams{
+				MinDeposit:       govMinDep,
+				MaxDepositPeriod: &depositPeriod,
+			})
+		}, "gov SetDepositParams")
+		var err error
+		require.NotPanics(t, func() {
+			err = s.app.SanctionKeeper.SetParams(s.ctx, &sanction.Params{
+				ImmediateSanctionMinDeposit:   sanctMinDep,
+				ImmediateUnsanctionMinDeposit: unsanctMinDep,
+			})
+		}, "sanction SetParams")
+		require.NoError(t, err, "sanction SetParams error")
+	}
+
+	tests := []struct {
+		name            string
+		setup           func(t *testing.T)
+		accs            []simtypes.Account
+		expInErr        []string
+		expOpMsgOK      bool
+		expOpMsgRoute   string
+		expOpMsgName    string
+		expOpMsgComment string
+		expAccsInMsg    int
+	}{
+		{
+			name: "gov min deposit equals immediate sanction",
+			setup: func(t *testing.T) {
+				require.NotPanics(t, func() {
+					s.app.GovKeeper.SetDepositParams(s.ctx, govv1.DepositParams{MinDeposit: sanctMinDep})
+				}, "gov SetDepositParams")
+			},
+			accs:            simtypes.RandomAccounts(rand.New(rand.NewSource(1)), 10),
+			expOpMsgOK:      false,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    sdk.MsgTypeURL(&sanction.MsgSanction{}),
+			expOpMsgComment: "cannot sanction without it being immediate",
+			expAccsInMsg:    0,
+		},
+		{
+			name: "gov min deposit greater than immediate sanction",
+			setup: func(t *testing.T) {
+				require.NotPanics(t, func() {
+					s.app.GovKeeper.SetDepositParams(s.ctx, govv1.DepositParams{MinDeposit: sanctMinDep.Add(govMinDep...)})
+				}, "gov SetDepositParams")
+			},
+			accs:            simtypes.RandomAccounts(rand.New(rand.NewSource(1)), 10),
+			expOpMsgOK:      false,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    sdk.MsgTypeURL(&sanction.MsgSanction{}),
+			expOpMsgComment: "cannot sanction without it being immediate",
+			expAccsInMsg:    0,
+		},
+		{
+			name:            "problem sending gov msg",
+			accs:            s.getTestingAccountsWithPower(rand.New(rand.NewSource(100)), 10, 0),
+			expOpMsgOK:      false,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    sdk.MsgTypeURL(&sanction.MsgSanction{}),
+			expOpMsgComment: "sender has no spendable coins",
+			expAccsInMsg:    0,
+		},
+		{
+			name:            "19 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(200)), 19),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "sanction",
+			expAccsInMsg:    0,
+		},
+		{
+			name:            "20 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(300)), 20),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "sanction",
+			expAccsInMsg:    1,
+		},
+		{
+			name:            "39 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(400)), 39),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "sanction",
+			expAccsInMsg:    1,
+		},
+		{
+			name:            "40 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(500)), 40),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "sanction",
+			expAccsInMsg:    2,
+		},
+		{
+			name:            "59 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(600)), 59),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "sanction",
+			expAccsInMsg:    2,
+		},
+		{
+			name:            "60 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(700)), 60),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "sanction",
+			expAccsInMsg:    3,
+		},
+	}
+
+	// Things to test:
+	// SendGovMsg does not return an error (i.e. all good):
+	// -> If there are 20 or more accounts, one is chosen to be sanctioned.
+	// -> If there are 40 or more accounts, two are chosen to be sanctioned.
+
+	wopArgs := s.getWeightedOpsArgs()
+	voteType := sdk.MsgTypeURL(&govv1.MsgVote{})
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			resetParams(s.T())
+			if tc.setup != nil {
+				tc.setup(s.T())
+			}
+			var op simtypes.Operation
+			testFunc := func() {
+				op = simulation.SimulateGovMsgSanction(&wopArgs)
+			}
+			s.Require().NotPanics(testFunc, "SimulateGovMsgSanction")
+			var opMsg simtypes.OperationMsg
+			var fops []simtypes.FutureOperation
+			var err error
+			testOp := func() {
+				opMsg, fops, err = op(rand.New(rand.NewSource(1)), s.app.BaseApp, s.ctx, tc.accs, chainID)
+			}
+			s.Require().NotPanics(testOp, "SimulateGovMsgSanction op execution")
+			testutil.AssertErrorContents(s.T(), err, tc.expInErr, "op error")
+			s.Assert().Equal(tc.expOpMsgOK, opMsg.OK, "op msg ok")
+			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "op msg route")
+			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "op msg name")
+			s.Assert().Equal(tc.expOpMsgComment, opMsg.Comment, "op msg comment")
+			if !tc.expOpMsgOK && !opMsg.OK {
+				s.Assert().Empty(fops, "future ops")
+			}
+			if tc.expOpMsgOK && opMsg.OK {
+				s.Assert().Equal(len(tc.accs), len(fops), "number of future ops")
+				// If we were expecting it to be okay, and it was, run all the future ops too.
+				// Some of them might fail (due to being sanctioned),
+				// but all the ones that went through should be YES votes.
+				maxBlockTime := s.ctx.BlockHeader().Time.Add(votingPeriod)
+				prop := s.getLastGovProp()
+				s.Assert().Equal(govMinDep.String(), sdk.NewCoins(prop.TotalDeposit...).String(), "prop deposit")
+				preVotes := s.app.GovKeeper.GetVotes(s.ctx, prop.Id)
+				// There shouldn't be any votes yet.
+				if !s.Assert().Empty(preVotes, "votes before running future ops") {
+					for i, fop := range fops {
+						s.Assert().LessOrEqual(fop.BlockTime, maxBlockTime, "future op %d block time", i+1)
+						s.Assert().Equal(0, fop.BlockHeight, "future op %d block height", i+1)
+						var fopMsg simtypes.OperationMsg
+						var ffops []simtypes.FutureOperation
+						testFop := func() {
+							fopMsg, ffops, err = fop.Op(rand.New(rand.NewSource(1)), s.app.BaseApp, s.ctx, tc.accs, chainID)
+						}
+						if !s.Assert().NotPanics(testFop, "future op %d execution", i+1) {
+							continue
+						}
+						if err != nil {
+							s.T().Logf("future op %d returned an error, but that's kind of expected: %v", i+1, err)
+							continue
+						}
+						if !fopMsg.OK {
+							s.T().Logf("future op %d returned not okay, but that's kind of expected: %q", i+1, fopMsg.Comment)
+							continue
+						}
+						s.Assert().Empty(ffops, "future ops returned by future op %d", i+1)
+						s.Assert().Equal(voteType, fopMsg.Name, "future op %d msg name", i+1)
+						s.Assert().Equal(tc.expOpMsgComment, fopMsg.Comment, "future op %d msg comment", i+1)
+					}
+					// Now there should be some votes.
+					postVotes := s.app.GovKeeper.GetVotes(s.ctx, prop.Id)
+					for i, vote := range postVotes {
+						if s.Assert().Len(vote.Options, 1, "vote %d options count", i+1) {
+							s.Assert().Equal(govv1.OptionYes, vote.Options[0].Option, "vote %d option", i+1)
+							s.Assert().Equal("1.000000000000000000", vote.Options[1].Weight, "vote %d weight", i+1)
+						}
+					}
+				}
+				// Now, get the message and count the number of addresses listed that were provided.
+				providedAddrs := make(map[string]bool)
+				for _, acc := range tc.accs {
+					providedAddrs[acc.Address.String()] = true
+				}
+				msgs, err := prop.GetMsgs()
+				if s.Assert().NoError(err, "getting messages from the proposal") {
+					if s.Assert().Len(msgs, 1, "number of messages in the proposal") {
+						msg, ok := msgs[0].(*sanction.MsgSanction)
+						if s.Assert().True(ok, "could not cast prop msg to MsgSanction") {
+							inMsg := make([]string, 0, tc.expAccsInMsg+2)
+							for _, addr := range msg.Addresses {
+								if providedAddrs[addr] {
+									inMsg = append(inMsg, addr)
+								}
+							}
+							s.Assert().Len(inMsg, tc.expAccsInMsg, "provided accs that ended up in the gov prop msg")
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
 // TODO[1046]: SimulateGovMsgSanctionImmediate
-// TODO[1046]: SimulateGovMsgUnsanction
+
+func (s *SimTestSuite) TestSimulateGovMsgUnsanction() {
+	chainID := "test-simulate-gov-msg-Sanction"
+	votingPeriod := 2 * time.Minute
+	depositPeriod := 1 * time.Second
+	govMinDep := sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, 3))
+	sanctMinDep := sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, 7))
+	unsanctMinDep := sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, 10))
+
+	// resetParams resets the params to what they values defined above.
+	resetParams := func(t *testing.T) {
+		require.NotPanics(t, func() {
+			s.app.GovKeeper.SetVotingParams(s.ctx, govv1.VotingParams{VotingPeriod: &votingPeriod})
+		}, "gov SetVotingParams")
+		require.NotPanics(t, func() {
+			s.app.GovKeeper.SetDepositParams(s.ctx, govv1.DepositParams{
+				MinDeposit:       govMinDep,
+				MaxDepositPeriod: &depositPeriod,
+			})
+		}, "gov SetDepositParams")
+		var err error
+		require.NotPanics(t, func() {
+			err = s.app.SanctionKeeper.SetParams(s.ctx, &sanction.Params{
+				ImmediateSanctionMinDeposit:   sanctMinDep,
+				ImmediateUnsanctionMinDeposit: unsanctMinDep,
+			})
+		}, "sanction SetParams")
+		require.NoError(t, err, "sanction SetParams error")
+	}
+
+	tests := []struct {
+		name            string
+		setup           func(t *testing.T)
+		accs            []simtypes.Account
+		expInErr        []string
+		expOpMsgOK      bool
+		expOpMsgRoute   string
+		expOpMsgName    string
+		expOpMsgComment string
+		expAccsInMsg    int
+	}{
+		{
+			name: "gov min deposit equals immediate unsanction",
+			setup: func(t *testing.T) {
+				require.NotPanics(t, func() {
+					s.app.GovKeeper.SetDepositParams(s.ctx, govv1.DepositParams{MinDeposit: unsanctMinDep})
+				}, "gov SetDepositParams")
+			},
+			accs:            simtypes.RandomAccounts(rand.New(rand.NewSource(1)), 10),
+			expOpMsgOK:      false,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    sdk.MsgTypeURL(&sanction.MsgUnsanction{}),
+			expOpMsgComment: "cannot unsanction without it being immediate",
+			expAccsInMsg:    0,
+		},
+		{
+			name: "gov min deposit greater than immediate unsanction",
+			setup: func(t *testing.T) {
+				require.NotPanics(t, func() {
+					s.app.GovKeeper.SetDepositParams(s.ctx, govv1.DepositParams{MinDeposit: unsanctMinDep.Add(govMinDep...)})
+				}, "gov SetDepositParams")
+			},
+			accs:            simtypes.RandomAccounts(rand.New(rand.NewSource(1)), 10),
+			expOpMsgOK:      false,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    sdk.MsgTypeURL(&sanction.MsgUnsanction{}),
+			expOpMsgComment: "cannot unsanction without it being immediate",
+			expAccsInMsg:    0,
+		},
+		{
+			name:            "problem sending gov msg",
+			accs:            s.getTestingAccountsWithPower(rand.New(rand.NewSource(100)), 10, 0),
+			expOpMsgOK:      false,
+			expOpMsgRoute:   "sanction",
+			expOpMsgName:    sdk.MsgTypeURL(&sanction.MsgUnsanction{}),
+			expOpMsgComment: "sender has no spendable coins",
+			expAccsInMsg:    0,
+		},
+		{
+			name:            "19 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(200)), 19),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "unsanction",
+			expAccsInMsg:    0,
+		},
+		{
+			name:            "20 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(300)), 20),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "unsanction",
+			expAccsInMsg:    1,
+		},
+		{
+			name:            "39 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(400)), 39),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "unsanction",
+			expAccsInMsg:    1,
+		},
+		{
+			name:            "40 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(500)), 40),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "unsanction",
+			expAccsInMsg:    2,
+		},
+		{
+			name:            "59 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(600)), 59),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "unsanction",
+			expAccsInMsg:    2,
+		},
+		{
+			name:            "60 accounts to choose from",
+			accs:            s.getTestingAccounts(rand.New(rand.NewSource(700)), 60),
+			expOpMsgOK:      true,
+			expOpMsgRoute:   "gov",
+			expOpMsgName:    sdk.MsgTypeURL(&govv1.MsgSubmitProposal{}),
+			expOpMsgComment: "unsanction",
+			expAccsInMsg:    3,
+		},
+	}
+
+	// Things to test:
+	// SendGovMsg does not return an error (i.e. all good):
+	// -> If there are 20 or more accounts, one is chosen to be sanctioned.
+	// -> If there are 40 or more accounts, two are chosen to be sanctioned.
+
+	wopArgs := s.getWeightedOpsArgs()
+	voteType := sdk.MsgTypeURL(&govv1.MsgVote{})
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			resetParams(s.T())
+			if tc.setup != nil {
+				tc.setup(s.T())
+			}
+			var op simtypes.Operation
+			testFunc := func() {
+				op = simulation.SimulateGovMsgUnsanction(&wopArgs)
+			}
+			s.Require().NotPanics(testFunc, "SimulateGovMsgUnsanction")
+			var opMsg simtypes.OperationMsg
+			var fops []simtypes.FutureOperation
+			var err error
+			testOp := func() {
+				opMsg, fops, err = op(rand.New(rand.NewSource(1)), s.app.BaseApp, s.ctx, tc.accs, chainID)
+			}
+			s.Require().NotPanics(testOp, "SimulateGovMsgUnsanction op execution")
+			testutil.AssertErrorContents(s.T(), err, tc.expInErr, "op error")
+			s.Assert().Equal(tc.expOpMsgOK, opMsg.OK, "op msg ok")
+			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "op msg route")
+			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "op msg name")
+			s.Assert().Equal(tc.expOpMsgComment, opMsg.Comment, "op msg comment")
+			if !tc.expOpMsgOK && !opMsg.OK {
+				s.Assert().Empty(fops, "future ops")
+			}
+			if tc.expOpMsgOK && opMsg.OK {
+				s.Assert().Equal(len(tc.accs), len(fops), "number of future ops")
+				// If we were expecting it to be okay, and it was, run all the future ops too.
+				// Some of them might fail (due to being sanctioned),
+				// but all the ones that went through should be YES votes.
+				maxBlockTime := s.ctx.BlockHeader().Time.Add(votingPeriod)
+				prop := s.getLastGovProp()
+				s.Assert().Equal(govMinDep.String(), sdk.NewCoins(prop.TotalDeposit...).String(), "prop deposit")
+				preVotes := s.app.GovKeeper.GetVotes(s.ctx, prop.Id)
+				// There shouldn't be any votes yet.
+				if !s.Assert().Empty(preVotes, "votes before running future ops") {
+					for i, fop := range fops {
+						s.Assert().LessOrEqual(fop.BlockTime, maxBlockTime, "future op %d block time", i+1)
+						s.Assert().Equal(0, fop.BlockHeight, "future op %d block height", i+1)
+						var fopMsg simtypes.OperationMsg
+						var ffops []simtypes.FutureOperation
+						testFop := func() {
+							fopMsg, ffops, err = fop.Op(rand.New(rand.NewSource(1)), s.app.BaseApp, s.ctx, tc.accs, chainID)
+						}
+						if !s.Assert().NotPanics(testFop, "future op %d execution", i+1) {
+							continue
+						}
+						if err != nil {
+							s.T().Logf("future op %d returned an error, but that's kind of expected: %v", i+1, err)
+							continue
+						}
+						if !fopMsg.OK {
+							s.T().Logf("future op %d returned not okay, but that's kind of expected: %q", i+1, fopMsg.Comment)
+							continue
+						}
+						s.Assert().Empty(ffops, "future ops returned by future op %d", i+1)
+						s.Assert().Equal(voteType, fopMsg.Name, "future op %d msg name", i+1)
+						s.Assert().Equal(tc.expOpMsgComment, fopMsg.Comment, "future op %d msg comment", i+1)
+					}
+					// Now there should be some votes.
+					postVotes := s.app.GovKeeper.GetVotes(s.ctx, prop.Id)
+					for i, vote := range postVotes {
+						if s.Assert().Len(vote.Options, 1, "vote %d options count", i+1) {
+							s.Assert().Equal(govv1.OptionYes, vote.Options[0].Option, "vote %d option", i+1)
+							s.Assert().Equal("1.000000000000000000", vote.Options[1].Weight, "vote %d weight", i+1)
+						}
+					}
+				}
+				// Now, get the message and count the number of addresses listed that were provided.
+				providedAddrs := make(map[string]bool)
+				for _, acc := range tc.accs {
+					providedAddrs[acc.Address.String()] = true
+				}
+				msgs, err := prop.GetMsgs()
+				if s.Assert().NoError(err, "getting messages from the proposal") {
+					if s.Assert().Len(msgs, 1, "number of messages in the proposal") {
+						msg, ok := msgs[0].(*sanction.MsgUnsanction)
+						if s.Assert().True(ok, "could not cast prop msg to MsgUnsanction") {
+							inMsg := make([]string, 0, tc.expAccsInMsg+2)
+							for _, addr := range msg.Addresses {
+								if providedAddrs[addr] {
+									inMsg = append(inMsg, addr)
+								}
+							}
+							s.Assert().Len(inMsg, tc.expAccsInMsg, "provided accs that ended up in the gov prop msg")
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
 // TODO[1046]: SimulateGovMsgUnsanctionImmediate
 // TODO[1046]: SimulateGovMsgUpdateParams
