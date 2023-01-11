@@ -137,6 +137,16 @@ func TestRandomizer(t *testing.T) {
 		actualRands = append(actualRands, randomParamsRands(r)...)
 		assert.Equal(t, expectedRands, actualRands, "random numbers generated")
 	})
+
+	t.Run("values used in immediate operations for various seeds", func(t *testing.T) {
+		// A little crossover here. This knowledge is useful in the operations tests for immediate stuff.
+		expectedRands := []int{0, 1}
+		actualRands := make([]int, len(expectedRands))
+		for i := range actualRands {
+			actualRands[i] = rand.New(rand.NewSource(int64(i))).Intn(2)
+		}
+		assert.Equal(t, expectedRands, actualRands, "first random number generated at each seed")
+	})
 }
 
 func TestRandomSanctionedAddresses(t *testing.T) {
