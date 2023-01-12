@@ -222,26 +222,13 @@ func SimulateGovMsgSanction(args *WeightedOpsArgs) simtypes.Operation {
 			return simtypes.NoOpMsg(sanction.ModuleName, msgType, "cannot sanction without it being immediate"), nil, nil
 		}
 
-		sender, senderI := simtypes.RandomAcc(r, accs)
-		// Create 1-10 new accounts to use.
-		accsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
-		// If there are 20 or more accounts, pick a random one for each 20.
-		if len(accs) >= 20 {
-			valsUsed := map[int]bool{senderI: true}
-			for i := 0; i < len(accs)/20; i++ {
-				for {
-					acct, v := simtypes.RandomAcc(r, accs)
-					if !valsUsed[v] {
-						valsUsed[v] = true
-						accsToUse = append(accsToUse, acct)
-						break
-					}
-				}
-			}
-		}
-		for _, acct := range accsToUse {
+		// Create 1-10 new accounts to sanction.
+		// Sanctioning known accounts breaks other sim ops.
+		for _, acct := range simtypes.RandomAccounts(r, r.Intn(10)+1) {
 			msg.Addresses = append(msg.Addresses, acct.Address.String())
 		}
+
+		sender, _ := simtypes.RandomAcc(r, accs)
 
 		msgArgs := &SendGovMsgArgs{
 			WeightedOpsArgs: *args,
@@ -291,13 +278,6 @@ func SimulateGovMsgSanctionImmediate(args *WeightedOpsArgs) simtypes.Operation {
 		}
 		msgType := sdk.MsgTypeURL(msg)
 
-		// Decide early whether we're going to vote yes or no on this.
-		// By doing it early, we use R before anything else, which makes testing easier.
-		vote := govv1.OptionYes
-		if r.Intn(2) == 0 {
-			vote = govv1.OptionNo
-		}
-
 		// Get the governance and immediate sanction min deposits and make sure immediate is possible.
 		govMinDep := sdk.NewCoins(args.GK.GetDepositParams(ctx).MinDeposit...)
 		imMinDep := args.SK.GetImmediateSanctionMinDeposit(ctx)
@@ -308,26 +288,20 @@ func SimulateGovMsgSanctionImmediate(args *WeightedOpsArgs) simtypes.Operation {
 		// The deposit needs to be >= both the gov min dep and im min dep.
 		deposit := MaxCoins(imMinDep, govMinDep)
 
-		sender, senderI := simtypes.RandomAcc(r, accs)
-		// Create 1-10 new accounts to use.
-		accsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
-		// If there are 20 or more accounts, pick a random one for each 20.
-		if len(accs) >= 20 {
-			valsUsed := map[int]bool{senderI: true}
-			for i := 0; i < len(accs)/20; i++ {
-				for {
-					acct, v := simtypes.RandomAcc(r, accs)
-					if !valsUsed[v] {
-						valsUsed[v] = true
-						accsToUse = append(accsToUse, acct)
-						break
-					}
-				}
-			}
+		// Decide early whether we're going to vote yes or no on this.
+		// By doing it early, we use r before anything else, which makes testing easier.
+		vote := govv1.OptionYes
+		if r.Intn(2) == 0 {
+			vote = govv1.OptionNo
 		}
-		for _, acct := range accsToUse {
+
+		// Create 1-10 new accounts to sanction.
+		// Sanctioning known accounts breaks other sim ops.
+		for _, acct := range simtypes.RandomAccounts(r, r.Intn(10)+1) {
 			msg.Addresses = append(msg.Addresses, acct.Address.String())
 		}
+
+		sender, _ := simtypes.RandomAcc(r, accs)
 
 		msgArgs := &SendGovMsgArgs{
 			WeightedOpsArgs: *args,
@@ -377,33 +351,34 @@ func SimulateGovMsgUnsanction(args *WeightedOpsArgs) simtypes.Operation {
 		}
 		msgType := sdk.MsgTypeURL(msg)
 
-		// First, get the governance min deposit needed and immediate sanction min deposit needed.
+		sanctionedAddrs := args.SK.GetAllSanctionedAddresses(ctx)
+		if len(sanctionedAddrs) == 0 {
+			return simtypes.NoOpMsg(sanction.ModuleName, msgType, "no addresses are sanctioned"), nil, nil
+		}
+
+		// Get the governance min deposit needed and immediate sanction min deposit needed.
 		govMinDep := sdk.NewCoins(args.GK.GetDepositParams(ctx).MinDeposit...)
 		imMinDep := args.SK.GetImmediateUnsanctionMinDeposit(ctx)
 		if !imMinDep.IsZero() && govMinDep.IsAllGTE(imMinDep) {
 			return simtypes.NoOpMsg(sanction.ModuleName, msgType, "cannot unsanction without it being immediate"), nil, nil
 		}
 
-		sender, senderI := simtypes.RandomAcc(r, accs)
-		// Create 1-10 new accounts to use.
-		accsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
-		// If there are 20 or more accounts, pick a random one for each 20.
-		if len(accs) >= 20 {
-			valsUsed := map[int]bool{senderI: true}
-			for i := 0; i < len(accs)/20; i++ {
-				for {
-					acct, v := simtypes.RandomAcc(r, accs)
-					if !valsUsed[v] {
-						valsUsed[v] = true
-						accsToUse = append(accsToUse, acct)
-						break
-					}
-				}
-			}
+		// Unsanction 1/4 of the sanctioned addresses but at least 4.
+		// If there are fewer than 4 sanctioned addresses, unsanction them all.
+		count := len(sanctionedAddrs) / 4
+		if count < 4 {
+			count = 4
 		}
-		for _, acct := range accsToUse {
-			msg.Addresses = append(msg.Addresses, acct.Address.String())
+		if count > len(sanctionedAddrs) {
+			count = len(sanctionedAddrs)
+		} else {
+			r.Shuffle(count, func(i, j int) {
+				sanctionedAddrs[i], sanctionedAddrs[j] = sanctionedAddrs[j], sanctionedAddrs[i]
+			})
 		}
+		msg.Addresses = sanctionedAddrs[:count]
+
+		sender, _ := simtypes.RandomAcc(r, accs)
 
 		msgArgs := &SendGovMsgArgs{
 			WeightedOpsArgs: *args,
@@ -453,11 +428,9 @@ func SimulateGovMsgUnsanctionImmediate(args *WeightedOpsArgs) simtypes.Operation
 		}
 		msgType := sdk.MsgTypeURL(msg)
 
-		// Decide early whether we're going to vote yes or no on this.
-		// By doing it early, we use R before anything else, which makes testing easier.
-		vote := govv1.OptionYes
-		if r.Intn(2) == 0 {
-			vote = govv1.OptionNo
+		sanctionedAddrs := args.SK.GetAllSanctionedAddresses(ctx)
+		if len(sanctionedAddrs) == 0 {
+			return simtypes.NoOpMsg(sanction.ModuleName, msgType, "no addresses are sanctioned"), nil, nil
 		}
 
 		// Get the governance and immediate sanction min deposits and make sure immediate is possible.
@@ -470,26 +443,29 @@ func SimulateGovMsgUnsanctionImmediate(args *WeightedOpsArgs) simtypes.Operation
 		// The deposit needs to be >= both the gov min dep and im min dep.
 		deposit := MaxCoins(imMinDep, govMinDep)
 
-		sender, senderI := simtypes.RandomAcc(r, accs)
-		// Create 1-10 new accounts to use.
-		accsToUse := simtypes.RandomAccounts(r, r.Intn(10)+1)
-		// If there are 20 or more accounts, pick a random one for each 20.
-		if len(accs) >= 20 {
-			valsUsed := map[int]bool{senderI: true}
-			for i := 0; i < len(accs)/20; i++ {
-				for {
-					acct, v := simtypes.RandomAcc(r, accs)
-					if !valsUsed[v] {
-						valsUsed[v] = true
-						accsToUse = append(accsToUse, acct)
-						break
-					}
-				}
-			}
+		// Decide early whether we're going to vote yes or no on this.
+		// By doing it early, we use r before anything else, which makes testing easier.
+		vote := govv1.OptionYes
+		if r.Intn(2) == 0 {
+			vote = govv1.OptionNo
 		}
-		for _, acct := range accsToUse {
-			msg.Addresses = append(msg.Addresses, acct.Address.String())
+
+		// Unsanction 1/4 of the sanctioned addresses but at least 4.
+		// If there are fewer than 4 sanctioned addresses, unsanction them all.
+		count := len(sanctionedAddrs) / 4
+		if count < 4 {
+			count = 4
 		}
+		if count > len(sanctionedAddrs) {
+			count = len(sanctionedAddrs)
+		} else {
+			r.Shuffle(count, func(i, j int) {
+				sanctionedAddrs[i], sanctionedAddrs[j] = sanctionedAddrs[j], sanctionedAddrs[i]
+			})
+		}
+		msg.Addresses = sanctionedAddrs[:count]
+
+		sender, _ := simtypes.RandomAcc(r, accs)
 
 		msgArgs := &SendGovMsgArgs{
 			WeightedOpsArgs: *args,
