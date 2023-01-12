@@ -43,6 +43,7 @@ func NewAppModule(cdc codec.Codec, sanctionKeeper keeper.Keeper, accKeeper sanct
 		keeper:         sanctionKeeper,
 		accKeeper:      accKeeper,
 		bankKeeper:     bankKeeper,
+		govKeeper:      govKeeper,
 		registry:       registry,
 	}
 }
