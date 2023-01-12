@@ -39,7 +39,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* nothing
+### Bug Fixes
+
+* Pull in Cosmos-SDK authz validate basic fix [#12184](https://github.com/cosmos/cosmos-sdk/pull/12184)
 
 ---
 
