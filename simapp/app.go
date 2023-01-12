@@ -326,10 +326,9 @@ func NewSimApp(
 		&stakingKeeper, govRouter, app.MsgServiceRouter(), govConfig,
 	)
 
-	// TODO[1046]: Figure out how best to provide the unsanctionable addresses.
 	app.SanctionKeeper = sanctionkeeper.NewKeeper(appCodec, keys[sanction.StoreKey],
 		app.BankKeeper, &govKeeper,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(), nil)
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(), app.ModuleAccounts())
 
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
@@ -530,14 +529,23 @@ func (app *SimApp) LoadHeight(height int64) error {
 	return app.LoadVersion(height)
 }
 
-// ModuleAccountAddrs returns all the app's module account addresses.
+// ModuleAccountAddrs returns all the app's module account address bech32 strings.
 func (app *SimApp) ModuleAccountAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
-	for acc := range maccPerms {
-		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
+	for _, addr := range app.ModuleAccounts() {
+		modAccAddrs[addr.String()] = true
 	}
 
 	return modAccAddrs
+}
+
+// ModuleAccounts returns all the app's module accounts addresses.
+func (app *SimApp) ModuleAccounts() []sdk.AccAddress {
+	rv := make([]sdk.AccAddress, 0, len(maccPerms))
+	for name := range maccPerms {
+		rv = append(rv, authtypes.NewModuleAddress(name))
+	}
+	return rv
 }
 
 // LegacyAmino returns SimApp's amino codec.
