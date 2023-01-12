@@ -133,20 +133,6 @@ func TestRandomizer(t *testing.T) {
 		assert.Equal(t, expectedRands, actualRands, "random numbers generated")
 	})
 
-	t.Run("values used in RandomizedGenState", func(t *testing.T) {
-		expectedRands := []int64{
-			0, 1, 1, 1, 2, 0, 3, 3, 1, 4,
-			4, 7, 4, 6, 5, 3, 8, 1, 790, 1, 273, 6,
-			1, 637, 3, 109,
-		}
-
-		r := rand.New(rand.NewSource(getSeedValue()))
-		actualRands := randomSanctionedAddressesRands(r)
-		actualRands = append(actualRands, randomTempEntriesRands(r)...)
-		actualRands = append(actualRands, randomParamsRands(r)...)
-		assert.Equal(t, expectedRands, actualRands, "random numbers generated")
-	})
-
 	t.Run("values used in immediate operations for various seeds", func(t *testing.T) {
 		// A little crossover here. This knowledge is useful in the operations tests for immediate stuff.
 		expectedRands := []int{0, 1}
@@ -225,38 +211,19 @@ func TestRandomParams(t *testing.T) {
 
 func TestRandomizedGenState(t *testing.T) {
 	accounts := generateAccounts(t)
-
-	// From TestRandomizer:
-	//  0, 1, 1, 1, 2, 0, 3, 3, 1, 4,
-	//  4, 7, 4, 6, 5, 3, 8, 1, 790, 1, 273, 6,
-	//  1, 637, 3, 109,
-	expected := sanction.GenesisState{
-		SanctionedAddresses: []string{
-			accounts[0].Address.String(),
-			accounts[5].Address.String(),
-		},
-		TemporaryEntries: []*sanction.TemporaryEntry{
-			{
-				Address:    accounts[7].Address.String(),
-				ProposalId: 790 + 2_000_000_000,
-				Status:     sanction.TEMP_STATUS_UNSANCTIONED,
-			},
-			{
-				Address:    accounts[8].Address.String(),
-				ProposalId: 273 + 2_000_000_000,
-				Status:     sanction.TEMP_STATUS_UNSANCTIONED,
-			},
-		},
-		Params: &sanction.Params{
-			ImmediateSanctionMinDeposit:   sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, 637+1)),
-			ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, 109+1)),
-		},
+	accountMap := make(map[string]bool)
+	for _, acc := range accounts {
+		accountMap[acc.Address.String()] = true
 	}
+
+	// Since part of RandomizedGenState involves creating new accounts, and that uses r before anything else can use it,
+	// it's not worthwhile to define a specific expected state.
+	// Instead, I just need to make sure that the addresses included aren't in the accounts provided.
 
 	simState := module.SimulationState{
 		AppParams:    make(simtypes.AppParams),
 		Cdc:          simapp.MakeTestEncodingConfig().Codec,
-		Rand:         rand.New(rand.NewSource(getSeedValue())),
+		Rand:         rand.New(rand.NewSource(0)), // not using getSeedValue because that was used to generate the accounts.
 		NumBonded:    3,
 		Accounts:     accounts,
 		InitialStake: sdkmath.NewInt(1000),
@@ -272,18 +239,19 @@ func TestRandomizedGenState(t *testing.T) {
 	var actual sanction.GenesisState
 	err := simState.Cdc.UnmarshalJSON(sanctionGenStateBz, &actual)
 	require.NoError(t, err, "UnmarshalJSON to sanction.GenesisState")
-	if !assert.Equal(t, expected, actual, "sanction.GenesisState") {
-		assert.Equal(t, expected.SanctionedAddresses, actual.SanctionedAddresses, "SanctionedAddresses")
-		assert.Equal(t, expected.TemporaryEntries, actual.TemporaryEntries, "TemporaryEntries")
-		if !assert.Equal(t, expected.Params, actual.Params, "Params") && expected.Params != nil && actual.Params != nil {
-			assert.Equal(t, expected.Params.ImmediateSanctionMinDeposit.String(),
-				actual.Params.ImmediateSanctionMinDeposit.String(),
-				"Params.ImmediateSanctionMinDeposit")
-			assert.Equal(t, expected.Params.ImmediateUnsanctionMinDeposit.String(),
-				actual.Params.ImmediateUnsanctionMinDeposit.String(),
-				"Params.ImmediateUnsanctionMinDeposit")
-		}
+
+	for i, addr := range actual.SanctionedAddresses {
+		isKnownAcc := accountMap[addr]
+		assert.False(t, isKnownAcc, "is SanctionedAddresses[%d] a known account", i)
 	}
+	for i, entry := range actual.TemporaryEntries {
+		isKnownAcc := accountMap[entry.Address]
+		assert.False(t, isKnownAcc, "is TemporaryEntries[%d] a known account", i)
+	}
+	// This is kind of useless because UnmarshalJSON will create an empty Params no matter what, but....
+	assert.NotNil(t, actual.Params, "Params")
+	// Not asserting any param values though since their randomization depends on uses of r outside our control.
+	// They'd be prone to breakage for seemingly unrelated reasons, which is dumb and annoying.
 
 	// Make sure nothing else was added to the genesis state.
 	expectedGenStateKeys := []string{sanction.ModuleName}
