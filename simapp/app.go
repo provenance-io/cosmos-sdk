@@ -540,6 +540,7 @@ func (app *SimApp) ModuleAccountAddrs() map[string]bool {
 }
 
 // ModuleAccounts returns all the app's module accounts addresses.
+// Warning, this result is nondeterministic. It must be sorted (by you) if order has any chance of being important.
 func (app *SimApp) ModuleAccounts() []sdk.AccAddress {
 	rv := make([]sdk.AccAddress, 0, len(maccPerms))
 	for name := range maccPerms {
