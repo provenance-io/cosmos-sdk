@@ -20,6 +20,7 @@ service Query {
     option (google.api.http).get = "/cosmos/sanction/v1beta1/all";
   }
 
+  // TemporaryEntries returns temporary sanction/unsanction info.
   rpc TemporaryEntries(QueryTemporaryEntriesRequest) returns (QueryTemporaryEntriesResponse) {
     option (google.api.http).get = "/cosmos/sanction/v1beta1/temp";
   }

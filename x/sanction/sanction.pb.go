@@ -26,6 +26,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// TempStatus is whether a temporary entry is a sanction or unsanction.
 type TempStatus int32
 
 const (
@@ -118,6 +119,7 @@ func (m *Params) GetImmediateUnsanctionMinDeposit() github_com_cosmos_cosmos_sdk
 	return nil
 }
 
+// TemporaryEntry defines the information involved in a temporary sanction or unsanction.
 type TemporaryEntry struct {
 	// address is the address of this temporary entry.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`

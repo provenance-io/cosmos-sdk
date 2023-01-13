@@ -487,6 +487,7 @@ type QueryClient interface {
 	IsSanctioned(ctx context.Context, in *QueryIsSanctionedRequest, opts ...grpc.CallOption) (*QueryIsSanctionedResponse, error)
 	// SanctionedAddresses returns a list of sanctioned addresses.
 	SanctionedAddresses(ctx context.Context, in *QuerySanctionedAddressesRequest, opts ...grpc.CallOption) (*QuerySanctionedAddressesResponse, error)
+	// TemporaryEntries returns temporary sanction/unsanction info.
 	TemporaryEntries(ctx context.Context, in *QueryTemporaryEntriesRequest, opts ...grpc.CallOption) (*QueryTemporaryEntriesResponse, error)
 	// Params returns the sanction module's params.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
@@ -542,6 +543,7 @@ type QueryServer interface {
 	IsSanctioned(context.Context, *QueryIsSanctionedRequest) (*QueryIsSanctionedResponse, error)
 	// SanctionedAddresses returns a list of sanctioned addresses.
 	SanctionedAddresses(context.Context, *QuerySanctionedAddressesRequest) (*QuerySanctionedAddressesResponse, error)
+	// TemporaryEntries returns temporary sanction/unsanction info.
 	TemporaryEntries(context.Context, *QueryTemporaryEntriesRequest) (*QueryTemporaryEntriesResponse, error)
 	// Params returns the sanction module's params.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
