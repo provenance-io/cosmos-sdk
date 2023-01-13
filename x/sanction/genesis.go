@@ -30,5 +30,14 @@ func (g GenesisState) Validate() error {
 			return sdkerrors.ErrInvalidAddress.Wrapf("sanctioned addresses[%d], %q: %v", i, addr, err)
 		}
 	}
+	for i, entry := range g.TemporaryEntries {
+		if entry.Status != TEMP_STATUS_SANCTIONED && entry.Status != TEMP_STATUS_UNSANCTIONED {
+			return errors.ErrInvalidTempStatus.Wrapf("temporary entries[%d]: %s", i, entry.Status)
+		}
+		_, err := sdk.AccAddressFromBech32(entry.Address)
+		if err != nil {
+			return sdkerrors.ErrInvalidAddress.Wrapf("temporary entries[%d], %q: %v", i, entry.Address, err)
+		}
+	}
 	return nil
 }
