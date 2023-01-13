@@ -20,6 +20,7 @@ type BankKeeper interface {
 	SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 }
 
+// GovKeeper defines the gov functionality needed from within the sanction module.
 type GovKeeper interface {
 	GetProposal(ctx sdk.Context, proposalID uint64) (govv1.Proposal, bool)
 	GetDepositParams(ctx sdk.Context) govv1.DepositParams
