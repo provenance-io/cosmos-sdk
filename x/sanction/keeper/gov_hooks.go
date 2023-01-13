@@ -101,7 +101,6 @@ func (k Keeper) proposalGovHook(ctx sdk.Context, proposalID uint64) {
 }
 
 // isModuleGovHooksMsgURL returns true if the provided URL is one that these gov hooks care about.
-// Warning, it's assumed that lazyLoadMsgTypeURLs() has been called prior to invoking this method.
 func (k Keeper) isModuleGovHooksMsgURL(url string) bool {
 	// Note: We don't need to care about one of ours being wrapped in a MsgExecLegacyContent,
 	// because ours don't implement the old v1beta1.Content interface, and thus can't be wrapped as such.
@@ -110,7 +109,6 @@ func (k Keeper) isModuleGovHooksMsgURL(url string) bool {
 
 // getMsgAddresses gets the list of addresses from the provided message if it's one we care about.
 // If it's a type we don't care about, returns nil.
-// Warning, it's assumed that lazyLoadMsgTypeURLs() has been called prior to invoking this method.
 func (k Keeper) getMsgAddresses(msg *codectypes.Any) []sdk.AccAddress {
 	if msg == nil {
 		return nil
@@ -140,9 +138,8 @@ func (k Keeper) getMsgAddresses(msg *codectypes.Any) []sdk.AccAddress {
 	return nil
 }
 
-// getImmediateMinDeposit gets the minimum deposit for immediate action to be taken on the proposal.
+// getImmediateMinDeposit gets the minimum deposit for immediate action to be taken on the proposal msg.
 // If the msg isn't of a type we care about, returns empty coins.
-// Warning, it's assumed that lazyLoadMsgTypeURLs() has been called prior to invoking this method.
 func (k Keeper) getImmediateMinDeposit(ctx sdk.Context, msg *codectypes.Any) sdk.Coins {
 	if msg != nil {
 		switch msg.TypeUrl {
