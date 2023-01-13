@@ -68,7 +68,7 @@ func (m *EventAddressSanctioned) GetAddress() string {
 	return ""
 }
 
-// EventAddressUnsanctioned is an event emitted when an address is sanctioned.
+// EventAddressUnsanctioned is an event emitted when an address is unsanctioned.
 type EventAddressUnsanctioned struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
