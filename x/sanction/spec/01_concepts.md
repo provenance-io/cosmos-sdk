@@ -8,7 +8,7 @@ order: 1
 
 An account becomes sanctioned when a governance proposal is passed with a `MsgSanction` in it containing the account's address.
 When an account is sanctioned, funds cannot be removed from it.
-The funds cannot be sent to another account. They cannot be spent either, e.g. on `Tx` fees.
+The funds cannot be sent to another account. They cannot be spent either (e.g. on `Tx` fees).
 Funds can be sent *to* a sanctioned account, though, but would then be immediately frozen.
 
 Sanctioning is enforced as a restriction injected into the `x/bank` send keeper and prevents removal of funds from an account.
@@ -23,7 +23,7 @@ They happen when a `MsgSanction` governance proposal has a large enough deposit.
 They also happen if a deposit is added after proposal submittal that puts the proposal's total deposit over the threshold.
 
 This deposit threshold is managed as a module parameter: `ImmediateSanctionMinDeposit`.
-If not set, immediate sanctions are not possible.
+If zero or empty, immediate sanctions are not possible.
 If set to the governance proposal minimum deposit or less (not recommended), all `MsgSanction` governance proposals will create immediate temporary sanctions.
 If set to more than the governance proposal minimum deposit (this is recommended), it's possible to submit a `MsgSanction` proposal without the sanctions being immediate.
 
@@ -46,7 +46,7 @@ Once an account is unsanctioned, it can again send or spend its funds.
 Similar to immediate temporary sanctions, these are created when a `MsgUnsanction` proposal has a large enough deposit (either initially or later).
 
 This deposit threshold is managed as a module parameter: `ImmediateUnsanctionMinDeposit`.
-If not set, immediate unsanctions are not possible.
+If zero or empty, immediate unsanctions are not possible.
 If set to the governance proposal minimum deposit or less (not recommended), all `MsgUnsanction` governance proposals will create immediate temporary unsanctions.
 If set to more than the governance proposal minimum deposit (this is recommended), it's possible to submit a `MsgUnsanction` proposal without the unsanctions being immediate.
 
@@ -70,6 +70,9 @@ For example, say a proposal has, a `MsgSanction` for accounts A, B, and C, then 
 And the proposal has enough of a deposit for both immediate sanctions and unsanctions.
 There will be 4 temporary entries: account A will have a temporary sanction; and B, C, and D will have temporary unsanctions.
 If the proposal passes, a permanent sanction will be placed on A, and accounts B, C, and D will have their sanctions removed.
+
+If a proposal contains both a `MsgSanction` and `MsgUnsanction` and the total deposit is enough for immediate temporary entries of one type, but not the other,
+the temporary entries are enacted for the one, but not the other. If later, more deposit is added so there's enoug for both, the others will then be enacted too.
 
 ### Conflicting Governance Proposals
 
