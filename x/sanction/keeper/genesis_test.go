@@ -232,7 +232,7 @@ func (s *GenesisTestSuite) TestKeeper_InitGenesis() {
 			expPanic: []string{"invalid address[0]", "decoding bech32 failed"},
 		},
 		{
-			name: "five addrs third bad",
+			name: "six addrs third bad",
 			genState: &sanction.GenesisState{
 				SanctionedAddresses: []string{
 					addr1.String(),
@@ -246,7 +246,7 @@ func (s *GenesisTestSuite) TestKeeper_InitGenesis() {
 			expPanic: []string{"invalid address[2]", "decoding bech32 failed"},
 		},
 		{
-			name: "five addrs, sixth bad",
+			name: "six addrs, sixth bad",
 			genState: &sanction.GenesisState{
 				SanctionedAddresses: []string{
 					addr1.String(),
