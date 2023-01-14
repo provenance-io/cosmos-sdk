@@ -125,7 +125,6 @@ func AssertPanicContents(t *testing.T, contains []string, f assert.PanicTestFunc
 	for _, exp := range contains {
 		if !strings.Contains(panicMsg, exp) {
 			missing = append(missing, exp)
-
 		}
 	}
 

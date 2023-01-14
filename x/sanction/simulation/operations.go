@@ -17,11 +17,11 @@ import (
 )
 
 const (
-	OpWeightSanction            = "op_weight_sanction"
-	OpWeightSanctionImmediate   = "op_weight_sanction_immediate"
-	OpWeightUnsanction          = "op_weight_unsanction"
-	OpWeightUnsanctionImmediate = "op_weight_unsanction_immediate"
-	OpWeightUpdateParams        = "op_weight_update_params"
+	OpWeightSanction            = "op_weight_sanction"             //nolint:gosec
+	OpWeightSanctionImmediate   = "op_weight_sanction_immediate"   //nolint:gosec
+	OpWeightUnsanction          = "op_weight_unsanction"           //nolint:gosec
+	OpWeightUnsanctionImmediate = "op_weight_unsanction_immediate" //nolint:gosec
+	OpWeightUpdateParams        = "op_weight_update_params"        //nolint:gosec
 
 	DefaultWeightSanction            = 10
 	DefaultWeightSanctionImmediate   = 10
