@@ -275,7 +275,7 @@ func (k Keeper) IterateProposalIndexEntries(ctx sdk.Context, govPropID *uint64, 
 }
 
 // IsAddrThatCannotBeSanctioned returns true if the provided address is one of the ones that cannot be sanctioned.
-// I.e. returns true if it can be sanctioned.
+// Returns false if the addr can be sanctioned.
 func (k Keeper) IsAddrThatCannotBeSanctioned(addr sdk.AccAddress) bool {
 	// Okay. I know this is a clunky name for this function.
 	// IsUnsanctionableAddr would be a better name if it weren't WAY too close to IsSanctionedAddr.
@@ -285,6 +285,7 @@ func (k Keeper) IsAddrThatCannotBeSanctioned(addr sdk.AccAddress) bool {
 }
 
 // GetParams gets the sanction module's params.
+// If there isn't anything set in state, the defaults are returned.
 func (k Keeper) GetParams(ctx sdk.Context) *sanction.Params {
 	rv := sanction.DefaultParams()
 
