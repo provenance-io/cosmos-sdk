@@ -24,7 +24,7 @@ Each param field is stored in its own record with this format:
 When an account is sanctioned, the following record is made:
 
 ```
-0x01 | len([]byte(<account address>)) | []byte(<account address>) -> 0x00
+0x01 | len([]byte(<account address>)) | []byte(<account address>) -> 0x01
 ```
 
 When an account is unsanctioned, that record is deleted.
