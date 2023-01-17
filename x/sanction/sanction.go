@@ -5,7 +5,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-// Define the defaults for each param field and allow consuming apps to define them.
+// Define the defaults for each param field and allow consuming apps to set them.
 var (
 	// DefaultImmediateSanctionMinDeposit is the default to use for the MinDepositSanction.
 	DefaultImmediateSanctionMinDeposit sdk.Coins = nil
