@@ -19,9 +19,9 @@ It injects a restriction into the `x/bank` module to enforce these sanctions.
    - [Immediate Temporary Sanctions](01_concepts.md#immediate-temporary-sanctions)
    - [Unsanctioning](01_concepts.md#unsanctioning)
    - [Immediate Temporary Unsanctions](01_concepts.md#immediate-temporary-unsanctions)
-   - [Complex Interactions](01_concepts.md#complex-interactions)
    - [Unsanctionable Addresses](01_concepts.md#unsanctionable-addresses)
    - [Params](01_concepts.md#params)
+   - [Complex Interactions](01_concepts.md#complex-interactions)
 2. **[State](02_state.md)**
    - [Params](02_state.md#params)
    - [Sanctioned Accounts](02_state.md#sanctioned-accounts)

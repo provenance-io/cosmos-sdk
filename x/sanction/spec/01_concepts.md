@@ -9,7 +9,7 @@ order: 1
 An account becomes sanctioned when a governance proposal is passed with a `MsgSanction` in it containing the account's address.
 When an account is sanctioned, funds cannot be removed from it.
 The funds cannot be sent to another account. They cannot be spent either (e.g. on `Tx` fees).
-Funds can be sent *to* a sanctioned account, though, but would then be immediately frozen.
+Funds can be sent *to* a sanctioned account, but would then be immediately frozen in that account.
 
 Sanctioning is enforced as a restriction injected into the `x/bank` send keeper and prevents removal of funds from an account.
 A sanctioned account is otherwise unchanged.
@@ -24,7 +24,7 @@ They also happen if a deposit is added after proposal submittal that puts the pr
 
 This deposit threshold is managed as a module parameter: `ImmediateSanctionMinDeposit`.
 If zero or empty, immediate sanctions are not possible.
-If set to the governance proposal minimum deposit or less (not recommended), all `MsgSanction` governance proposals will create immediate temporary sanctions.
+If set to the governance proposal minimum deposit or less (not recommended), all `MsgSanction` governance proposals put to a vote will create immediate temporary sanctions.
 If set to more than the governance proposal minimum deposit (this is recommended), it's possible to submit a `MsgSanction` proposal without the sanctions being immediate.
 
 Immediate temporary sanctions are associated with both the governance proposal and address in question.
@@ -33,7 +33,7 @@ If the proposal passes, permanent sanctions are enacted and any temporary entrie
 If the proposal does not pass, any temporary entries associated with that proposal are removed.
 
 Note: The phrase "permanent sanction" is used in here as a counterpart to "temporary sanction".
-It is "permanent" only in the sense that it won't change without specific user interaction.
+It is "permanent" only in the sense that it isn't temporary.
 It is *not* "permanent" in the sense that it is possible to be undone (e.g. with a `MsgUnsanction`).
 
 ## Unsanctioning
@@ -47,13 +47,40 @@ Similar to immediate temporary sanctions, these are created when a `MsgUnsanctio
 
 This deposit threshold is managed as a module parameter: `ImmediateUnsanctionMinDeposit`.
 If zero or empty, immediate unsanctions are not possible.
-If set to the governance proposal minimum deposit or less (not recommended), all `MsgUnsanction` governance proposals will create immediate temporary unsanctions.
+If set to the governance proposal minimum deposit or less (not recommended), all `MsgUnsanction` governance proposals put to a vote will create immediate temporary unsanctions.
 If set to more than the governance proposal minimum deposit (this is recommended), it's possible to submit a `MsgUnsanction` proposal without the unsanctions being immediate.
 
 Immediate temporary unsanctions are associated with both the governance proposal and address in question.
 They expire once the governance proposal is resolved (e.g. the voting period ends).
 If the proposal passes, permanent sanctions are removed and any temporary entries for each address are removed.
 If the proposal does not pass, any temporary entries associated with that proposal are removed.
+
+## Unsanctionable Addresses
+
+When creating the sanction keeper, a list of addresses of unsanctionable accounts can be provided.
+An attempt to sanction or enact an immediate temporary sanction on an address in that list results in the error: `"address cannot be sanctioned"`.
+
+An example of an account that should not be sanctionable is the fee collector.
+
+## Params
+
+The `x/sanction` module has some params that can be defined in state.
+
+* `ImmediateSanctionMinDeposit` is the minimum deposit required for immediate temporary sanctions to be enacted for addresses in a `MsgSanction`.
+* `ImmediateUnsanctionMinDeposit` is the minimum deposit required for immediate temporary unsanctions to be enacted for addresses in a `MsgUnsanction`.
+
+If not defined in state, the following variables are used (defined in `x/sanction/sanction.go`):
+* `DefaultImmediateSanctionMinDeposit`
+* `DefaultImmediateUnsanctionMinDeposit`
+
+By default, those have a value of `nil` which makes it impossible to enact immediate temporary sanctions or unsanctions.
+They are public, though, so consuming chains can change them as desired.
+
+The default variables are only used if the state entry does not exist.
+If the entry exists, but is empty, that empty value is used.
+
+It is recommended that both of these minimum deposits be significantly larger than the governance proposal minimum deposit.
+This is to prevent malicious use of immediate temporary sanctions or unsanctions.
 
 ## Complex Interactions
 
@@ -62,7 +89,7 @@ In a general sense, the last one takes precedence.
 
 ### Conflicting Messages in a Proposal
 
-When a proposal has multiple messages, they are processed in the order they appear listed in the proposal.
+When a proposal has multiple messages, they are processed in the order they are listed in the proposal.
 So if a governance proposal contains both a `MsgSanction` and `MsgUnsanction`, and one or more addresses are listed in both,
 then, the last message they're in takes precedence.
 
@@ -98,27 +125,3 @@ Scenarios:
 * Prop 5 does not pass while prop 3 is still being voted on:
   The temporary unsanction entries for accounts B, C, and D are removed leaving temporary sanction entries for A, B, and C.
   If accounts B, C, or D were previously permanently sanctioned, those sanctions remain.
-
-## Unsanctionable Addresses
-
-When creating the sanction keeper, a list of addresses of unsanctionable accounts can be provided.
-An attempt to sanction or enact an immediate temporary sanction on an address in that list results in the error: `"address cannot be sanctioned"`.
-
-An example of an account that should not be sanctionable is the fee collector.
-
-## Params
-
-The `x/sanction` module has some params that can be defined in state.
-
-* `ImmediateSanctionMinDeposit` is the minimum deposit required for immediate temporary sanctions to be enacted for addresses in a `MsgSanction`.
-* `ImmediateUnsanctionMinDeposit` is the minimum deposit required for immediate temporary unsanctions to be enacted for addresses in a `MsgUnsanction`.
-
-If not defined in state, the following variables are used (defined in `x/sanction/sanction.go`):
-* `DefaultImmediateSanctionMinDeposit`
-* `DefaultImmediateUnsanctionMinDeposit`
-
-By default, those have a value of `nil` which makes it impossible to enact immediate temporary sanctions or unsanctions.
-They are public, though, so consuming chains can change them as desired.
-
-The default variables are only used if the state entry does not exist.
-If the entry exists, but is empty, that empty value is used.
