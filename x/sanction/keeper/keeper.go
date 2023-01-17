@@ -65,10 +65,10 @@ func (k Keeper) IsSanctionedAddr(ctx sdk.Context, addr sdk.AccAddress) bool {
 	}
 	store := ctx.KVStore(k.storeKey)
 	tempEntry := k.getLatestTempEntry(store, addr)
-	if IsTempSanctionBz(tempEntry) {
+	if IsSanctionBz(tempEntry) {
 		return true
 	}
-	if IsTempUnsanctionBz(tempEntry) {
+	if IsUnsanctionBz(tempEntry) {
 		return false
 	}
 	key := CreateSanctionedAddrKey(addr)
@@ -79,7 +79,7 @@ func (k Keeper) IsSanctionedAddr(ctx sdk.Context, addr sdk.AccAddress) bool {
 // Also deletes any temporary entries for each address.
 func (k Keeper) SanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) error {
 	store := ctx.KVStore(k.storeKey)
-	val := []byte{0x00}
+	val := []byte{SanctionB}
 	for _, addr := range addrs {
 		if k.IsAddrThatCannotBeSanctioned(addr) {
 			return errors.ErrUnsanctionableAddr.Wrap(addr.String())
@@ -111,12 +111,12 @@ func (k Keeper) UnsanctionAddresses(ctx sdk.Context, addrs ...sdk.AccAddress) er
 
 // AddTemporarySanction adds a temporary sanction with the given gov prop id for each of the provided addresses.
 func (k Keeper) AddTemporarySanction(ctx sdk.Context, govPropID uint64, addrs ...sdk.AccAddress) error {
-	return k.addTempEntries(ctx, TempSanctionB, govPropID, addrs)
+	return k.addTempEntries(ctx, SanctionB, govPropID, addrs)
 }
 
 // AddTemporaryUnsanction adds a temporary unsanction with the given gov prop id for each of the provided addresses.
 func (k Keeper) AddTemporaryUnsanction(ctx sdk.Context, govPropID uint64, addrs ...sdk.AccAddress) error {
-	return k.addTempEntries(ctx, TempUnsanctionB, govPropID, addrs)
+	return k.addTempEntries(ctx, UnsanctionB, govPropID, addrs)
 }
 
 // addTempEntries adds a temporary entry with the given value and gov prop id for each address given.
@@ -124,7 +124,7 @@ func (k Keeper) addTempEntries(ctx sdk.Context, value byte, govPropID uint64, ad
 	store := ctx.KVStore(k.storeKey)
 	val := []byte{value}
 	for _, addr := range addrs {
-		if value == TempSanctionB && k.IsAddrThatCannotBeSanctioned(addr) {
+		if value == SanctionB && k.IsAddrThatCannotBeSanctioned(addr) {
 			return errors.ErrUnsanctionableAddr.Wrap(addr.String())
 		}
 		key := CreateTemporaryKey(addr, govPropID)
@@ -240,7 +240,7 @@ func (k Keeper) IterateTemporaryEntries(ctx sdk.Context, addr sdk.AccAddress, cb
 	for ; iter.Valid(); iter.Next() {
 		key := ConcatBz(pre, iter.Key())
 		kAddr, govPropID := ParseTemporaryKey(key)
-		isSanction := IsTempSanctionBz(iter.Value())
+		isSanction := IsSanctionBz(iter.Value())
 		if cb(kAddr, govPropID, isSanction) {
 			break
 		}

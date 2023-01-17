@@ -735,10 +735,10 @@ func TestParseTemporaryKey(t *testing.T) {
 
 func TestTempBValues(t *testing.T) {
 	// If these were the same, it'd be bad.
-	assert.NotEqual(t, keeper.TempSanctionB, keeper.TempUnsanctionB, "%v = TempSanctionB = TempUnsanctionB", keeper.TempSanctionB)
+	assert.NotEqual(t, keeper.SanctionB, keeper.UnsanctionB, "%v = SanctionB = UnsanctionB", keeper.SanctionB)
 }
 
-func TestIsTempSanctionBz(t *testing.T) {
+func TestIsSanctionBz(t *testing.T) {
 	tests := []struct {
 		name string
 		bz   []byte
@@ -746,28 +746,28 @@ func TestIsTempSanctionBz(t *testing.T) {
 	}{
 		{name: "nil", bz: nil, exp: false},
 		{name: "empty", bz: []byte{}, exp: false},
-		{name: "TempSanctionB and 0", bz: []byte{keeper.TempSanctionB, 0}, exp: false},
-		{name: "TempUnsanctionB and 0", bz: []byte{keeper.TempUnsanctionB, 0}, exp: false},
-		{name: "0 and TempSanctionB", bz: []byte{0, keeper.TempSanctionB}, exp: false},
-		{name: "0 and TempUnsanctionB", bz: []byte{0, keeper.TempUnsanctionB}, exp: false},
+		{name: "SanctionB and 0", bz: []byte{keeper.SanctionB, 0}, exp: false},
+		{name: "UnsanctionB and 0", bz: []byte{keeper.UnsanctionB, 0}, exp: false},
+		{name: "0 and SanctionB", bz: []byte{0, keeper.SanctionB}, exp: false},
+		{name: "0 and UnsanctionB", bz: []byte{0, keeper.UnsanctionB}, exp: false},
 		{name: "the letter f", bz: []byte{'f'}, exp: false},
-		{name: "TempSanctionB", bz: []byte{keeper.TempSanctionB}, exp: true},
-		{name: "TempUnsanctionB", bz: []byte{keeper.TempUnsanctionB}, exp: false},
+		{name: "SanctionB", bz: []byte{keeper.SanctionB}, exp: true},
+		{name: "UnsanctionB", bz: []byte{keeper.UnsanctionB}, exp: false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var actual bool
 			testFunc := func() {
-				actual = keeper.IsTempSanctionBz(tc.bz)
+				actual = keeper.IsSanctionBz(tc.bz)
 			}
-			require.NotPanics(t, testFunc, "IsTempSanctionBz")
-			assert.Equal(t, tc.exp, actual, "IsTempSanctionBz result")
+			require.NotPanics(t, testFunc, "IsSanctionBz")
+			assert.Equal(t, tc.exp, actual, "IsSanctionBz result")
 		})
 	}
 }
 
-func TestIsTempUnsanctionBz(t *testing.T) {
+func TestIsUnsanctionBz(t *testing.T) {
 	tests := []struct {
 		name string
 		bz   []byte
@@ -775,23 +775,23 @@ func TestIsTempUnsanctionBz(t *testing.T) {
 	}{
 		{name: "nil", bz: nil, exp: false},
 		{name: "empty", bz: []byte{}, exp: false},
-		{name: "TempSanctionB and 0", bz: []byte{keeper.TempSanctionB, 0}, exp: false},
-		{name: "TempUnsanctionB and 0", bz: []byte{keeper.TempUnsanctionB, 0}, exp: false},
-		{name: "0 and TempSanctionB", bz: []byte{0, keeper.TempSanctionB}, exp: false},
-		{name: "0 and TempUnsanctionB", bz: []byte{0, keeper.TempUnsanctionB}, exp: false},
+		{name: "SanctionB and 0", bz: []byte{keeper.SanctionB, 0}, exp: false},
+		{name: "UnsanctionB and 0", bz: []byte{keeper.UnsanctionB, 0}, exp: false},
+		{name: "0 and SanctionB", bz: []byte{0, keeper.SanctionB}, exp: false},
+		{name: "0 and UnsanctionB", bz: []byte{0, keeper.UnsanctionB}, exp: false},
 		{name: "the letter f", bz: []byte{'f'}, exp: false},
-		{name: "TempSanctionB", bz: []byte{keeper.TempSanctionB}, exp: false},
-		{name: "TempUnsanctionB", bz: []byte{keeper.TempUnsanctionB}, exp: true},
+		{name: "SanctionB", bz: []byte{keeper.SanctionB}, exp: false},
+		{name: "UnsanctionB", bz: []byte{keeper.UnsanctionB}, exp: true},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var actual bool
 			testFunc := func() {
-				actual = keeper.IsTempUnsanctionBz(tc.bz)
+				actual = keeper.IsUnsanctionBz(tc.bz)
 			}
-			require.NotPanics(t, testFunc, "IsTempUnsanctionBz")
-			assert.Equal(t, tc.exp, actual, "IsTempUnsanctionBz result")
+			require.NotPanics(t, testFunc, "IsUnsanctionBz")
+			assert.Equal(t, tc.exp, actual, "IsUnsanctionBz result")
 		})
 	}
 }
@@ -804,13 +804,13 @@ func TestToTempStatus(t *testing.T) {
 	}{
 		{name: "nil", bz: nil, exp: sanction.TEMP_STATUS_UNSPECIFIED},
 		{name: "empty", bz: []byte{}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
-		{name: "TempSanctionB and 0", bz: []byte{keeper.TempSanctionB, 0}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
-		{name: "TempUnsanctionB and 0", bz: []byte{keeper.TempUnsanctionB, 0}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
-		{name: "0 and TempSanctionB", bz: []byte{0, keeper.TempSanctionB}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
-		{name: "0 and TempUnsanctionB", bz: []byte{0, keeper.TempUnsanctionB}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
+		{name: "SanctionB and 0", bz: []byte{keeper.SanctionB, 0}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
+		{name: "UnsanctionB and 0", bz: []byte{keeper.UnsanctionB, 0}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
+		{name: "0 and SanctionB", bz: []byte{0, keeper.SanctionB}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
+		{name: "0 and UnsanctionB", bz: []byte{0, keeper.UnsanctionB}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
 		{name: "the letter f", bz: []byte{'f'}, exp: sanction.TEMP_STATUS_UNSPECIFIED},
-		{name: "TempSanctionB", bz: []byte{keeper.TempSanctionB}, exp: sanction.TEMP_STATUS_SANCTIONED},
-		{name: "TempUnsanctionB", bz: []byte{keeper.TempUnsanctionB}, exp: sanction.TEMP_STATUS_UNSANCTIONED},
+		{name: "SanctionB", bz: []byte{keeper.SanctionB}, exp: sanction.TEMP_STATUS_SANCTIONED},
+		{name: "UnsanctionB", bz: []byte{keeper.UnsanctionB}, exp: sanction.TEMP_STATUS_UNSANCTIONED},
 	}
 
 	for _, tc := range tests {
@@ -834,50 +834,50 @@ func TestNewTempEvent(t *testing.T) {
 		expPanic string
 	}{
 		{
-			name:    "TempSanctionB nil addr",
-			typeVal: keeper.TempSanctionB,
+			name:    "SanctionB nil addr",
+			typeVal: keeper.SanctionB,
 			addr:    nil,
 			exp:     &sanction.EventTempAddressSanctioned{Address: ""},
 		},
 		{
-			name:    "TempSanctionB empty addr",
-			typeVal: keeper.TempSanctionB,
+			name:    "SanctionB empty addr",
+			typeVal: keeper.SanctionB,
 			addr:    sdk.AccAddress{},
 			exp:     &sanction.EventTempAddressSanctioned{Address: ""},
 		},
 		{
-			name:    "TempSanctionB 20 byte addr",
-			typeVal: keeper.TempSanctionB,
+			name:    "SanctionB 20 byte addr",
+			typeVal: keeper.SanctionB,
 			addr:    sdk.AccAddress("this_is_a_short_addr"),
 			exp:     &sanction.EventTempAddressSanctioned{Address: sdk.AccAddress("this_is_a_short_addr").String()},
 		},
 		{
-			name:    "TempSanctionB 32 byte addr",
-			typeVal: keeper.TempSanctionB,
+			name:    "SanctionB 32 byte addr",
+			typeVal: keeper.SanctionB,
 			addr:    sdk.AccAddress("this_is_a_longer_addr_for_tests_"),
 			exp:     &sanction.EventTempAddressSanctioned{Address: sdk.AccAddress("this_is_a_longer_addr_for_tests_").String()},
 		},
 		{
-			name:    "TempUnsanctionB nil addr",
-			typeVal: keeper.TempUnsanctionB,
+			name:    "UnsanctionB nil addr",
+			typeVal: keeper.UnsanctionB,
 			addr:    nil,
 			exp:     &sanction.EventTempAddressUnsanctioned{Address: ""},
 		},
 		{
-			name:    "TempUnsanctionB empty addr",
-			typeVal: keeper.TempUnsanctionB,
+			name:    "UnsanctionB empty addr",
+			typeVal: keeper.UnsanctionB,
 			addr:    sdk.AccAddress{},
 			exp:     &sanction.EventTempAddressUnsanctioned{Address: ""},
 		},
 		{
-			name:    "TempUnsanctionB 20 byte addr",
-			typeVal: keeper.TempUnsanctionB,
+			name:    "UnsanctionB 20 byte addr",
+			typeVal: keeper.UnsanctionB,
 			addr:    sdk.AccAddress("this_is_a_short_addr"),
 			exp:     &sanction.EventTempAddressUnsanctioned{Address: sdk.AccAddress("this_is_a_short_addr").String()},
 		},
 		{
-			name:    "TempUnsanctionB 32 byte addr",
-			typeVal: keeper.TempUnsanctionB,
+			name:    "UnsanctionB 32 byte addr",
+			typeVal: keeper.UnsanctionB,
 			addr:    sdk.AccAddress("this_is_a_longer_addr_for_tests_"),
 			exp:     &sanction.EventTempAddressUnsanctioned{Address: sdk.AccAddress("this_is_a_longer_addr_for_tests_").String()},
 		},

@@ -15,13 +15,11 @@ import (
 // Params entry:
 // - 0x00<name> -> <value>
 // Sanctioned addresses:
-// - 0x01<addr len (1 byte)><addr> -> 0x00
-// Temporarily sanctioned addresses:
-// - 0x02<addr len (1 byte)><addr><gov prop id (8 bytes)> -> 0x01
-// Temporarily unsanctioned addresses:
-// - 0x02<addr len (1 byte)><addr><gov prop id (8 bytes)> -> 0x00
+// - 0x01<addr len (1 byte)><addr> -> 0x01
+// Temporarily sanctioned or unsanctioned addresses:
+// - 0x02<addr len (1 byte)><addr><gov prop id (8 bytes)> -> 0x01 or 0x00
 // Proposal id temp sanction index:
-// - 0x03<proposal id (8 bytes)><addr len (1 byte)><addr> -> 0x00
+// - 0x03<proposal id (8 bytes)><addr len (1 byte)><addr> -> 0x00 or 0x01
 var (
 	ParamsPrefix        = []byte{0x00}
 	SanctionedPrefix    = []byte{0x01}
@@ -124,41 +122,41 @@ func ParseTemporaryKey(key []byte) (sdk.AccAddress, uint64) {
 }
 
 const (
-	// TempSanctionB is a byte representing a temporary sanction.
-	TempSanctionB = 0x01
-	// TempUnsanctionB is a byte representing a temporary unsanction.
-	TempUnsanctionB = 0x00
+	// SanctionB is a byte representing a sanction (either temporary or permanent).
+	SanctionB = 0x01
+	// UnsanctionB is a byte representing an unsanction (probably temporary).
+	UnsanctionB = 0x00
 )
 
-// IsTempSanctionBz returns true if the provided byte slice indicates a temporary sanction.
-func IsTempSanctionBz(bz []byte) bool {
-	return len(bz) == 1 && bz[0] == TempSanctionB
+// IsSanctionBz returns true if the provided byte slice indicates a temporary sanction.
+func IsSanctionBz(bz []byte) bool {
+	return len(bz) == 1 && bz[0] == SanctionB
 }
 
-// IsTempUnsanctionBz returns true if the provided byte slice indicates a temporary unsanction.
-func IsTempUnsanctionBz(bz []byte) bool {
-	return len(bz) == 1 && bz[0] == TempUnsanctionB
+// IsUnsanctionBz returns true if the provided byte slice indicates a temporary unsanction.
+func IsUnsanctionBz(bz []byte) bool {
+	return len(bz) == 1 && bz[0] == UnsanctionB
 }
 
 // ToTempStatus converts a temporary entry value byte slice into a TempStatus value.
 func ToTempStatus(bz []byte) sanction.TempStatus {
 	if len(bz) == 1 {
 		switch bz[0] {
-		case TempSanctionB:
+		case SanctionB:
 			return sanction.TEMP_STATUS_SANCTIONED
-		case TempUnsanctionB:
+		case UnsanctionB:
 			return sanction.TEMP_STATUS_UNSANCTIONED
 		}
 	}
 	return sanction.TEMP_STATUS_UNSPECIFIED
 }
 
-// NewTempEvent creates the temp event for the given type val (e.g. TempSanctionB or TempUnsanctionB) with the given address.
+// NewTempEvent creates the temp event for the given type val (e.g. SanctionB or UnsanctionB) with the given address.
 func NewTempEvent(typeVal byte, addr sdk.AccAddress) proto.Message {
 	switch typeVal {
-	case TempSanctionB:
+	case SanctionB:
 		return sanction.NewEventTempAddressSanctioned(addr)
-	case TempUnsanctionB:
+	case UnsanctionB:
 		return sanction.NewEventTempAddressUnsanctioned(addr)
 	default:
 		panic(fmt.Errorf("unknown temp value byte: %x", typeVal))

@@ -517,7 +517,7 @@ func (s *KeeperTestSuite) TestKeeper_AddTemporarySanction() {
 	makeEvents := func(addrs ...sdk.AccAddress) sdk.Events {
 		rv := sdk.Events{}
 		for _, addr := range addrs {
-			event, err := sdk.TypedEventToEvent(keeper.NewTempEvent(keeper.TempSanctionB, addr))
+			event, err := sdk.TypedEventToEvent(keeper.NewTempEvent(keeper.SanctionB, addr))
 			s.Require().NoError(err, "TypedEventToEvent temp event")
 			rv = append(rv, event)
 		}
@@ -697,7 +697,7 @@ func (s *KeeperTestSuite) TestKeeper_AddTemporaryUnsanction() {
 	makeEvents := func(addrs ...sdk.AccAddress) sdk.Events {
 		rv := sdk.Events{}
 		for _, addr := range addrs {
-			event, err := sdk.TypedEventToEvent(keeper.NewTempEvent(keeper.TempUnsanctionB, addr))
+			event, err := sdk.TypedEventToEvent(keeper.NewTempEvent(keeper.UnsanctionB, addr))
 			s.Require().NoError(err, "TypedEventToEvent temp event")
 			rv = append(rv, event)
 		}
@@ -941,7 +941,7 @@ func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
 			return s.Keeper.AddTemporarySanction(s.SdkCtx, 1, addr)
 		}, "Setup: AddTemporarySanction")
 
-		expected := []byte{keeper.TempSanctionB}
+		expected := []byte{keeper.SanctionB}
 		var actual []byte
 		testFunc := func() {
 			actual = s.Keeper.OnlyTestsGetLatestTempEntry(store, addr)
@@ -956,7 +956,7 @@ func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
 			return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 2, addr)
 		}, "Setup: AddTemporaryUnsanction")
 
-		expected := []byte{keeper.TempUnsanctionB}
+		expected := []byte{keeper.UnsanctionB}
 		var actual []byte
 		testFunc := func() {
 			actual = s.Keeper.OnlyTestsGetLatestTempEntry(store, addr)
@@ -977,7 +977,7 @@ func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
 			return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 4, addr)
 		}, "Setup: AddTemporaryUnsanction 4")
 
-		expected := []byte{keeper.TempSanctionB}
+		expected := []byte{keeper.SanctionB}
 		var actual []byte
 		testFunc := func() {
 			actual = s.Keeper.OnlyTestsGetLatestTempEntry(store, addr)
@@ -998,7 +998,7 @@ func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
 			return s.Keeper.AddTemporarySanction(s.SdkCtx, 6, addr)
 		}, "Setup: AddTemporarySanction 6")
 
-		expected := []byte{keeper.TempUnsanctionB}
+		expected := []byte{keeper.UnsanctionB}
 		var actual []byte
 		testFunc := func() {
 			actual = s.Keeper.OnlyTestsGetLatestTempEntry(store, addr)
