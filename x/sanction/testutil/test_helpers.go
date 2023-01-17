@@ -160,10 +160,10 @@ func RequirePanicContents(t *testing.T, contains []string, f assert.PanicTestFun
 func AssertNotPanicsNoError(t *testing.T, f func() error, msgAndArgs ...interface{}) bool {
 	t.Helper()
 	var err error
-	if assert.NotPanics(t, func() { err = f() }, msgAndArgs...) {
-		return assert.NoError(t, err, msgAndArgs...)
+	if !assert.NotPanics(t, func() { err = f() }, msgAndArgs...) {
+		return false
 	}
-	return false
+	return assert.NoError(t, err, msgAndArgs...)
 }
 
 // RequireNotPanicsNoError asserts that the code inside the provided function does not panic
