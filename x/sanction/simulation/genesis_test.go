@@ -28,19 +28,17 @@ func getAccountCount() int {
 	return 10
 }
 
-// getSeedValue returns a seed value to use in each of the tests.
-func getSeedValue() int64 {
-	// This is a function instead of variable because I dislike global variables.
-	// Global variables in unit tests just leads to weird, painful problems.
-	return 1
+// newDefaultRand returns a new Rand made from a default, constant seed value.
+func newDefaultRand() *rand.Rand {
+	return rand.New(rand.NewSource(1))
 }
 
 // generateAccounts generates a standard number of accounts.
 func generateAccounts(t *testing.T) []simtypes.Account {
 	// This uses its own random number generator in order to not affect the numbers
-	// generated elsewhere. Plus, but setting the seed the same, we should always
+	// generated elsewhere. Plus, by setting the seed the same, we should always
 	// have the same accounts which can help when trying to identify problems.
-	rv := simtypes.RandomAccounts(rand.New(rand.NewSource(getSeedValue())), getAccountCount())
+	rv := simtypes.RandomAccounts(newDefaultRand(), getAccountCount())
 	// Log all the account addresses so that if this test breaks,
 	// people can see which accounts where which.
 	t.Logf("accounts:")
@@ -73,7 +71,7 @@ func TestRandomizer(t *testing.T) {
 	t.Run("values used in RandomSanctionedAddresses", func(t *testing.T) {
 		expectedRands := []int64{0, 1, 1, 1, 2, 0, 3, 3, 1, 4}
 
-		r := rand.New(rand.NewSource(getSeedValue()))
+		r := newDefaultRand()
 		actualRands := randomSanctionedAddressesRands(r)
 		assert.Equal(t, expectedRands, actualRands, "random numbers generated")
 	})
@@ -96,7 +94,7 @@ func TestRandomizer(t *testing.T) {
 	t.Run("values used in RandomTempEntries", func(t *testing.T) {
 		expectedRands := []int64{0, 551, 1, 51, 7, 0, 758, 8, 6, 9, 4, 7, 4}
 
-		r := rand.New(rand.NewSource(getSeedValue()))
+		r := newDefaultRand()
 		actualRands := randomTempEntriesRands(r)
 		assert.Equal(t, expectedRands, actualRands, "random numbers generated")
 	})
@@ -119,7 +117,7 @@ func TestRandomizer(t *testing.T) {
 	t.Run("values used in RandomParams default seed", func(t *testing.T) {
 		expectedRands := []int64{0, 1, 821}
 
-		r := rand.New(rand.NewSource(getSeedValue()))
+		r := newDefaultRand()
 		actualRands := randomParamsRands(r)
 		assert.Equal(t, expectedRands, actualRands, "random numbers generated")
 	})
@@ -153,7 +151,7 @@ func TestRandomSanctionedAddresses(t *testing.T) {
 		accounts[5].Address.String(),
 	}
 
-	r := rand.New(rand.NewSource(getSeedValue()))
+	r := newDefaultRand()
 	var actual []string
 	testFunc := func() {
 		actual = simulation.RandomSanctionedAddresses(r, accounts)
@@ -184,7 +182,7 @@ func TestRandomTempEntries(t *testing.T) {
 		},
 	}
 
-	r := rand.New(rand.NewSource(getSeedValue()))
+	r := newDefaultRand()
 	var actual []*sanction.TemporaryEntry
 	testFunc := func() {
 		actual = simulation.RandomTempEntries(r, accounts)
@@ -200,7 +198,7 @@ func TestRandomParams(t *testing.T) {
 		ImmediateUnsanctionMinDeposit: sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, 821+1)),
 	}
 
-	r := rand.New(rand.NewSource(getSeedValue()))
+	r := newDefaultRand()
 	var actual *sanction.Params
 	testFunc := func() {
 		actual = simulation.RandomParams(r)
