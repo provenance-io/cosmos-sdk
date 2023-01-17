@@ -116,10 +116,16 @@ func (s *BaseTestSuite) GetAllIndexTempEntries() []*sanction.TemporaryEntry {
 	return tempIndEntries
 }
 
+// RequireNotPanicsNoError calls RequireNotPanicsNoError with this suite's t.
+func (s *BaseTestSuite) RequireNotPanicsNoError(f func() error, msgAndArgs ...interface{}) {
+	s.T().Helper()
+	testutil.RequireNotPanicsNoError(s.T(), f, msgAndArgs...)
+}
+
 // ReqOKSetParams calls SetParams, making sure it doesn't panic and doesn't return an error.
 func (s *BaseTestSuite) ReqOKSetParams(params *sanction.Params) {
 	s.T().Helper()
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
+	s.RequireNotPanicsNoError(func() error {
 		return s.Keeper.SetParams(s.SdkCtx, params)
 	}, "SetParams")
 }
@@ -127,7 +133,7 @@ func (s *BaseTestSuite) ReqOKSetParams(params *sanction.Params) {
 // ReqOKAddPermSanct calls SanctionAddresses, making sure it doesn't panic and doesn't return an error.
 func (s *BaseTestSuite) ReqOKAddPermSanct(addrArgNames string, addrs ...sdk.AccAddress) {
 	s.T().Helper()
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
+	s.RequireNotPanicsNoError(func() error {
 		return s.Keeper.SanctionAddresses(s.SdkCtx, addrs...)
 	}, "SanctionAddresses(%s)", addrArgNames)
 }
@@ -135,7 +141,7 @@ func (s *BaseTestSuite) ReqOKAddPermSanct(addrArgNames string, addrs ...sdk.AccA
 // ReqOKAddPermUnsanct calls UnsanctionAddresses, making sure it doesn't panic and doesn't return an error.
 func (s *BaseTestSuite) ReqOKAddPermUnsanct(addrArgNames string, addrs ...sdk.AccAddress) {
 	s.T().Helper()
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
+	s.RequireNotPanicsNoError(func() error {
 		return s.Keeper.UnsanctionAddresses(s.SdkCtx, addrs...)
 	}, "UnsanctionAddresses(%s)", addrArgNames)
 }
@@ -143,7 +149,7 @@ func (s *BaseTestSuite) ReqOKAddPermUnsanct(addrArgNames string, addrs ...sdk.Ac
 // ReqOKAddTempSanct calls AddTemporarySanction, making sure it doesn't panic and doesn't return an error.
 func (s *BaseTestSuite) ReqOKAddTempSanct(id uint64, addrArgNames string, addrs ...sdk.AccAddress) {
 	s.T().Helper()
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
+	s.RequireNotPanicsNoError(func() error {
 		return s.Keeper.AddTemporarySanction(s.SdkCtx, id, addrs...)
 	}, "AddTemporarySanction(%d, %s)", id, addrArgNames)
 }
@@ -151,7 +157,7 @@ func (s *BaseTestSuite) ReqOKAddTempSanct(id uint64, addrArgNames string, addrs 
 // ReqOKAddTempUnsanct calls AddTemporaryUnsanction, making sure it doesn't panic and doesn't return an error.
 func (s *BaseTestSuite) ReqOKAddTempUnsanct(id uint64, addrArgNames string, addrs ...sdk.AccAddress) {
 	s.T().Helper()
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
+	s.RequireNotPanicsNoError(func() error {
 		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, id, addrs...)
 	}, "AddTemporaryUnsanction(%d, %s)", id, addrArgNames)
 }

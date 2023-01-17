@@ -103,24 +103,19 @@ func (s *KeeperTestSuite) TestKeeper_IsSanctionedAddr() {
 	// addr4 will have a temp sanction then temp unsanction.
 	// addr5 will be sanctioned and have a temp unsanction then a temp sanction.
 	// addrUnsanctionable will have a sanction in place, but be one of the unsanctionable addresses.
-	var setupErr error
 	addrUnsanctionable := sdk.AccAddress("unsanctionable_addr_")
-	s.Require().NotPanics(func() {
-		setupErr = s.Keeper.SanctionAddresses(s.SdkCtx, s.addr1, s.addr2, s.addr5, addrUnsanctionable)
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.SanctionAddresses(s.SdkCtx, s.addr1, s.addr2, s.addr5, addrUnsanctionable)
 	}, "SanctionAddresses")
-	s.Require().NoError(setupErr, "SanctionAddresses error")
-	s.Require().NotPanics(func() {
-		setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 1, s.addr3, s.addr4)
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 1, s.addr3, s.addr4)
 	}, "first AddTemporarySanction")
-	s.Require().NoError(setupErr, "first AddTemporarySanction error")
-	s.Require().NotPanics(func() {
-		setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 2, s.addr2, s.addr4, s.addr5)
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 2, s.addr2, s.addr4, s.addr5)
 	}, "AddTemporaryUnsanction")
-	s.Require().NoError(setupErr, "AddTemporaryUnsanction error")
-	s.Require().NotPanics(func() {
-		setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 3, s.addr5)
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 3, s.addr5)
 	}, "second AddTemporarySanction")
-	s.Require().NoError(setupErr, "second AddTemporarySanction error")
 
 	k := s.Keeper.OnlyTestsWithUnsanctionableAddrs(map[string]bool{string(addrUnsanctionable): true})
 
@@ -357,26 +352,20 @@ func (s *KeeperTestSuite) TestKeeper_SanctionAddresses() {
 	}
 
 	s.Run("temp entries are deleted", func() {
-		var err error
-		s.Require().NotPanics(func() {
-			err = k.AddTemporarySanction(s.SdkCtx, 1, s.addr1, s.addr2)
-			if err != nil {
-				return
-			}
-			err = k.AddTemporarySanction(s.SdkCtx, 2, s.addr1, s.addr3)
-			if err != nil {
-				return
-			}
-			err = k.AddTemporaryUnsanction(s.SdkCtx, 3, s.addr2, s.addr4, s.addr5)
-			if err != nil {
-				return
-			}
-		}, "adding some temporary entries")
+		s.RequireNotPanicsNoError(func() error {
+			return k.AddTemporarySanction(s.SdkCtx, 1, s.addr1, s.addr2)
+		}, "Setup: AddTemporarySanction 1; 1, 2")
+		s.RequireNotPanicsNoError(func() error {
+			return k.AddTemporarySanction(s.SdkCtx, 2, s.addr1, s.addr3)
+		}, "Setup: AddTemporarySanction 2; 1, 3")
+		s.RequireNotPanicsNoError(func() error {
+			return k.AddTemporaryUnsanction(s.SdkCtx, 3, s.addr2, s.addr4, s.addr5)
+		}, "Setup: AddTemporaryUnsanction 3; 2, 4, 5")
 
-		testFunc := func() {
-			err = k.SanctionAddresses(s.SdkCtx, s.addr5, s.addr3, s.addr1, s.addr2, s.addr4)
+		testFunc := func() error {
+			return k.SanctionAddresses(s.SdkCtx, s.addr5, s.addr3, s.addr1, s.addr2, s.addr4)
 		}
-		s.Require().NotPanics(testFunc, "SanctionAddresses")
+		s.RequireNotPanicsNoError(testFunc, "SanctionAddresses")
 
 		tempEntries := s.GetAllTempEntries()
 		s.Assert().Empty(tempEntries, "temporary entries still in the store")
@@ -400,11 +389,9 @@ func (s *KeeperTestSuite) TestKeeper_UnsanctionAddresses() {
 	// Setup: Sanction all 5 addrs plus a new one that will end up being unsanctionable.
 	addrUnsanctionable := sdk.AccAddress("unsanctionable_addr_")
 	addrRandom := sdk.AccAddress("just_a_random_addr")
-	var setupErr error
-	s.Require().NotPanics(func() {
-		setupErr = s.Keeper.SanctionAddresses(s.SdkCtx, s.addr1, s.addr2, s.addr3, s.addr4, s.addr5, addrUnsanctionable)
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.SanctionAddresses(s.SdkCtx, s.addr1, s.addr2, s.addr3, s.addr4, s.addr5, addrUnsanctionable)
 	}, "Setup: SanctionAddresses")
-	s.Require().NoError(setupErr, "Setup: SanctionAddresses error")
 	k := s.Keeper.OnlyTestsWithUnsanctionableAddrs(map[string]bool{string(addrUnsanctionable): true})
 
 	tests := []struct {
@@ -483,48 +470,40 @@ func (s *KeeperTestSuite) TestKeeper_UnsanctionAddresses() {
 		s.Run(tc.name, func() {
 			em := sdk.NewEventManager()
 			ctx := s.SdkCtx.WithEventManager(em)
-			var err error
-			testFunc := func() {
-				err = k.UnsanctionAddresses(ctx, tc.addrs...)
+			testFunc := func() error {
+				return k.UnsanctionAddresses(ctx, tc.addrs...)
 			}
-			s.Require().NotPanics(testFunc, "UnsanctionAddresses")
-			s.Assert().NoError(err, "UnsanctionAddresses error")
+			s.RequireNotPanicsNoError(testFunc, "UnsanctionAddresses")
 			events := em.Events()
 			s.Assert().Equal(tc.expEvents, events, "events emitted during UnsanctionAddresses")
-			for _, addr := range tc.checkSanctioned {
-				if s.Assert().NotPanics(testIsSanction(addr), "IsSanctionedAddr") {
-					s.Assert().True(isSanctioned, "IsSanctionedAddr result")
+			for i, addr := range tc.checkSanctioned {
+				if s.Assert().NotPanics(testIsSanction(addr), "checkSanctioned[%d] IsSanctionedAddr", i) {
+					s.Assert().True(isSanctioned, "checkSanctioned[%d] IsSanctionedAddr result", i)
 				}
 			}
-			for _, addr := range tc.checkNotSanctioned {
-				if s.Assert().NotPanics(testIsSanction(addr), "IsSanctionedAddr") {
-					s.Assert().False(isSanctioned, "IsSanctionedAddr result")
+			for i, addr := range tc.checkNotSanctioned {
+				if s.Assert().NotPanics(testIsSanction(addr), "checkNotSanctioned[%d] IsSanctionedAddr", i) {
+					s.Assert().False(isSanctioned, "checkNotSanctioned[%d] IsSanctionedAddr result", i)
 				}
 			}
 		})
 	}
 
 	s.Run("temp entries are deleted", func() {
-		var err error
-		s.Require().NotPanics(func() {
-			err = k.AddTemporarySanction(s.SdkCtx, 1, s.addr1, s.addr2)
-			if err != nil {
-				return
-			}
-			err = k.AddTemporarySanction(s.SdkCtx, 2, s.addr1, s.addr3)
-			if err != nil {
-				return
-			}
-			err = k.AddTemporaryUnsanction(s.SdkCtx, 3, s.addr2, s.addr4, s.addr5)
-			if err != nil {
-				return
-			}
-		}, "adding some temporary entries")
+		s.RequireNotPanicsNoError(func() error {
+			return k.AddTemporarySanction(s.SdkCtx, 1, s.addr1, s.addr2)
+		}, "Setup: AddTemporarySanction 1; 1, 2")
+		s.RequireNotPanicsNoError(func() error {
+			return k.AddTemporarySanction(s.SdkCtx, 2, s.addr1, s.addr3)
+		}, "Setup: AddTemporarySanction 2; 1, 3")
+		s.RequireNotPanicsNoError(func() error {
+			return k.AddTemporaryUnsanction(s.SdkCtx, 3, s.addr2, s.addr4, s.addr5)
+		}, "Setup: AddTemporarySanction 3; 2, 4, 5")
 
-		testFunc := func() {
-			err = k.UnsanctionAddresses(s.SdkCtx, s.addr5, s.addr3, s.addr1, s.addr2, s.addr4)
+		testFunc := func() error {
+			return k.UnsanctionAddresses(s.SdkCtx, s.addr5, s.addr3, s.addr1, s.addr2, s.addr4)
 		}
-		s.Require().NotPanics(testFunc, "UnsanctionAddresses")
+		s.RequireNotPanicsNoError(testFunc, "UnsanctionAddresses")
 
 		tempEntries := s.GetAllTempEntries()
 		s.Assert().Empty(tempEntries, "temporary entries still in the store")
@@ -566,11 +545,9 @@ func (s *KeeperTestSuite) TestKeeper_AddTemporarySanction() {
 	}
 
 	// Start with addr5 having a temp unsanction entry.
-	var setupErr error
-	s.Require().NotPanics(func() {
-		setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 100, s.addr5)
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 100, s.addr5)
 	}, "Setup: AddTemporaryUnsanction")
-	s.Require().NoError(setupErr, "Setup: AddTemporaryUnsanction error")
 
 	addrUnsanctionable := sdk.AccAddress("unsanctionable_addr_")
 	k := s.Keeper.OnlyTestsWithUnsanctionableAddrs(map[string]bool{string(addrUnsanctionable): true})
@@ -748,11 +725,9 @@ func (s *KeeperTestSuite) TestKeeper_AddTemporaryUnsanction() {
 	}
 
 	// Start with addr5 having a temp sanction entry.
-	var setupErr error
-	s.Require().NotPanics(func() {
-		setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 100, s.addr5)
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 100, s.addr5)
 	}, "Setup: AddTemporarySanction")
-	s.Require().NoError(setupErr, "Setup: AddTemporarySanction error")
 
 	addrUnsanctionable := sdk.AccAddress("unsanctionable_addr_")
 	k := s.Keeper.OnlyTestsWithUnsanctionableAddrs(map[string]bool{string(addrUnsanctionable): true})
@@ -893,12 +868,10 @@ func (s *KeeperTestSuite) TestKeeper_AddTemporaryUnsanction() {
 		s.Run(tc.name, func() {
 			em := sdk.NewEventManager()
 			ctx := s.SdkCtx.WithEventManager(em)
-			var err error
-			testFunc := func() {
-				err = k.AddTemporaryUnsanction(ctx, tc.govPropID, tc.addrs...)
+			testFunc := func() error {
+				return k.AddTemporaryUnsanction(ctx, tc.govPropID, tc.addrs...)
 			}
-			s.Require().NotPanics(testFunc, "AddTemporaryUnsanction")
-			s.Assert().NoError(err, "AddTemporaryUnsanction error")
+			s.RequireNotPanicsNoError(testFunc, "AddTemporaryUnsanction")
 
 			events := em.Events()
 			s.Assert().Equal(tc.expEvents, events, "events emitted during AddTemporaryUnsanction")
@@ -918,7 +891,7 @@ func (s *KeeperTestSuite) TestKeeper_AddTemporaryUnsanction() {
 
 func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
 	store := s.GetStore()
-	// Add a few random entries with weird values so they're easy to identify.
+	// Add a few random entries with weird values, so they're easy to identify.
 	randAddr1 := sdk.AccAddress{0, 0, 0, 0, 0}
 	randAddr2 := s.addr1[:len(s.addr1)-1]
 	randAddr3 := s.addr1[1:]
@@ -964,11 +937,9 @@ func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
 
 	s.Run("one sanction entry", func() {
 		addr := sdk.AccAddress("one_entry_test_addr")
-		var setupErr error
-		s.Require().NotPanics(func() {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 1, addr)
-		}, "Setup")
-		s.Require().NoError(setupErr, "Setup error")
+		s.RequireNotPanicsNoError(func() error {
+			return s.Keeper.AddTemporarySanction(s.SdkCtx, 1, addr)
+		}, "Setup: AddTemporarySanction")
 
 		expected := []byte{keeper.TempSanctionB}
 		var actual []byte
@@ -981,11 +952,9 @@ func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
 
 	s.Run("one unsanction entry", func() {
 		addr := sdk.AccAddress("one_entry_test_addr2")
-		var setupErr error
-		s.Require().NotPanics(func() {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 2, addr)
-		}, "Setup")
-		s.Require().NoError(setupErr, "Setup error")
+		s.RequireNotPanicsNoError(func() error {
+			return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 2, addr)
+		}, "Setup: AddTemporaryUnsanction")
 
 		expected := []byte{keeper.TempUnsanctionB}
 		var actual []byte
@@ -998,17 +967,15 @@ func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
 
 	s.Run("three entries last sanction", func() {
 		addr := sdk.AccAddress("three_entry_sanctioned")
-		var setupErr error
-		s.Require().NotPanics(func() {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 5, addr)
-			if setupErr == nil {
-				setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 3, addr)
-			}
-			if setupErr == nil {
-				setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 4, addr)
-			}
-		}, "Setup")
-		s.Require().NoError(setupErr, "Setup error")
+		s.RequireNotPanicsNoError(func() error {
+			return s.Keeper.AddTemporarySanction(s.SdkCtx, 5, addr)
+		}, "Setup: AddTemporarySanction 5")
+		s.RequireNotPanicsNoError(func() error {
+			return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 3, addr)
+		}, "Setup: AddTemporaryUnsanction 3")
+		s.RequireNotPanicsNoError(func() error {
+			return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 4, addr)
+		}, "Setup: AddTemporaryUnsanction 4")
 
 		expected := []byte{keeper.TempSanctionB}
 		var actual []byte
@@ -1021,17 +988,15 @@ func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
 
 	s.Run("three entries last unsanction", func() {
 		addr := sdk.AccAddress("three_entry_unsanctioned")
-		var setupErr error
-		s.Require().NotPanics(func() {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 8, addr)
-			if setupErr == nil {
-				setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 7, addr)
-			}
-			if setupErr == nil {
-				setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 6, addr)
-			}
-		}, "Setup")
-		s.Require().NoError(setupErr, "Setup error")
+		s.RequireNotPanicsNoError(func() error {
+			return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 8, addr)
+		}, "Setup: AddTemporaryUnsanction 8")
+		s.RequireNotPanicsNoError(func() error {
+			return s.Keeper.AddTemporarySanction(s.SdkCtx, 7, addr)
+		}, "Setup: AddTemporarySanction 7")
+		s.RequireNotPanicsNoError(func() error {
+			return s.Keeper.AddTemporarySanction(s.SdkCtx, 6, addr)
+		}, "Setup: AddTemporarySanction 6")
 
 		expected := []byte{keeper.TempUnsanctionB}
 		var actual []byte
@@ -1046,8 +1011,8 @@ func (s *KeeperTestSuite) TestKeeper_getLatestTempEntry() {
 func (s *KeeperTestSuite) TestKeeper_DeleteGovPropTempEntries() {
 	// Add several temp entries for multiple gov props.
 	addrs := []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5}
-	var setupErr error
-	s.Require().NotPanics(func() {
+	s.RequireNotPanicsNoError(func() error {
+		var setupErr error
 		for id := uint64(1); id <= 10; id++ {
 			if id%2 == 1 {
 				setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, id, addrs...)
@@ -1055,11 +1020,11 @@ func (s *KeeperTestSuite) TestKeeper_DeleteGovPropTempEntries() {
 				setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, id, addrs...)
 			}
 			if setupErr != nil {
-				return
+				return setupErr
 			}
 		}
+		return nil
 	}, "Setup: add a bunch of temp entries")
-	s.Require().NoError(setupErr, "Setup: error adding a bunch of temp entries")
 
 	s.Run("unknown gov prop id", func() {
 		origTempEntries := s.GetAllTempEntries()
@@ -1141,8 +1106,8 @@ func (s *KeeperTestSuite) TestKeeper_DeleteGovPropTempEntries() {
 func (s *KeeperTestSuite) TestKeeper_DeleteAddrTempEntries() {
 	// Add several temp entries for multiple gov props.
 	addrs := []sdk.AccAddress{s.addr1, s.addr2, s.addr3, s.addr4, s.addr5}
-	var setupErr error
-	s.Require().NotPanics(func() {
+	s.RequireNotPanicsNoError(func() error {
+		var setupErr error
 		for id := uint64(1); id <= 10; id++ {
 			if id%2 == 1 {
 				setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, id, addrs...)
@@ -1150,11 +1115,11 @@ func (s *KeeperTestSuite) TestKeeper_DeleteAddrTempEntries() {
 				setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, id, addrs...)
 			}
 			if setupErr != nil {
-				return
+				return setupErr
 			}
 		}
+		return nil
 	}, "Setup: add a bunch of temp entries")
-	s.Require().NoError(setupErr, "Setup: error adding a bunch of temp entries")
 
 	s.Run("unknown address", func() {
 		origTempEntries := s.GetAllTempEntries()
@@ -1231,23 +1196,21 @@ func (s *KeeperTestSuite) TestKeeper_IterateSanctionedAddresses() {
 	// addr2 = sanctioned then unsanctioned
 	// addr3 = temp sanctioned
 	// addr4 = temp unsanctioned
-	var setupErr error
-	s.Require().NotPanics(func() {
-		setupErr = s.Keeper.SanctionAddresses(s.SdkCtx, s.addr1, s.addr2)
-		if setupErr == nil {
-			setupErr = s.Keeper.SanctionAddresses(s.SdkCtx, randomAddrs...)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.UnsanctionAddresses(s.SdkCtx, s.addr2)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 1, s.addr3)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, s.addr4)
-		}
-	}, "Setup: adding records")
-	s.Require().NoError(setupErr, "error during setup")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.SanctionAddresses(s.SdkCtx, s.addr1, s.addr2)
+	}, "Setup: SanctionAddresses 1 2")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.SanctionAddresses(s.SdkCtx, randomAddrs...)
+	}, "Setup: SanctionAddresses random addrs")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.UnsanctionAddresses(s.SdkCtx, s.addr2)
+	}, "Setup: UnsanctionAddresses 2")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 1, s.addr3)
+	}, "Setup: AddTemporarySanction 1; 3")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, s.addr4)
+	}, "Setup: AddTemporaryUnsanction 1; 4")
 
 	s.Run("get all entries", func() {
 		expected := []sdk.AccAddress{s.addr1}
@@ -1327,48 +1290,49 @@ func (s *KeeperTestSuite) TestKeeper_IterateTemporaryEntries() {
 	// all the randomUnsanctAddrs = temp unsanctioned for gov prop 1 and 2
 	// first two randomUnsanctAddrs = temp unsanctioned for gov prop 3 too
 	// mixedAddr = temp sanction for 1 and 3, temp unsanction for 2
-	var setupErr error
-	s.Require().NotPanics(func() {
-		setupErr = s.Keeper.SanctionAddresses(s.SdkCtx, s.addr1, s.addr2)
-		if setupErr == nil {
-			setupErr = s.Keeper.UnsanctionAddresses(s.SdkCtx, s.addr2)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 1, s.addr3)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, s.addr4)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 1, randomSanctAddrs...)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 2, randomSanctAddrs...)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 3, randomSanctAddrs[:2]...)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, randomUnsanctAddrs...)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 2, randomUnsanctAddrs...)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 3, randomUnsanctAddrs[:2]...)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 1, mixedAddr)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 2, mixedAddr)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 3, mixedAddr)
-		}
-	}, "Setup: adding records")
-	s.Require().NoError(setupErr, "error during setup")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.SanctionAddresses(s.SdkCtx, s.addr1, s.addr2)
+	}, "Setup: SanctionAddresses 1, 2")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.UnsanctionAddresses(s.SdkCtx, s.addr2)
+	}, "Setup: UnsanctionAddresses 2")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 1, s.addr3)
+	}, "Setup: AddTemporarySanction 1; 3")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, s.addr4)
+	}, "Setup: AddTemporaryUnsanction 1; 4")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 1, randomSanctAddrs...)
+	}, "Setup: AddTemporarySanction 1; rand")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 2, randomSanctAddrs...)
+	}, "Setup: AddTemporarySanction 2; rand")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 3, randomSanctAddrs[:2]...)
+	}, "Setup: AddTemporarySanction 3; rand")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, randomUnsanctAddrs...)
+	}, "Setup: AddTemporaryUnsanction 1; rand")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 2, randomUnsanctAddrs...)
+	}, "Setup: AddTemporaryUnsanction 2; rand")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 3, randomUnsanctAddrs[:2]...)
+	}, "Setup: AddTemporaryUnsanction 3; rand[:2]")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 1, mixedAddr)
+	}, "Setup: AddTemporarySanction 1; mixed")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 2, mixedAddr)
+	}, "Setup: AddTemporaryUnsanction 2; mixed")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 3, mixedAddr)
+	}, "Setup: AddTemporarySanction 3; mixed")
 
+	// sortEntries sorts the provided entries in place and also returns that slice.
+	// They are ordered the same way they're expected to be in state.
+	// This is horribly inefficient. Do not use it outside unit tests.
 	sortEntries := func(entries []*sanction.TemporaryEntry) []*sanction.TemporaryEntry {
 		sort.Slice(entries, func(i, j int) bool {
 			addrI, err := sdk.AccAddressFromBech32(entries[i].Address)
@@ -1454,8 +1418,6 @@ func (s *KeeperTestSuite) TestKeeper_IterateTemporaryEntries() {
 		allEntries = append(allEntries, entries...)
 	}
 	allEntries = append(allEntries, mixedEntries...)
-	// horribly inefficient, but whatever, it's a unit test.
-
 	allEntries = sortEntries(allEntries)
 
 	s.Run("stop after third", func() {
@@ -1521,6 +1483,21 @@ func (s *KeeperTestSuite) TestKeeper_IterateTemporaryEntries() {
 			addr:     mixedAddr,
 			expected: mixedEntries,
 		},
+		{
+			name:     "first byte of a random addr",
+			addr:     sdk.AccAddress{randomSanctAddrs[0][0]},
+			expected: nil,
+		},
+		{
+			name:     "first byte of addr 3",
+			addr:     sdk.AccAddress{s.addr3[0]},
+			expected: nil,
+		},
+		{
+			name:     "first byte of addr 4",
+			addr:     sdk.AccAddress{s.addr4[0]},
+			expected: nil,
+		},
 	}
 
 	for _, tc := range tests {
@@ -1566,41 +1543,41 @@ func (s *KeeperTestSuite) TestKeeper_IterateProposalIndexEntries() {
 	// id 1 = sanctioned: addr3, all randomSanctAddrs mixed addr, unsanctioned: addr4, all randomUnsanctAddrs
 	// id 2 = sanctioned: addr3, all randomSanctAddrs mixed addr
 	// id 3 = unsanctioned: addr4, all randomUnsanctAddrs, mixed addr
-	var setupErr error
-	s.Require().NotPanics(func() {
-		setupErr = s.Keeper.SanctionAddresses(s.SdkCtx, s.addr1, s.addr2)
-		if setupErr == nil {
-			setupErr = s.Keeper.UnsanctionAddresses(s.SdkCtx, s.addr2)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 1, s.addr3, mixedAddr)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 1, randomSanctAddrs...)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, s.addr4)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, randomUnsanctAddrs...)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 2, s.addr3, mixedAddr)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporarySanction(s.SdkCtx, 2, randomSanctAddrs...)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 3, s.addr4, mixedAddr)
-		}
-		if setupErr == nil {
-			setupErr = s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 3, randomUnsanctAddrs...)
-		}
-	}, "Setup: adding records")
-	s.Require().NoError(setupErr, "error during setup")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.SanctionAddresses(s.SdkCtx, s.addr1, s.addr2)
+	}, "Setup: SanctionAddresses 1, 2")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.UnsanctionAddresses(s.SdkCtx, s.addr2)
+	}, "Setup: UnsanctionAddresses 2")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 1, s.addr3, mixedAddr)
+	}, "Setup: AddTemporarySanction 1; 3, mixed")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 1, randomSanctAddrs...)
+	}, "Setup: AddTemporarySanction 1; rand")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, s.addr4)
+	}, "Setup: AddTemporaryUnsanction 1; 4")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, randomUnsanctAddrs...)
+	}, "Setup: AddTemporaryUnsanction 1; rand")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 2, s.addr3, mixedAddr)
+	}, "Setup: AddTemporarySanction 2; 3, mixed")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporarySanction(s.SdkCtx, 2, randomSanctAddrs...)
+	}, "Setup: AddTemporarySanction 2; rand")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 3, s.addr4, mixedAddr)
+	}, "Setup: AddTemporaryUnsanction 3; 4, mixed")
+	s.RequireNotPanicsNoError(func() error {
+		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 3, randomUnsanctAddrs...)
+	}, "Setup: AddTemporaryUnsanction 3; rand")
 
+	// sortEntries sorts the provided entries in place and also returns that slice.
+	// They are ordered the same way they're expected to be in state.
+	// This is horribly inefficient. Do not use it outside unit tests.
 	sortEntries := func(entries []*sanction.TemporaryEntry) []*sanction.TemporaryEntry {
-		// horribly inefficient, but whatever, it's a unit test.
 		sort.Slice(entries, func(i, j int) bool {
 			if entries[i].ProposalId < entries[j].ProposalId {
 				return true
@@ -1617,10 +1594,6 @@ func (s *KeeperTestSuite) TestKeeper_IterateProposalIndexEntries() {
 		return entries
 	}
 
-	// Setup:
-	// id 1 = sanctioned: addr3, all randomSanctAddrs mixed addr, unsanctioned: addr4, all randomUnsanctAddrs
-	// id 2 = sanctioned: addr3, all randomSanctAddrs mixed addr
-	// id 3 = unsanctioned: addr4, all randomUnsanctAddrs, mixed addr
 	prop1Entries := sortEntries([]*sanction.TemporaryEntry{
 		newIndTempEntry(1, s.addr3),
 		newIndTempEntry(1, s.addr4),
@@ -1803,7 +1776,7 @@ func (s *KeeperTestSuite) TestKeeper_IsAddrThatCannotBeSanctioned() {
 }
 
 func (s *KeeperTestSuite) TestKeeper_GetSetParams() {
-	// Change the defaults from their norm so we know they've got values we can check against.
+	// Change the defaults from their norm so, we know they've got values we can check against.
 	origSanct := sanction.DefaultImmediateSanctionMinDeposit
 	origUnsanct := sanction.DefaultImmediateUnsanctionMinDeposit
 	defer func() {
@@ -1906,12 +1879,9 @@ func (s *KeeperTestSuite) TestKeeper_GetSetParams() {
 		s.Run(tc.name, func() {
 			em := sdk.NewEventManager()
 			ctx := s.SdkCtx.WithEventManager(em)
-			var err error
-			testSet := func() {
-				err = s.Keeper.SetParams(ctx, tc.setInput)
-			}
-			s.Require().NotPanics(testSet, "SetParams")
-			s.Require().NoError(err, "SetParams error")
+			s.RequireNotPanicsNoError(func() error {
+				return s.Keeper.SetParams(ctx, tc.setInput)
+			}, "SetParams")
 			actualEvents := em.Events()
 			s.Assert().Equal(expectedEvents, actualEvents, "events emitted during SetParams")
 			var actual *sanction.Params
@@ -1921,7 +1891,7 @@ func (s *KeeperTestSuite) TestKeeper_GetSetParams() {
 			s.Require().NotPanics(testGet, "GetParams")
 			if !s.Assert().Equal(tc.getOutput, actual, "GetParams result") {
 				if actual != nil {
-					// it failed, but the coins aren't easy to read in that ouptput, so be helpful here.
+					// it failed, but the coins aren't easy to read in that output, so be helpful here.
 					s.Assert().Equal(tc.getOutput.ImmediateSanctionMinDeposit.String(),
 						actual.ImmediateSanctionMinDeposit.String(), "ImmediateSanctionMinDeposit")
 					s.Assert().Equal(tc.getOutput.ImmediateUnsanctionMinDeposit.String(),
@@ -2244,10 +2214,10 @@ func (s *KeeperTestSuite) TestKeeper_getSetDeleteParam() {
 		toDelete = append(toDelete, name)
 		var actual string
 		var ok bool
-		testfuncGet := func() {
+		testFuncGet := func() {
 			actual, ok = s.Keeper.OnlyTestsGetParam(store, name)
 		}
-		s.Require().NotPanics(testfuncGet, "getParam(%q)", name)
+		s.Require().NotPanics(testFuncGet, "getParam(%q)", name)
 		s.Assert().True(ok, "getParam(%q) result bool", name)
 		s.Assert().Equal(value, actual, "getParam(%q) result string", name)
 	})

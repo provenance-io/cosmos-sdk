@@ -31,13 +31,13 @@ func (s *QueryTestSuite) TestKeeper_IsSanctioned() {
 	addrSanctTempUn := sdk.AccAddress("this_address_is_nuts")
 
 	s.ClearState()
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
+	s.RequireNotPanicsNoError(func() error {
 		return s.Keeper.SanctionAddresses(s.SdkCtx, addrSanctioned, addrSanctTempUn)
 	})
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
+	s.RequireNotPanicsNoError(func() error {
 		return s.Keeper.AddTemporarySanction(s.SdkCtx, 1, AddrTempSanct)
 	})
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
+	s.RequireNotPanicsNoError(func() error {
 		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, addrSanctTempUn)
 	})
 
@@ -933,7 +933,7 @@ func (s *QueryTestSuite) TestKeeper_Params() {
 			}
 
 			var resp *sanction.QueryParamsResponse
-			testutil.RequireNotPanicsNoError(s.T(), func() error {
+			s.RequireNotPanicsNoError(func() error {
 				var err error
 				resp, err = s.Keeper.Params(s.StdlibCtx, tc.req)
 				return err

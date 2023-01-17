@@ -1524,7 +1524,7 @@ func (s *GovHooksTestSuite) TestKeeper_getImmediateMinDeposit() {
 	}
 
 	// Delete the params so that the defaults are used.
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
+	s.RequireNotPanicsNoError(func() error {
 		return s.Keeper.SetParams(s.SdkCtx, nil)
 	}, "SetParams(nil)")
 
@@ -1544,7 +1544,7 @@ func (s *GovHooksTestSuite) TestKeeper_getImmediateMinDeposit() {
 	}
 
 	// Now, set the params appropriately.
-	testutil.RequireNotPanicsNoError(s.T(), func() error {
+	s.RequireNotPanicsNoError(func() error {
 		return s.Keeper.SetParams(s.SdkCtx, &sanction.Params{
 			ImmediateSanctionMinDeposit:   paramSanctMin,
 			ImmediateUnsanctionMinDeposit: paramUnsanctMin,
