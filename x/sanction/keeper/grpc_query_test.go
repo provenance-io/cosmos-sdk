@@ -31,15 +31,9 @@ func (s *QueryTestSuite) TestKeeper_IsSanctioned() {
 	addrSanctTempUn := sdk.AccAddress("this_address_is_nuts")
 
 	s.ClearState()
-	s.RequireNotPanicsNoError(func() error {
-		return s.Keeper.SanctionAddresses(s.SdkCtx, addrSanctioned, addrSanctTempUn)
-	})
-	s.RequireNotPanicsNoError(func() error {
-		return s.Keeper.AddTemporarySanction(s.SdkCtx, 1, AddrTempSanct)
-	})
-	s.RequireNotPanicsNoError(func() error {
-		return s.Keeper.AddTemporaryUnsanction(s.SdkCtx, 1, addrSanctTempUn)
-	})
+	s.ReqOKAddPermSanct("addrSanctioned, addrSanctTempUn", addrSanctioned, addrSanctTempUn)
+	s.ReqOKAddTempSanct(1, "AddrTempSanct", AddrTempSanct)
+	s.ReqOKAddTempUnsanct(1, "addrSanctTempUn", addrSanctTempUn)
 
 	tests := []struct {
 		name   string

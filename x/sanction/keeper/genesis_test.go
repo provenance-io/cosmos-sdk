@@ -487,9 +487,7 @@ func (s *GenesisTestSuite) TestKeeper_ExportGenesis() {
 			},
 		}
 
-		s.RequireNotPanicsNoError(func() error {
-			return s.Keeper.SetParams(s.SdkCtx, expected.Params)
-		}, "SetParams")
+		s.ReqOKSetParams(expected.Params)
 		s.ReqOKAddPermSanct("addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8", addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8)
 		s.ReqOKAddTempSanct(1, "addr1, addr5", addr1, addr5)
 		s.ReqOKAddTempUnsanct(1, "addr2, addr6", addr2, addr6)
