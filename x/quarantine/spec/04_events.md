@@ -14,7 +14,7 @@ This event is emitted when an account opts into quarantine.
 
 | Attribute Key | Attribute Value                        |
 | ------------- |----------------------------------------|
-| to_address    | {bech32 string of account opting out} |
+| to_address    | {bech32 string of account opting in} |
 
 ## EventOptOut
 
