@@ -100,15 +100,17 @@ Examples:
 func QueryIsQuarantinedCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "is-quarantined <to_address>",
-		Aliases: []string{"is"},
+		Aliases: []string{"is", "check", "c"},
 		Short:   "Query whether an account is opted into quarantined",
 		Long: fmt.Sprintf(`Query whether an account is opted into quarantined.
 
 Examples:
   $ %[1]s is-quarantined %[2]s
-  $ %[1]s is %[3]s
+  $ %[1]s is %[2]s
+  $ %[1]s check %[2]s
+  $ %[1]s c %[2]s
 `,
-			exampleQueryCmdBase, exampleAddr1, exampleAddr2),
+			exampleQueryCmdBase, exampleAddr1),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
