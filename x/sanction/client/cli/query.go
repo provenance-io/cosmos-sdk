@@ -42,7 +42,7 @@ func QueryCmd() *cobra.Command {
 func QueryIsSanctionedCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "is-sanctioned <address>",
-		Aliases: []string{"is", "check", "is-sanction"},
+		Aliases: []string{"is", "check", "is-sanction", "c"},
 		Short:   "Check if an address is sanctioned",
 		Long: fmt.Sprintf(`Check if an address is sanctioned.
 
@@ -50,6 +50,7 @@ Examples:
   $ %[1]s is-sanctioned %[2]s
   $ %[1]s is %[2]s
   $ %[1]s check %[2]s
+  $ %[1]s c %[2]s
 `,
 			exampleQueryCmdBase, exampleQueryAddr1),
 		Args: cobra.ExactArgs(1),
