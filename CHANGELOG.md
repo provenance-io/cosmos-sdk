@@ -42,6 +42,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Features
 
 * [#270](https://github.com/provenance-io/cosmos-sdk/pull/270) Add functionality to update denom metadata via gov proposal.
+* [#401](https://github.com/provenance-io/cosmos-sdk/pull/401) Create the `x/sanction` module.
 
 ### Bug Fixes
 
