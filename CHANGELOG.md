@@ -42,6 +42,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Features
 
 * [#270](https://github.com/provenance-io/cosmos-sdk/pull/270) Add functionality to update denom metadata via gov proposal.
+* [#335](https://github.com/provenance-io/cosmos-sdk/pull/335) Create the `x/quarantine` module.
 
 ### Bug Fixes
 
