@@ -120,7 +120,7 @@ func parseSubmitProposal(cdc codec.Codec, path string) ([]sdk.Msg, string, sdk.C
 // AddGovPropFlagsToCmd adds flags for defining MsgSubmitProposal fields.
 func AddGovPropFlagsToCmd(cmd *cobra.Command) {
 	cmd.Flags().String(FlagDeposit, "", "The deposit to include with the governance proposal")
-	cmd.Flags().String(flagMetadata, "", "The metadata to include with the governance proposal")
+	cmd.Flags().String(FlagMetadata, "", "The metadata to include with the governance proposal")
 }
 
 // ReadGovPropFlags parses a MsgSubmitProposal from the provided context and flags.
@@ -139,7 +139,7 @@ func ReadGovPropFlags(clientCtx client.Context, flagSet *pflag.FlagSet) (*govv1.
 		}
 	}
 
-	rv.Metadata, err = flagSet.GetString(flagMetadata)
+	rv.Metadata, err = flagSet.GetString(FlagMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("could not read metadata: %w", err)
 	}

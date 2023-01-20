@@ -259,13 +259,13 @@ func TestAddGovPropFlagsToCmd(t *testing.T) {
 	// Regexp notes: (?m:...) = multi-line mode so ^ and $ match the beginning and end of each line.
 	// Each regexp assertion checks for a line containing only a specific flag and its description.
 	assert.Regexp(t, `(?m:^\s+--`+FlagDeposit+` string\s+`+expDepositDesc+`$)`, help, "help output")
-	assert.Regexp(t, `(?m:^\s+--`+flagMetadata+` string\s+`+expMetadataDesc+`$)`, help, "help output")
+	assert.Regexp(t, `(?m:^\s+--`+FlagMetadata+` string\s+`+expMetadataDesc+`$)`, help, "help output")
 }
 
 func TestReadGovPropFlags(t *testing.T) {
 	fromAddr := sdk.AccAddress("from_addr___________")
 	argDeposit := "--" + FlagDeposit
-	argMetadata := "--" + flagMetadata
+	argMetadata := "--" + FlagMetadata
 
 	// cz is a shorter way to define coins objects for these tests.
 	cz := func(coins string) sdk.Coins {
