@@ -30,9 +30,11 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type AutoResponse int32
 
 const (
-	// AUTO_RESPONSE_UNSPECIFIED defines that no automatic action should be taken.
+	// AUTO_RESPONSE_UNSPECIFIED defines that an automatic response has not been specified.
+	// This means that no automatic action should be taken, i.e. this auto-response is off,
+	// and default quarantine behavior is used.
 	AUTO_RESPONSE_UNSPECIFIED AutoResponse = 0
-	// AUTO_RESPONSE_ACCEPT defines that sends should be automatically accepted.
+	// AUTO_RESPONSE_ACCEPT defines that sends should be automatically accepted, bypassing quarantine.
 	AUTO_RESPONSE_ACCEPT AutoResponse = 1
 	// AUTO_RESPONSE_DECLINE defines that sends should be automatically declined.
 	AUTO_RESPONSE_DECLINE AutoResponse = 2
@@ -199,8 +201,8 @@ func (m *AutoResponseEntry) GetResponse() AutoResponse {
 type AutoResponseUpdate struct {
 	// from_address is the address that funds would be coming from.
 	FromAddress string `protobuf:"bytes,1,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty"`
-	// response is the automatic action to take on funds sent from from_address, or in the
-	// case of AUTO_RESPONSE_UNSPECIFIED, that no automatic action should be taken.
+	// response is the automatic action to take on funds sent from from_address.
+	// Provide AUTO_RESPONSE_UNSPECIFIED to turn off an auto-response.
 	Response AutoResponse `protobuf:"varint,2,opt,name=response,proto3,enum=cosmos.quarantine.v1beta1.AutoResponse" json:"response,omitempty"`
 }
 
