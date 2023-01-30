@@ -1,99 +1,59 @@
-## [v0.46.6-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.46.6-pio-1) - 2022-11-21
+## [v0.46.8-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.46.8-pio-1) - 2023-01-25
 
 ### Features
 
-* (x/authz) [#12648](https://github.com/cosmos/cosmos-sdk/pull/12648) Add an allow list, an optional list of addresses allowed to receive bank assests via authz MsgSend grant.
+* [#270](https://github.com/provenance-io/cosmos-sdk/pull/270) Add functionality to update denom metadata via gov proposal.
+* (x/gov,cli) [#434](https://github.com/provenance-io/cosmos-sdk/pull/434) Added `AddGovPropFlagsToCmd` and `ReadGovPropFlags` functions.
+* (quarantine) [#335](https://github.com/provenance-io/cosmos-sdk/pull/335) Create the `x/quarantine` module.
+* (sanction) [#401](https://github.com/provenance-io/cosmos-sdk/pull/401) Create the `x/sanction` module.
 
 ### Improvements
 
-* Bring in Cosmos-SDK [v0.46.6](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.6) changes [#367](https://github.com/provenance-io/cosmos-sdk/pull/367).
-
-### Full Commit History
-
-* https://github.com/provenance-io/cosmos-sdk/compare/v0.46.4-pio-1...v0.46.6-pio-1
-* https://github.com/provenance-io/cosmos-sdk/compare/v0.46.6...v0.46.6-pio-1
-
----
-
-## [v0.46.6](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.6) - 2022-11-18
-
-This release introduces small bug fixes and improvements.
-
-Please read the release notes of [v0.46.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.5) if you are upgrading from `<=0.46.4`.
-
-Please see the [CHANGELOG](https://github.com/cosmos/cosmos-sdk/blob/release/v0.46.x/CHANGELOG.md) for an exhaustive list of changes.
-
-Full Commit History: https://github.com/cosmos/cosmos-sdk/compare/v0.46.5...v0.46.6
-
-**NOTE**: The changes mentioned in `v0.46.3` are **still** required:
-
-```go
-# Chains must add the following to their go.mod for the application:
-replace github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
-```
-
-### Improvements
-
-* (config) [#13894](https://github.com/cosmos/cosmos-sdk/pull/13894) Support state streaming configuration in `app.toml` template and default configuration.
-
-## Bug Fixes
-
-* (x/gov) [#13918](https://github.com/cosmos/cosmos-sdk/pull/13918) Fix propagation of message errors when executing a proposal.
-
----
-
-## [v0.46.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.5) - 2022-11-17
-
-This release introduces a number of serious bug fixes and improvements. Notably, an upgrade to Tendermint [v0.34.23](https://github.com/tendermint/tendermint/releases/tag/v0.34.23).
-
-If you are planning to migrate to v0.46, please use `v0.46.5`. All releases prior to `v0.46.5` are [retracted](https://go.dev/ref/mod#go-mod-file-retract) and **must NOT be used** (`go get` directly upgrades the SDK version to `>= v0.46.5` thanks to the retraction, current builds are not affected).
-
-If your chain's state has coin metadata, an issue has been discovered in the bank module coin metadata migration. This issue is fixed in `v0.46.5`.
-
-* If your chain is already on v0.46 using `<= v0.46.4` and has coin metadata, a **coordinated upgrade** to `v0.46.5` is required.
-    * Use the helper function `Migrate_V0464_To_V0465` for migrating a chain **already on v0.46 with versions <=v0.46.4** to the latest v0.46.5 correct state.
-* If your chain is already on v0.46 using `<= v0.46.4` but has no coin metadata, this release is **non-breaking**.
-
-Moreover, serious issues have been found in the group module. These issues are fixed in `v0.46.5`.
-
-* If you use the group module, upgrade to `v0.46.5` **immediately**. A **coordinated upgrade** to `v0.46.5` is required.
-
-When a chain is already using `<= v0.46.4`, but has no coin metadata and no group module, this release is **non-breaking**.
-
-Please see the [CHANGELOG](https://github.com/cosmos/cosmos-sdk/blob/release/v0.46.x/CHANGELOG.md) for an exhaustive list of changes.
-
-Full Commit History: https://github.com/cosmos/cosmos-sdk/compare/v0.46.4...v0.46.5
-
-**NOTE**: The changes mentioned in `v0.46.3` are **still** required:
-
-```go
-# Chains must add the following to their go.mod for the application:
-replace github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
-```
-
-### Features
-
-* (x/bank) [#13891](https://github.com/cosmos/cosmos-sdk/pull/13891) Provide a helper function `Migrate_V0464_To_V0465` for migrating a chain **already on v0.46 with versions <=v0.46.4** to the latest v0.46.5 correct state.
-
-### Improvements
-
-* [#13826](https://github.com/cosmos/cosmos-sdk/pull/13826) Support custom `GasConfig` configuration for applications.
-* (deps) Bump Tendermint version to [v0.34.23](https://github.com/tendermint/tendermint/releases/tag/v0.34.23).
-
-### State Machine Breaking
-
-* (x/group) [#13876](https://github.com/cosmos/cosmos-sdk/pull/13876) Fix group MinExecutionPeriod that is checked on execution now, instead of voting period end.
-
-### API Breaking Changes
-
-* (x/group) [#13876](https://github.com/cosmos/cosmos-sdk/pull/13876) Add `GetMinExecutionPeriod` method on DecisionPolicy interface.
+* [#441](https://github.com/provenance-io/cosmos-sdk/pull/441) Bring in Cosmos-SDK [v0.46.8](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.8) changes.
 
 ### Bug Fixes
 
-* (x/group) [#13869](https://github.com/cosmos/cosmos-sdk/pull/13869) Group members weight must be positive and a finite number.
-* (x/bank) [#13821](https://github.com/cosmos/cosmos-sdk/pull/13821) Fix bank store migration of coin metadata.
-* (x/group) [#13808](https://github.com/cosmos/cosmos-sdk/pull/13808) Fix propagation of message events to the current context in `EndBlocker`.
-* (x/gov) [#13728](https://github.com/cosmos/cosmos-sdk/pull/13728) Fix propagation of message events to the current context in `EndBlocker`.
-* (store) [#13803](https://github.com/cosmos/cosmos-sdk/pull/13803) Add an error log if IAVL set operation failed.
-* [#13861](https://github.com/cosmos/cosmos-sdk/pull/13861) Allow `_` characters in tx event queries, i.e. `GetTxsEvent`.
+* [#12184](https://github.com/cosmos/cosmos-sdk/pull/12184) Pull in Cosmos-SDK authz validate basic fix.
+* [#444](https://github.com/provenance-io/cosmos-sdk/pull/444) Revert [#13881](https://github.com/cosmos/cosmos-sdk/pull/13881) "Optimize iteration on nested cached KV stores and other operations in general" due to a concurrent iterator issue: [#14786](https://github.com/cosmos/cosmos-sdk/issues/14786).
 
+### Full Commit History
+
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.46.7-pio-1...v0.46.8-pio-1
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.46.8..v0.46.8-pio-1
+
+---
+
+## [v0.46.8](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.8) - 2022-01-23
+
+This release introduces bug fixes and improvements. Notably, the SDK have now switched to Informal Systems' Tendermint fork.
+Their fork has no changes compared to the upstream Tendermint, but it is now [maintained by Informal Systems](https://twitter.com/informalinc/status/1613580954383040512). Chains are invited to do the same.
+
+Moreover, this release contains a store fix. The changes have been tested against a v0.46.x chain mainnet with no issues. However, there is a low probability of an edge case happening. Hence, it is recommended to do a **coordinated upgrade** to avoid any issues.
+
+Please see the [CHANGELOG](https://github.com/cosmos/cosmos-sdk/blob/release/v0.46.x/CHANGELOG.md) for an exhaustive list of changes.
+
+Full Commit History: https://github.com/cosmos/cosmos-sdk/compare/v0.46.7...v0.46.8
+
+**NOTE**: The changes mentioned in `v0.46.3` are no longer required. The following replace directive can be removed from the chains.
+
+```go
+# Can be deleted from go.mod
+replace github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
+```
+
+Instead, `github.com/confio/ics23/go` must be **bumped to `v0.9.0`**.
+
+### Improvements
+
+* [#13881](https://github.com/cosmos/cosmos-sdk/pull/13881) Optimize iteration on nested cached KV stores and other operations in general.
+* (x/gov) [#14347](https://github.com/cosmos/cosmos-sdk/pull/14347) Support `v1.Proposal` message in `v1beta1.Proposal.Content`.
+* (deps) Use Informal System fork of Tendermint version to [v0.34.24](https://github.com/informalsystems/tendermint/releases/tag/v0.34.24).
+
+### Bug Fixes
+
+* (x/group) [#14526](https://github.com/cosmos/cosmos-sdk/pull/14526) Fix wrong address set in `EventUpdateGroupPolicy`.
+* (ante) [#14448](https://github.com/cosmos/cosmos-sdk/pull/14448) Return anteEvents when postHandler fail.
+
+### API Breaking
+
+* (x/gov) [#14422](https://github.com/cosmos/cosmos-sdk/pull/14422) Remove `Migrate_V046_6_To_V046_7` function which shouldn't be used for chains which already migrated to 0.46.

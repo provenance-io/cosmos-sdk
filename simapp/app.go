@@ -88,6 +88,12 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	"github.com/cosmos/cosmos-sdk/x/quarantine"
+	quarantinekeeper "github.com/cosmos/cosmos-sdk/x/quarantine/keeper"
+	quarantinemodule "github.com/cosmos/cosmos-sdk/x/quarantine/module"
+	"github.com/cosmos/cosmos-sdk/x/sanction"
+	sanctionkeeper "github.com/cosmos/cosmos-sdk/x/sanction/keeper"
+	sanctionmodule "github.com/cosmos/cosmos-sdk/x/sanction/module"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -133,6 +139,8 @@ var (
 		groupmodule.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		nftmodule.AppModuleBasic{},
+		quarantinemodule.AppModuleBasic{},
+		sanctionmodule.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -185,6 +193,8 @@ type SimApp struct {
 	FeeGrantKeeper   feegrantkeeper.Keeper
 	GroupKeeper      groupkeeper.Keeper
 	NFTKeeper        nftkeeper.Keeper
+	QuarantineKeeper quarantinekeeper.Keeper
+	SanctionKeeper   sanctionkeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -225,7 +235,7 @@ func NewSimApp(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, capabilitytypes.StoreKey,
-		authzkeeper.StoreKey, nftkeeper.StoreKey, group.StoreKey,
+		authzkeeper.StoreKey, nftkeeper.StoreKey, group.StoreKey, quarantine.StoreKey, sanction.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	// NOTE: The testingkey is just mounted for testing purposes. Actual applications should
@@ -274,6 +284,7 @@ func NewSimApp(
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec, keys[authtypes.StoreKey], app.GetSubspace(authtypes.ModuleName), authtypes.ProtoBaseAccount, maccPerms, sdk.Bech32MainPrefix,
 	)
+
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.ModuleAccountAddrs(),
 	)
@@ -334,9 +345,13 @@ func NewSimApp(
 		&stakingKeeper, govRouter, app.MsgServiceRouter(), govConfig,
 	)
 
+	app.SanctionKeeper = sanctionkeeper.NewKeeper(appCodec, keys[sanction.StoreKey],
+		app.BankKeeper, &govKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(), app.ModuleAccounts())
+
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			app.SanctionKeeper,
 		),
 	)
 
@@ -348,6 +363,8 @@ func NewSimApp(
 	)
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
+
+	app.QuarantineKeeper = quarantinekeeper.NewKeeper(appCodec, keys[quarantine.StoreKey], app.BankKeeper, authtypes.NewModuleAddress(quarantine.ModuleName))
 
 	/****  Module Options ****/
 
@@ -379,6 +396,8 @@ func NewSimApp(
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		groupmodule.NewAppModule(appCodec, app.GroupKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		nftmodule.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
+		quarantinemodule.NewAppModule(appCodec, app.QuarantineKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
+		sanctionmodule.NewAppModule(appCodec, app.SanctionKeeper, app.AccountKeeper, app.BankKeeper, app.GovKeeper, app.interfaceRegistry),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -391,7 +410,7 @@ func NewSimApp(
 		evidencetypes.ModuleName, stakingtypes.ModuleName,
 		authtypes.ModuleName, banktypes.ModuleName, govtypes.ModuleName, crisistypes.ModuleName, genutiltypes.ModuleName,
 		authz.ModuleName, feegrant.ModuleName, nft.ModuleName, group.ModuleName,
-		paramstypes.ModuleName, vestingtypes.ModuleName,
+		paramstypes.ModuleName, vestingtypes.ModuleName, quarantine.ModuleName, sanction.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName,
@@ -399,7 +418,7 @@ func NewSimApp(
 		slashingtypes.ModuleName, minttypes.ModuleName,
 		genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
 		feegrant.ModuleName, nft.ModuleName, group.ModuleName,
-		paramstypes.ModuleName, upgradetypes.ModuleName, vestingtypes.ModuleName,
+		paramstypes.ModuleName, upgradetypes.ModuleName, vestingtypes.ModuleName, quarantine.ModuleName, sanction.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -413,7 +432,7 @@ func NewSimApp(
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
 		genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
 		feegrant.ModuleName, nft.ModuleName, group.ModuleName,
-		paramstypes.ModuleName, upgradetypes.ModuleName, vestingtypes.ModuleName,
+		paramstypes.ModuleName, upgradetypes.ModuleName, vestingtypes.ModuleName, quarantine.ModuleName, sanction.ModuleName,
 	)
 
 	// Uncomment if you want to set a custom migration order here.
@@ -532,14 +551,24 @@ func (app *SimApp) LoadHeight(height int64) error {
 	return app.LoadVersion(height)
 }
 
-// ModuleAccountAddrs returns all the app's module account addresses.
+// ModuleAccountAddrs returns all the app's module account address bech32 strings.
 func (app *SimApp) ModuleAccountAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
-	for acc := range maccPerms {
-		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
+	for _, addr := range app.ModuleAccounts() {
+		modAccAddrs[addr.String()] = true
 	}
 
 	return modAccAddrs
+}
+
+// ModuleAccounts returns all the app's module accounts addresses.
+// Warning, this result is nondeterministic. It must be sorted (by you) if order has any chance of being important.
+func (app *SimApp) ModuleAccounts() []sdk.AccAddress {
+	rv := make([]sdk.AccAddress, 0, len(maccPerms))
+	for name := range maccPerms {
+		rv = append(rv, authtypes.NewModuleAddress(name))
+	}
+	return rv
 }
 
 // LegacyAmino returns SimApp's amino codec.

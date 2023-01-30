@@ -18,11 +18,13 @@ import (
 
 var _ Keeper = (*BaseKeeper)(nil)
 
+const govModuleName = "gov"
+
 // Keeper defines a module interface that facilitates the transfer of coins
 // between accounts.
 type Keeper interface {
 	SendKeeper
-	WithMintCoinsRestriction(MintingRestrictionFn) BaseKeeper
+	WithMintCoinsRestriction(MintingRestrictionFn) *BaseKeeper
 
 	InitGenesis(sdk.Context, *types.GenesisState)
 	ExportGenesis(sdk.Context) *types.GenesisState
@@ -47,6 +49,8 @@ type Keeper interface {
 	DelegateCoins(ctx sdk.Context, delegatorAddr, moduleAccAddr sdk.AccAddress, amt sdk.Coins) error
 	UndelegateCoins(ctx sdk.Context, moduleAccAddr, delegatorAddr sdk.AccAddress, amt sdk.Coins) error
 
+	GetAuthority() string
+
 	types.QueryServer
 }
 
@@ -59,6 +63,7 @@ type BaseKeeper struct {
 	storeKey               storetypes.StoreKey
 	paramSpace             paramtypes.Subspace
 	mintCoinsRestrictionFn MintingRestrictionFn
+	authority              string
 }
 
 type MintingRestrictionFn func(ctx sdk.Context, coins sdk.Coins) error
@@ -100,19 +105,20 @@ func NewBaseKeeper(
 	ak types.AccountKeeper,
 	paramSpace paramtypes.Subspace,
 	blockedAddrs map[string]bool,
-) BaseKeeper {
+) *BaseKeeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return BaseKeeper{
+	return &BaseKeeper{
 		BaseSendKeeper:         NewBaseSendKeeper(cdc, storeKey, ak, paramSpace, blockedAddrs),
 		ak:                     ak,
 		cdc:                    cdc,
 		storeKey:               storeKey,
 		paramSpace:             paramSpace,
 		mintCoinsRestrictionFn: func(ctx sdk.Context, coins sdk.Coins) error { return nil },
+		authority:              authtypes.NewModuleAddress(govModuleName).String(), // hardcoded till all transitive dependencies can be updated to pass in the constructor instead
 	}
 }
 
@@ -121,7 +127,7 @@ func NewBaseKeeper(
 // Previous restriction functions can be nested as such:
 //
 //	bankKeeper.WithMintCoinsRestriction(restriction1).WithMintCoinsRestriction(restriction2)
-func (k BaseKeeper) WithMintCoinsRestriction(check MintingRestrictionFn) BaseKeeper {
+func (k BaseKeeper) WithMintCoinsRestriction(check MintingRestrictionFn) *BaseKeeper {
 	oldRestrictionFn := k.mintCoinsRestrictionFn
 	k.mintCoinsRestrictionFn = func(ctx sdk.Context, coins sdk.Coins) error {
 		err := check(ctx, coins)
@@ -134,7 +140,7 @@ func (k BaseKeeper) WithMintCoinsRestriction(check MintingRestrictionFn) BaseKee
 		}
 		return nil
 	}
-	return k
+	return &k
 }
 
 // DelegateCoins performs delegation by deducting amt coins from an account with
@@ -549,4 +555,8 @@ func (k BaseViewKeeper) IterateTotalSupply(ctx sdk.Context, cb func(sdk.Coin) bo
 			break
 		}
 	}
+}
+
+func (k BaseKeeper) GetAuthority() string {
+	return k.authority
 }
