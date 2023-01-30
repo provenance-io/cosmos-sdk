@@ -72,12 +72,12 @@ func TestListenKVStoreSet(t *testing.T) {
 	testCases := []struct {
 		key         []byte
 		value       []byte
-		expectedOut types.StoreKVPair
+		expectedOut *types.StoreKVPair
 	}{
 		{
 			key:   kvPairs[0].Key,
 			value: kvPairs[0].Value,
-			expectedOut: types.StoreKVPair{
+			expectedOut: &types.StoreKVPair{
 				Key:      kvPairs[0].Key,
 				Value:    kvPairs[0].Value,
 				StoreKey: testStoreKey.Name(),
@@ -87,7 +87,7 @@ func TestListenKVStoreSet(t *testing.T) {
 		{
 			key:   kvPairs[1].Key,
 			value: kvPairs[1].Value,
-			expectedOut: types.StoreKVPair{
+			expectedOut: &types.StoreKVPair{
 				Key:      kvPairs[1].Key,
 				Value:    kvPairs[1].Value,
 				StoreKey: testStoreKey.Name(),
@@ -97,7 +97,7 @@ func TestListenKVStoreSet(t *testing.T) {
 		{
 			key:   kvPairs[2].Key,
 			value: kvPairs[2].Value,
-			expectedOut: types.StoreKVPair{
+			expectedOut: &types.StoreKVPair{
 				Key:      kvPairs[2].Key,
 				Value:    kvPairs[2].Value,
 				StoreKey: testStoreKey.Name(),
@@ -144,6 +144,7 @@ func TestListenKVStoreDelete(t *testing.T) {
 		store := newListenKVStore(listener)
 		store.Delete(tc.key)
 		cache := listener.PopStateCache()
+		require.NotEmpty(t, cache)
 		storeKVPair := cache[len(cache)-1]
 
 		require.Equal(t, tc.expectedOut, storeKVPair)

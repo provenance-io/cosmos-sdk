@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 )
 
 // Handshake is a common handshake that is shared by streaming and host.
@@ -28,7 +28,7 @@ type ABCIListenerGRPCPlugin struct {
 	plugin.Plugin
 	// Concrete implementation, written in Go. This is only used for plugins
 	// that are written in Go.
-	Impl baseapp.ABCIListener
+	Impl storetypes.ABCIListener
 }
 
 func (p *ABCIListenerGRPCPlugin) GRPCServer(_ *plugin.GRPCBroker, s *grpc.Server) error {

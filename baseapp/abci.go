@@ -189,23 +189,11 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 	app.voteInfos = req.LastCommitInfo.GetVotes()
 
 	// call the streaming service hook with the BeginBlock messages
-	for _, abciListener := range app.abciListeners {
+	for _, abciListener := range app.streamingManager.AbciListeners {
 		ctx := app.deliverState.ctx
 		blockHeight := ctx.BlockHeight()
-		if app.abciListenersAsync {
-			go func(req abci.RequestBeginBlock, res abci.ResponseBeginBlock) {
-				if err := abciListener.ListenBeginBlock(ctx, req, res); err != nil {
-					app.logger.Error("BeginBlock listening hook failed", "height", blockHeight, "err", err)
-				}
-			}(req, res)
-		} else {
-			if err := abciListener.ListenBeginBlock(ctx, req, res); err != nil {
-				app.logger.Error("BeginBlock listening hook failed", "height", blockHeight, "err", err)
-				if app.stopNodeOnABCIListenerErr {
-					plugin.CleanupClients()
-					os.Exit(1)
-				}
-			}
+		if err := abciListener.ListenBeginBlock(ctx, req, res); err != nil {
+			app.logger.Error("BeginBlock listening hook failed", "height", blockHeight, "err", err)
 		}
 	}
 
@@ -230,23 +218,11 @@ func (app *BaseApp) EndBlock(req abci.RequestEndBlock) (res abci.ResponseEndBloc
 	}
 
 	// call the streaming service hook with the EndBlock messages
-	for _, abciListener := range app.abciListeners {
+	for _, abciListener := range app.streamingManager.AbciListeners {
 		ctx := app.deliverState.ctx
 		blockHeight := ctx.BlockHeight()
-		if app.abciListenersAsync {
-			go func(req abci.RequestEndBlock, res abci.ResponseEndBlock) {
-				if err := abciListener.ListenEndBlock(ctx, req, res); err != nil {
-					app.logger.Error("EndBlock listening hook failed", "height", blockHeight, "err", err)
-				}
-			}(req, res)
-		} else {
-			if err := abciListener.ListenEndBlock(ctx, req, res); err != nil {
-				app.logger.Error("EndBlock listening hook failed", "height", blockHeight, "err", err)
-				if app.stopNodeOnABCIListenerErr {
-					plugin.CleanupClients()
-					os.Exit(1)
-				}
-			}
+		if err := abciListener.ListenEndBlock(ctx, req, res); err != nil {
+			app.logger.Error("EndBlock listening hook failed", "height", blockHeight, "err", err)
 		}
 	}
 
@@ -300,23 +276,11 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx 
 	var res abci.ResponseDeliverTx
 	defer func() {
 		// call the streaming service hook with the EndBlock messages
-		for _, abciListener := range app.abciListeners {
+		for _, abciListener := range app.streamingManager.AbciListeners {
 			ctx := app.deliverState.ctx
 			blockHeight := ctx.BlockHeight()
-			if app.abciListenersAsync {
-				go func(req abci.RequestDeliverTx, res abci.ResponseDeliverTx) {
-					if err := abciListener.ListenDeliverTx(ctx, req, res); err != nil {
-						app.logger.Error("DeliverTx listening hook failed", "height", blockHeight, "err", err)
-					}
-				}(req, res)
-			} else {
-				if err := abciListener.ListenDeliverTx(ctx, req, res); err != nil {
-					app.logger.Error("DeliverTx listening hook failed", "height", blockHeight, "err", err)
-					if app.stopNodeOnABCIListenerErr {
-						plugin.CleanupClients()
-						os.Exit(1)
-					}
-				}
+			if err := abciListener.ListenDeliverTx(ctx, req, res); err != nil {
+				app.logger.Error("DeliverTx listening hook failed", "height", blockHeight, "err", err)
 			}
 		}
 	}()
@@ -369,25 +333,17 @@ func (app *BaseApp) Commit() abci.ResponseCommit {
 	}
 
 	// call the streaming service hook with the EndBlock messages
-	for _, abciListener := range app.abciListeners {
+	abciListeners := app.streamingManager.AbciListeners
+	if len(abciListeners) > 0 {
 		ctx := app.deliverState.ctx
 		blockHeight := ctx.BlockHeight()
 		changeSet := app.cms.PopStateCache()
-		if app.abciListenersAsync {
-			go func(res abci.ResponseCommit) {
-				if err := abciListener.ListenCommit(ctx, res, changeSet); err != nil {
-					app.logger.Error("ListenCommit listening hook failed", "height", blockHeight, "err", err)
-				}
-			}(res)
-		} else {
+		for _, abciListener := range abciListeners {
 			if err := abciListener.ListenCommit(ctx, res, changeSet); err != nil {
 				app.logger.Error("ListenCommit listening hook failed", "height", blockHeight, "err", err)
-				if app.stopNodeOnABCIListenerErr {
-					plugin.CleanupClients()
-					os.Exit(1)
-				}
 			}
 		}
+		changeSet = nil
 	}
 
 	app.logger.Info("commit synced", "commit", fmt.Sprintf("%X", commitID))

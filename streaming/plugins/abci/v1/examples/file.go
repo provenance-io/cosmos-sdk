@@ -8,19 +8,19 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 
-	store "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/streaming/plugins/abci/v1"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// FilePlugin is the implementation of the baseapp.ABCIListener interface
+// FilePlugin is the implementation of the ABCIListener interface
 // For Go plugins this is all that is required to process data sent over gRPC.
 type FilePlugin struct {
 	BlockHeight int64
 	fileDict    map[string]*os.File
 }
 
-func (a FilePlugin) writeToFile(file string, data []byte) error {
+func (a *FilePlugin) writeToFile(file string, data []byte) error {
 	if f, ok := a.fileDict[file]; ok {
 		_, err := f.Write(data)
 		return err
@@ -46,7 +46,7 @@ func (a FilePlugin) writeToFile(file string, data []byte) error {
 	return nil
 }
 
-func (a FilePlugin) ListenBeginBlock(ctx context.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
+func (a *FilePlugin) ListenBeginBlock(ctx context.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
 	a.BlockHeight = req.Header.Height
 	d1 := []byte(fmt.Sprintf("%d:::%v\n", a.BlockHeight, req))
 	d2 := []byte(fmt.Sprintf("%d:::%v\n", a.BlockHeight, res))
@@ -59,7 +59,7 @@ func (a FilePlugin) ListenBeginBlock(ctx context.Context, req abci.RequestBeginB
 	return nil
 }
 
-func (a FilePlugin) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error {
+func (a *FilePlugin) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error {
 	d1 := []byte(fmt.Sprintf("%d:::%v\n", a.BlockHeight, req))
 	d2 := []byte(fmt.Sprintf("%d:::%v\n", a.BlockHeight, req))
 	if err := a.writeToFile("end-block-req", d1); err != nil {
@@ -71,7 +71,7 @@ func (a FilePlugin) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock
 	return nil
 }
 
-func (a FilePlugin) ListenDeliverTx(ctx context.Context, req abci.RequestDeliverTx, res abci.ResponseDeliverTx) error {
+func (a *FilePlugin) ListenDeliverTx(ctx context.Context, req abci.RequestDeliverTx, res abci.ResponseDeliverTx) error {
 	d1 := []byte(fmt.Sprintf("%d:::%v\n", a.BlockHeight, req))
 	d2 := []byte(fmt.Sprintf("%d:::%v\n", a.BlockHeight, res))
 	if err := a.writeToFile("deliver-tx-req", d1); err != nil {
@@ -83,7 +83,7 @@ func (a FilePlugin) ListenDeliverTx(ctx context.Context, req abci.RequestDeliver
 	return nil
 }
 
-func (a FilePlugin) ListenCommit(ctx context.Context, res abci.ResponseCommit, changeSet []*store.StoreKVPair) error {
+func (a *FilePlugin) ListenCommit(ctx context.Context, res abci.ResponseCommit, changeSet []*storetypes.StoreKVPair) error {
 	fmt.Printf("listen-commit: block_height=%d data=%v", res.RetainHeight, changeSet)
 	d1 := []byte(fmt.Sprintf("%d:::%v\n", a.BlockHeight, res))
 	d2 := []byte(fmt.Sprintf("%d:::%v\n", a.BlockHeight, changeSet))

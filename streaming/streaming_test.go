@@ -2,7 +2,6 @@ package streaming
 
 import (
 	"fmt"
-	types "github.com/cosmos/cosmos-sdk/store/v2alpha1"
 	"os"
 	"testing"
 	"time"
@@ -11,8 +10,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	store "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/stretchr/testify/assert"
@@ -35,7 +33,7 @@ type PluginTestSuite struct {
 	deliverTxRes  abci.ResponseDeliverTx
 	commitRes     abci.ResponseCommit
 
-	changeSet []*store.StoreKVPair
+	changeSet []*storetypes.StoreKVPair
 }
 
 func (s *PluginTestSuite) SetupTest() {
@@ -83,20 +81,14 @@ func (s *PluginTestSuite) SetupTest() {
 	}
 	s.commitRes = abci.ResponseCommit{}
 
-	// test store kv pair types
-	s.changeSet = []*types.StoreKVPair{
-		{
+	// test storetypes kv pair types
+	for range [2000]int{} {
+		s.changeSet = append(s.changeSet, &storetypes.StoreKVPair{
 			StoreKey: "mockStore",
 			Delete:   false,
 			Key:      []byte{1, 2, 3},
 			Value:    []byte{3, 2, 1},
-		},
-		{
-			StoreKey: "mockStore",
-			Delete:   false,
-			Key:      []byte{3, 4, 5},
-			Value:    []byte{5, 4, 3},
-		},
+		})
 	}
 }
 
@@ -116,22 +108,36 @@ func (s *PluginTestSuite) TestABCIGRPCPlugin() {
 		raw, err := NewStreamingPlugin(pluginVersion, "trace")
 		require.NoError(t, err, "load", "streaming", "unexpected error")
 
-		abciListener, ok := raw.(baseapp.ABCIListener)
+		abciListener, ok := raw.(storetypes.ABCIListener)
 		require.True(t, ok, "should pass type check")
 
-		err = abciListener.ListenBeginBlock(s.loggerCtx, s.beginBlockReq, s.beginBlockRes)
-		assert.NoError(t, err, "ListenBeginBlock")
+		s.loggerCtx = s.loggerCtx.WithStreamingManager(storetypes.StreamingManager{
+			AbciListeners: []storetypes.ABCIListener{abciListener},
+			StopNodeOnErr: true,
+		})
 
-		err = abciListener.ListenEndBlock(s.loggerCtx, s.endBlockReq, s.endBlockRes)
-		assert.NoError(t, err, "ListenEndBlock")
+		for i := range [50]int{} {
+			s.updateHeight(int64(i))
 
-		err = abciListener.ListenDeliverTx(s.loggerCtx, s.deliverTxReq, s.deliverTxRes)
-		assert.NoError(t, err, "ListenDeliverTx")
-		err = abciListener.ListenDeliverTx(s.loggerCtx, s.deliverTxReq, s.deliverTxRes)
-		assert.NoError(t, err, "ListenDeliverTx")
+			err = abciListener.ListenBeginBlock(s.loggerCtx, s.beginBlockReq, s.beginBlockRes)
+			assert.NoError(t, err, "ListenBeginBlock")
 
-		// streaming services can choose not to implement store listening
-		err = abciListener.ListenCommit(s.loggerCtx, s.commitRes, s.changeSet)
-		assert.NoError(t, err, "ListenCommit")
+			err = abciListener.ListenEndBlock(s.loggerCtx, s.endBlockReq, s.endBlockRes)
+			assert.NoError(t, err, "ListenEndBlock")
+
+			for range [50]int{} {
+				err = abciListener.ListenDeliverTx(s.loggerCtx, s.deliverTxReq, s.deliverTxRes)
+				assert.NoError(t, err, "ListenDeliverTx")
+			}
+
+			err = abciListener.ListenCommit(s.loggerCtx, s.commitRes, s.changeSet)
+			assert.NoError(t, err, "ListenCommit")
+		}
 	})
+}
+
+func (s *PluginTestSuite) updateHeight(n int64) {
+	s.beginBlockReq.Header.Height = n
+	s.endBlockReq.Height = n
+	s.loggerCtx = s.loggerCtx.WithBlockHeight(n)
 }

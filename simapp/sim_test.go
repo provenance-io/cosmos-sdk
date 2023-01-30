@@ -303,7 +303,6 @@ func TestAppStateDeterminism(t *testing.T) {
 		m := make(map[string]interface{})
 		m["streaming.abci.keys"] = []string{"*"}
 		m["streaming.abci.plugin"] = "abci_v1"
-		m["streaming.abci.async"] = false
 		m["streaming.abci.stop-node-on-err"] = true
 		for key, value := range m {
 			vpr.SetDefault(key, value)

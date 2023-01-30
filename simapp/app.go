@@ -2,16 +2,13 @@ package simapp
 
 import (
 	"encoding/json"
-	"fmt"
+	"github.com/gorilla/mux"
+	"github.com/rakyll/statik/fs"
+	"github.com/spf13/cast"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"github.com/gorilla/mux"
-	"github.com/rakyll/statik/fs"
-	"github.com/spf13/cast"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -20,7 +17,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -30,7 +26,6 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/cosmos/cosmos-sdk/streaming"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -243,21 +238,7 @@ func NewSimApp(
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey, "testingkey")
 
 	// register streaming services
-	streamingCfg := cast.ToStringMap(appOpts.Get(baseapp.StreamingTomlKey))
-	for service := range streamingCfg {
-		pluginKey := fmt.Sprintf("%s.%s.%s", baseapp.StreamingTomlKey, service, baseapp.StreamingABCIPluginTomlKey)
-		pluginName := strings.TrimSpace(cast.ToString(appOpts.Get(pluginKey)))
-		if len(pluginName) > 0 {
-			logLevel := cast.ToString(appOpts.Get(flags.FlagLogLevel))
-			plugin, err := streaming.NewStreamingPlugin(pluginName, logLevel)
-			if err != nil {
-				tmos.Exit(err.Error())
-			}
-			if err := baseapp.RegisterStreamingPlugin(bApp, appOpts, keys, plugin); err != nil {
-				tmos.Exit(err.Error())
-			}
-		}
-	}
+	RegisterStreamingServices(bApp, appOpts, keys)
 
 	app := &SimApp{
 		BaseApp:           bApp,

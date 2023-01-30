@@ -891,8 +891,8 @@ func (tlm *traceListenMixin) ListeningEnabled(key types.StoreKey) bool {
 	return false
 }
 
-func (tlm *traceListenMixin) PopStateCache() []types.StoreKVPair {
-	var cache []types.StoreKVPair
+func (tlm *traceListenMixin) PopStateCache() []*types.StoreKVPair {
+	var cache []*types.StoreKVPair
 	for _, ls := range tlm.listeners {
 		cache = append(cache, ls.PopStateCache()...)
 	}

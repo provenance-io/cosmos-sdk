@@ -6,12 +6,12 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 
-	store "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/streaming/plugins/abci/v1"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// StdoutPlugin is the implementation of the baseapp.ABCIListener interface
+// StdoutPlugin is the implementation of the ABCIListener interface
 // For Go plugins this is all that is required to process data sent over gRPC.
 type StdoutPlugin struct {
 	BlockHeight int64
@@ -36,7 +36,7 @@ func (a StdoutPlugin) ListenDeliverTx(ctx context.Context, req abci.RequestDeliv
 	return nil
 }
 
-func (a StdoutPlugin) ListenCommit(ctx context.Context, res abci.ResponseCommit, changeSet []*store.StoreKVPair) error {
+func (a StdoutPlugin) ListenCommit(ctx context.Context, res abci.ResponseCommit, changeSet []*storetypes.StoreKVPair) error {
 	// process block commit messages (i.e: sent to external system)
 	fmt.Printf("listen-commit: block_height=%d res=%v data=%v", a.BlockHeight, res, changeSet)
 	return nil

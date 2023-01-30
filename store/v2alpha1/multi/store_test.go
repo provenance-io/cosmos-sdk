@@ -948,18 +948,20 @@ func TestListeners(t *testing.T) {
 		require.True(t, store.ListeningEnabled(tc.skey))
 
 		// Set case
-		expected := types.StoreKVPair{
+		expected := &types.StoreKVPair{
 			Key:      tc.key,
 			Value:    tc.value,
 			StoreKey: tc.skey.Name(),
 			Delete:   false,
 		}
 		store.GetKVStore(tc.skey).Set(tc.key, tc.value)
-		kvpair := store.PopStateCache()[0]
+		cache := store.PopStateCache()
+		require.Equal(t, 1, len(cache))
+		kvpair := cache[0]
 		require.Equal(t, expected, kvpair, i)
 
 		// Delete case
-		expected = types.StoreKVPair{
+		expected = &types.StoreKVPair{
 			Key:      tc.key,
 			Value:    nil,
 			StoreKey: tc.skey.Name(),
@@ -967,7 +969,9 @@ func TestListeners(t *testing.T) {
 		}
 
 		store.GetKVStore(tc.skey).Delete(tc.key)
-		kvpair = store.PopStateCache()[0]
+		cache = store.PopStateCache()
+		require.Equal(t, 1, len(cache))
+		kvpair = cache[0]
 		require.Equal(t, expected, kvpair, i)
 	}
 	require.NoError(t, store.Close())

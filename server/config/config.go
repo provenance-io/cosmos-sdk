@@ -241,7 +241,6 @@ type (
 	ABCIListenerConfig struct {
 		Keys          []string `mapstructure:"keys"`
 		Plugin        string   `mapstructure:"plugin"`
-		Async         bool     `mapstructure:"async"`
 		StopNodeOnErr bool     `mapstructure:"stop-node-on-err"`
 	}
 )
@@ -358,7 +357,6 @@ func DefaultConfig() *Config {
 		Streaming: StreamingConfig{
 			ABCI: ABCIListenerConfig{
 				Keys:          []string{"*"},
-				Async:         false,
 				StopNodeOnErr: true,
 			},
 		},

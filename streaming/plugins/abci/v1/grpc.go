@@ -5,19 +5,18 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	store "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-var _ baseapp.ABCIListener = (*GRPCClient)(nil)
+var _ storetypes.ABCIListener = (*GRPCClient)(nil)
 
 // GRPCClient is an implementation of the ABCIListener interface that talks over RPC.
 type GRPCClient struct {
 	client ABCIListenerServiceClient
 }
 
-func (m GRPCClient) ListenBeginBlock(ctx context.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
+func (m *GRPCClient) ListenBeginBlock(ctx context.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
 	_, err := m.client.ListenBeginBlock(ctx, &ListenBeginBlockRequest{
 		Req: &req,
 		Res: &res,
@@ -25,7 +24,7 @@ func (m GRPCClient) ListenBeginBlock(ctx context.Context, req abci.RequestBeginB
 	return err
 }
 
-func (m GRPCClient) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error {
+func (m *GRPCClient) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error {
 	_, err := m.client.ListenEndBlock(ctx, &ListenEndBlockRequest{
 		Req: &req,
 		Res: &res,
@@ -33,7 +32,7 @@ func (m GRPCClient) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock
 	return err
 }
 
-func (m GRPCClient) ListenDeliverTx(goCtx context.Context, req abci.RequestDeliverTx, res abci.ResponseDeliverTx) error {
+func (m *GRPCClient) ListenDeliverTx(goCtx context.Context, req abci.RequestDeliverTx, res abci.ResponseDeliverTx) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	_, err := m.client.ListenDeliverTx(ctx, &ListenDeliverTxRequest{
 		BlockHeight: ctx.BlockHeight(),
@@ -43,7 +42,7 @@ func (m GRPCClient) ListenDeliverTx(goCtx context.Context, req abci.RequestDeliv
 	return err
 }
 
-func (m GRPCClient) ListenCommit(goCtx context.Context, res abci.ResponseCommit, changeSet []*store.StoreKVPair) error {
+func (m *GRPCClient) ListenCommit(goCtx context.Context, res abci.ResponseCommit, changeSet []*storetypes.StoreKVPair) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	_, err := m.client.ListenCommit(ctx, &ListenCommitRequest{
 		BlockHeight: ctx.BlockHeight(),
@@ -53,12 +52,12 @@ func (m GRPCClient) ListenCommit(goCtx context.Context, res abci.ResponseCommit,
 	return err
 }
 
-//var _ ABCIListenerServiceServer = (*GRPCServer)(nil)
+var _ ABCIListenerServiceServer = (*GRPCServer)(nil)
 
 // GRPCServer is the gRPC server that GRPCClient talks to.
 type GRPCServer struct {
 	// This is the real implementation
-	Impl baseapp.ABCIListener
+	Impl storetypes.ABCIListener
 }
 
 func (m GRPCServer) ListenBeginBlock(ctx context.Context, request *ListenBeginBlockRequest) (*ListenBeginBlockResponse, error) {
