@@ -2,7 +2,9 @@ package v1
 
 import (
 	"context"
+	"os"
 
+	"github.com/hashicorp/go-plugin"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -16,40 +18,57 @@ type GRPCClient struct {
 	client ABCIListenerServiceClient
 }
 
-func (m *GRPCClient) ListenBeginBlock(ctx context.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
-	_, err := m.client.ListenBeginBlock(ctx, &ListenBeginBlockRequest{
-		Req: &req,
-		Res: &res,
-	})
+func (m *GRPCClient) ListenBeginBlock(goCtx context.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	sm := ctx.StreamingManager()
+	request := &ListenBeginBlockRequest{Req: &req, Res: &res}
+	_, err := m.client.ListenBeginBlock(ctx, request)
+	if err != nil && sm.StopNodeOnErr {
+		ctx.Logger().Error("BeginBlock listening hook failed", "height", ctx.BlockHeight(), "err", err)
+		cleanupAndExit()
+	}
 	return err
 }
 
-func (m *GRPCClient) ListenEndBlock(ctx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error {
-	_, err := m.client.ListenEndBlock(ctx, &ListenEndBlockRequest{
-		Req: &req,
-		Res: &res,
-	})
+func (m *GRPCClient) ListenEndBlock(goCtx context.Context, req abci.RequestEndBlock, res abci.ResponseEndBlock) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	sm := ctx.StreamingManager()
+	request := &ListenEndBlockRequest{Req: &req, Res: &res}
+	_, err := m.client.ListenEndBlock(ctx, request)
+	if err != nil && sm.StopNodeOnErr {
+		ctx.Logger().Error("EndBlock listening hook failed", "height", ctx.BlockHeight(), "err", err)
+		cleanupAndExit()
+	}
 	return err
 }
 
 func (m *GRPCClient) ListenDeliverTx(goCtx context.Context, req abci.RequestDeliverTx, res abci.ResponseDeliverTx) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	_, err := m.client.ListenDeliverTx(ctx, &ListenDeliverTxRequest{
-		BlockHeight: ctx.BlockHeight(),
-		Req:         &req,
-		Res:         &res,
-	})
+	sm := ctx.StreamingManager()
+	request := &ListenDeliverTxRequest{BlockHeight: ctx.BlockHeight(), Req: &req, Res: &res}
+	_, err := m.client.ListenDeliverTx(ctx, request)
+	if err != nil && sm.StopNodeOnErr {
+		ctx.Logger().Error("DeliverTx listening hook failed", "height", ctx.BlockHeight(), "err", err)
+		cleanupAndExit()
+	}
 	return err
 }
 
 func (m *GRPCClient) ListenCommit(goCtx context.Context, res abci.ResponseCommit, changeSet []*storetypes.StoreKVPair) error {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	_, err := m.client.ListenCommit(ctx, &ListenCommitRequest{
-		BlockHeight: ctx.BlockHeight(),
-		Res:         &res,
-		ChangeSet:   changeSet,
-	})
+	sm := ctx.StreamingManager()
+	request := &ListenCommitRequest{BlockHeight: ctx.BlockHeight(), Res: &res, ChangeSet: changeSet}
+	_, err := m.client.ListenCommit(ctx, request)
+	if err != nil && sm.StopNodeOnErr {
+		ctx.Logger().Error("Commit listening hook failed", "height", ctx.BlockHeight(), "err", err)
+		cleanupAndExit()
+	}
 	return err
+}
+
+func cleanupAndExit() {
+	plugin.CleanupClients()
+	os.Exit(1)
 }
 
 var _ ABCIListenerServiceServer = (*GRPCServer)(nil)

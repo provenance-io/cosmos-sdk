@@ -380,13 +380,15 @@ func (rs *Store) TracingEnabled() bool {
 	return rs.traceWriter != nil
 }
 
-// AddListeners adds state change listener for a specific KVStore
+// AddListeners adds a listener for the KVStore belonging to the provided StoreKey
 func (rs *Store) AddListeners(keys []types.StoreKey) {
 	rs.listenersMx.Lock()
 	defer rs.listenersMx.Unlock()
-	listener := types.NewMemoryListener()
 	for i := range keys {
-		rs.listeners[keys[i]] = listener
+		listener := rs.listeners[keys[i]]
+		if listener == nil {
+			rs.listeners[keys[i]] = types.NewMemoryListener()
+		}
 	}
 }
 

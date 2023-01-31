@@ -199,7 +199,6 @@ type StateSyncConfig struct {
 	SnapshotKeepRecent uint32 `mapstructure:"snapshot-keep-recent"`
 }
 
-// Deprecated: Use StreamingConfig instead
 type (
 	// StoreConfig defines application configuration for state streaming and other
 	// storage related operations.
@@ -256,7 +255,7 @@ type Config struct {
 	Rosetta   RosettaConfig    `mapstructure:"rosetta"`
 	GRPCWeb   GRPCWebConfig    `mapstructure:"grpc-web"`
 	StateSync StateSyncConfig  `mapstructure:"state-sync"`
-	Streaming StreamingConfig  `mapstructure:"streamers"`
+	Streaming StreamingConfig  `mapstructure:"streaming"`
 	Store     StoreConfig      `mapstructure:"store"`
 	Streamers StreamersConfig  `mapstructure:"streamers"`
 }

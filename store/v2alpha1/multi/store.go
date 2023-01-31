@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"sort"
 	"strings"
 	"sync"
 
@@ -143,6 +144,7 @@ type traceListenMixin struct {
 	listeners    map[string]*types.MemoryListener
 	TraceWriter  io.Writer
 	TraceContext types.TraceContext
+	listenersMx  sync.Mutex
 }
 
 func newTraceListenMixin() *traceListenMixin {
@@ -876,10 +878,15 @@ func (pr *prefixRegistry) RegisterSubstore(key string, typ types.StoreType) erro
 	return nil
 }
 
+// AddListeners adds a listener for the KVStore belonging to the provided StoreKey
 func (tlm *traceListenMixin) AddListeners(keys []types.StoreKey) {
-	listener := &types.MemoryListener{}
+	tlm.listenersMx.Lock()
+	defer tlm.listenersMx.Unlock()
 	for i := range keys {
-		tlm.listeners[keys[i].Name()] = listener
+		listener := tlm.listeners[keys[i].Name()]
+		if listener == nil {
+			tlm.listeners[keys[i].Name()] = &types.MemoryListener{}
+		}
 	}
 }
 
@@ -892,10 +899,18 @@ func (tlm *traceListenMixin) ListeningEnabled(key types.StoreKey) bool {
 }
 
 func (tlm *traceListenMixin) PopStateCache() []*types.StoreKVPair {
+	tlm.listenersMx.Lock()
+	defer tlm.listenersMx.Unlock()
 	var cache []*types.StoreKVPair
-	for _, ls := range tlm.listeners {
-		cache = append(cache, ls.PopStateCache()...)
+	for key := range tlm.listeners {
+		ls := tlm.listeners[key]
+		if ls != nil {
+			cache = append(cache, ls.PopStateCache()...)
+		}
 	}
+	sort.SliceStable(cache, func(i, j int) bool {
+		return cache[i].StoreKey < cache[j].StoreKey
+	})
 	return cache
 }
 
@@ -912,6 +927,8 @@ func (tlm *traceListenMixin) SetTraceContext(tc types.TraceContext) {
 }
 
 func (tlm *traceListenMixin) wrapTraceListen(store types.KVStore, skey types.StoreKey) types.KVStore {
+	tlm.listenersMx.Lock()
+	defer tlm.listenersMx.Unlock()
 	if tlm.TracingEnabled() {
 		store = tracekv.NewStore(store, tlm.TraceWriter, tlm.TraceContext)
 	}

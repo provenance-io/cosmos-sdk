@@ -2,10 +2,12 @@ package config
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -52,6 +54,70 @@ prefix = ""`
 	var buffer bytes.Buffer
 	require.NoError(t, configTemplate.Execute(&buffer, cfg), "executing template")
 	require.Contains(t, buffer.String(), expectedContents, "config file contents")
+}
+
+func TestStreamingConfig(t *testing.T) {
+	cfg := Config{
+		Streaming: StreamingConfig{
+			ABCI: ABCIListenerConfig{
+				Keys:          []string{"one", "two"},
+				Plugin:        "plugin-A",
+				StopNodeOnErr: false,
+			},
+		},
+		Store: StoreConfig{
+			Streamers: []string{"streamer-x", "streamer-y"},
+		},
+		Streamers: StreamersConfig{
+			File: FileStreamerConfig{
+				Keys:            []string{"key-1", "key-2"},
+				WriteDir:        "~/foo",
+				Prefix:          "bananas",
+				OutputMetadata:  false,
+				StopNodeOnError: false,
+				Fsync:           false,
+			},
+		},
+	}
+
+	testDir := t.TempDir()
+	cfgFile := filepath.Join(testDir, "app.toml")
+	WriteConfigFile(cfgFile, &cfg)
+
+	cfgFileBz, err := os.ReadFile(cfgFile)
+	require.NoError(t, err, "reading %s", cfgFile)
+	cfgFileContents := string(cfgFileBz)
+	t.Logf("Config file contents: %s:\n%s", cfgFile, cfgFileContents)
+
+	expectedLines := []string{
+		`keys = ["one", "two", ]`,
+		`plugin = "plugin-A"`,
+		`stop-node-on-err = false`,
+		`streamers = ["streamer-x", "streamer-y", ]`,
+		`keys = ["key-1", "key-2", ]`,
+		`write_dir = "~/foo"`,
+		`prefix = "bananas"`,
+		`output-metadata = "false"`,
+		`stop-node-on-error = "false"`,
+		`fsync = "false"`,
+	}
+
+	for _, line := range expectedLines {
+		assert.Contains(t, cfgFileContents, line+"\n", "config file contents")
+	}
+
+	vpr := viper.New()
+	vpr.SetConfigFile(cfgFile)
+	err = vpr.ReadInConfig()
+	require.NoError(t, err, "reading config file into viper")
+
+	var actual Config
+	err = vpr.Unmarshal(&actual)
+	require.NoError(t, err, "vpr.Unmarshal")
+
+	assert.Equal(t, cfg.Streaming, actual.Streaming, "Streaming")
+	assert.Equal(t, cfg.Store, actual.Store, "Store")
+	assert.Equal(t, cfg.Streamers, actual.Streamers, "Streamers")
 }
 
 func TestParseStreaming(t *testing.T) {
