@@ -125,11 +125,11 @@ func TestListenKVStoreSet(t *testing.T) {
 func TestListenKVStoreDelete(t *testing.T) {
 	testCases := []struct {
 		key         []byte
-		expectedOut types.StoreKVPair
+		expectedOut *types.StoreKVPair
 	}{
 		{
 			key: kvPairs[0].Key,
-			expectedOut: types.StoreKVPair{
+			expectedOut: &types.StoreKVPair{
 				Key:      kvPairs[0].Key,
 				Value:    nil,
 				StoreKey: testStoreKey.Name(),
