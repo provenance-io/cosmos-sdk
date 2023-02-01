@@ -355,7 +355,7 @@ func DefaultConfig() *Config {
 		},
 		Streaming: StreamingConfig{
 			ABCI: ABCIListenerConfig{
-				Keys:          []string{"*"},
+				Keys:          []string{},
 				StopNodeOnErr: true,
 			},
 		},
