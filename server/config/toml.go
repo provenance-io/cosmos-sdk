@@ -240,10 +240,10 @@ snapshot-keep-recent = {{ .StateSync.SnapshotKeepRecent }}
 ###                              State Streaming                            ###
 ###############################################################################
 
-# Streaming allows nodes to stream state to external systems
+# Streaming allows nodes to stream state to external systems.
 [streaming]
 
-# streaming.abci specifies the configuration for the ABCI Listener streaming service
+# streaming.abci specifies the configuration for the ABCI Listener streaming service.
 [streaming.abci]
 
 # List of kv store keys to stream out via gRPC.
@@ -255,31 +255,12 @@ snapshot-keep-recent = {{ .StateSync.SnapshotKeepRecent }}
 keys = [{{ range .Streaming.ABCI.Keys }}{{ printf "%q, " . }}{{end}}]
 
 # The plugin name used for streaming via gRPC.
+# Streaming is only enabled if this is set.
 # Supported plugins: abci_v1
 plugin = "{{ .Streaming.ABCI.Plugin }}"
 
-# stop-node-on-err specifies whether to stop the node on message delivery error
+# stop-node-on-err specifies whether to stop the node on message delivery error.
 stop-node-on-err = {{ .Streaming.ABCI.StopNodeOnErr }}
-
-# Legacy streaming support
-[store]
-streamers = [{{ range .Store.Streamers }}{{ printf "%q, " . }}{{end}}]
-
-[streamers]
-[streamers.file]
-keys = [{{ range .Streamers.File.Keys }}{{ printf "%q, " . }}{{end}}]
-write_dir = "{{ .Streamers.File.WriteDir }}"
-prefix = "{{ .Streamers.File.Prefix }}"
-
-# output-metadata specifies if output the metadata file which includes the abci request/responses 
-# during processing the block.
-output-metadata = "{{ .Streamers.File.OutputMetadata }}"
-
-# stop-node-on-error specifies if propagate the file streamer errors to consensus state machine.
-stop-node-on-error = "{{ .Streamers.File.StopNodeOnError }}"
-
-# fsync specifies if call fsync after writing the files.
-fsync = "{{ .Streamers.File.Fsync }}"
 `
 
 var configTemplate *template.Template

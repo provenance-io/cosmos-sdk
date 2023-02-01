@@ -36,26 +36,6 @@ func TestIndexEventsMarshalling(t *testing.T) {
 	require.Contains(t, actual, expectedIn, "config file contents")
 }
 
-func TestParseStoreStreaming(t *testing.T) {
-	expectedContents := `[store]
-streamers = ["file", ]
-
-[streamers]
-[streamers.file]
-keys = ["*", ]
-write_dir = "/foo/bar"
-prefix = ""`
-
-	cfg := DefaultConfig()
-	cfg.Store.Streamers = []string{FileStreamer}
-	cfg.Streamers.File.Keys = []string{"*"}
-	cfg.Streamers.File.WriteDir = "/foo/bar"
-
-	var buffer bytes.Buffer
-	require.NoError(t, configTemplate.Execute(&buffer, cfg), "executing template")
-	require.Contains(t, buffer.String(), expectedContents, "config file contents")
-}
-
 func TestStreamingConfig(t *testing.T) {
 	cfg := Config{
 		Streaming: StreamingConfig{
@@ -63,19 +43,6 @@ func TestStreamingConfig(t *testing.T) {
 				Keys:          []string{"one", "two"},
 				Plugin:        "plugin-A",
 				StopNodeOnErr: false,
-			},
-		},
-		Store: StoreConfig{
-			Streamers: []string{"streamer-x", "streamer-y"},
-		},
-		Streamers: StreamersConfig{
-			File: FileStreamerConfig{
-				Keys:            []string{"key-1", "key-2"},
-				WriteDir:        "~/foo",
-				Prefix:          "bananas",
-				OutputMetadata:  false,
-				StopNodeOnError: false,
-				Fsync:           false,
 			},
 		},
 	}
@@ -93,13 +60,6 @@ func TestStreamingConfig(t *testing.T) {
 		`keys = ["one", "two", ]`,
 		`plugin = "plugin-A"`,
 		`stop-node-on-err = false`,
-		`streamers = ["streamer-x", "streamer-y", ]`,
-		`keys = ["key-1", "key-2", ]`,
-		`write_dir = "~/foo"`,
-		`prefix = "bananas"`,
-		`output-metadata = "false"`,
-		`stop-node-on-error = "false"`,
-		`fsync = "false"`,
 	}
 
 	for _, line := range expectedLines {
@@ -116,8 +76,6 @@ func TestStreamingConfig(t *testing.T) {
 	require.NoError(t, err, "vpr.Unmarshal")
 
 	assert.Equal(t, cfg.Streaming, actual.Streaming, "Streaming")
-	assert.Equal(t, cfg.Store, actual.Store, "Store")
-	assert.Equal(t, cfg.Streamers, actual.Streamers, "Streamers")
 }
 
 func TestParseStreaming(t *testing.T) {

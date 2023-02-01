@@ -99,8 +99,8 @@ func TestPluginTestSuite(t *testing.T) {
 func (s *PluginTestSuite) TestABCIGRPCPlugin() {
 	s.T().Run("Should successfully load streaming", func(t *testing.T) {
 		pluginVersion := "abci_v1"
-		pluginPath := fmt.Sprintf("%s/plugins/abci/v1/examples/stdout", s.workDir)
-		//pluginPath := fmt.Sprintf("%s/plugins/abci/v1/examples/file", s.workDir)
+		// to write data to files, replace stdout/stdout => file/file
+		pluginPath := fmt.Sprintf("%s/plugins/abci/v1/examples/stdout/stdout", s.workDir)
 		if err := os.Setenv(GetPluginEnvKey(pluginVersion), pluginPath); err != nil {
 			t.Fail()
 		}
