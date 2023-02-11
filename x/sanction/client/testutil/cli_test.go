@@ -84,7 +84,7 @@ func TestIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, NewIntegrationTestSuite(cfg, &sanctionGen))
 }
 
-func (s *IntegrationTestSuite) TestSanctionValidatorImmediate() {
+func (s *IntegrationTestSuite) TestSanctionValidatorImmediateUsingGovCmds() {
 	// Wait 2 blocks to start this. That way, hopefully the query tests are done.
 	// In between the two, create all the stuff to send.
 	s.Require().NoError(s.network.WaitForNextBlock(), "wait for next block 1")
