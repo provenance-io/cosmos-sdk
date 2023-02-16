@@ -39,38 +39,14 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* nothing
-
----
-
-## [v0.46.8-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.46.8-pio-3) - 2023-02-06
-
-### Improvements
-
-* [#498](https://github.com/provenance-io/cosmos-sdk/pull/498) Bump Tendermint to v0.34.25 (from v0.34.24).
-* [#499](https://github.com/provenance-io/cosmos-sdk/pull/499) Fix a few listener proto comments.
-
-### Full Commit History
-
-* https://github.com/provenance-io/cosmos-sdk/compare/v0.46.8-pio-2...v0.46.8-pio-3
-* https://github.com/provenance-io/cosmos-sdk/compare/v0.46.8..v0.46.8-pio-3
-
----
-
-## [v0.46.8-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.46.8-pio-2) - 2023-02-01
-
-### Features
-
-* [#510](https://github.com/provenance-io/cosmos-sdk/pull/510) Add Sanction Tx commands.
-
----
-
-## [v0.46.8-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.46.8-pio-3) - 2023-02-06
-
 ### Improvements
 
 * [#505](https://github.com/provenance-io/cosmos-sdk/pull/505) Revert [#444](https://github.com/provenance-io/cosmos-sdk/pull/505): Revert [#13881](https://github.com/cosmos/cosmos-sdk/pull/13881) "Optimize iteration on nested cached KV stores and other operations in general".
 * [#505](https://github.com/provenance-io/cosmos-sdk/pull/505) Bring in Cosmos-SDK [v0.46.9](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.9) changes.
+
+### Features
+
+* [#510](https://github.com/provenance-io/cosmos-sdk/pull/510) Add Sanction Tx commands.
 
 ---
 
