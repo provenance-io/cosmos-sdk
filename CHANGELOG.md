@@ -39,9 +39,20 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
+* nothing
+
+---
+
+## [v0.46.10-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.46.10-pio-2) - 2023-02-28
+
 ### Bug Fixes
 
 * [PR 562](https://github.com/provenance-io/cosmos-sdk/pull/562) Fix `stopNodeOnErr` always false in State Listening Plugin system
+
+### Full Commit History
+
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.46.10-pio-1...v0.46.10-pio-2
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.46.10..v0.46.10-pio-2
 
 ---
 
@@ -51,7 +62,6 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 * [#505](https://github.com/provenance-io/cosmos-sdk/pull/505) Revert [#444](https://github.com/provenance-io/cosmos-sdk/pull/505): Revert [#13881](https://github.com/cosmos/cosmos-sdk/pull/13881) "Optimize iteration on nested cached KV stores and other operations in general".
 * [#505](https://github.com/provenance-io/cosmos-sdk/pull/505) [#517](https://github.com/provenance-io/cosmos-sdk/pull/517) Bring in Cosmos-SDK [v0.46.9](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.9) and [v0.46.10](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.10) changes.
-
 
 ### Features
 
