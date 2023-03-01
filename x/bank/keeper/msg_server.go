@@ -43,6 +43,10 @@ func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSe
 		return nil, err
 	}
 
+	if err := k.EnsureAdditionalReqsApply(ctx, msg.FromAddress, msg.ToAddress, msg.Amount...); err != nil {
+		return nil, err
+	}
+
 	from, err := sdk.AccAddressFromBech32(msg.FromAddress)
 	if err != nil {
 		return nil, err
@@ -115,4 +119,3 @@ func (k msgServer) MultiSend(goCtx context.Context, msg *types.MsgMultiSend) (*t
 
 	return &types.MsgMultiSendResponse{}, nil
 }
-
