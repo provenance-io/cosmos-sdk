@@ -241,7 +241,12 @@ func (k BaseSendKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAd
 // of possible quarantine on the toAddr.
 // An error is returned upon failure.
 func (k BaseSendKeeper) SendCoinsBypassQuarantine(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
-	err := k.subUnlockedCoins(ctx, fromAddr, amt)
+	err := k.EnsureSendRestrictions(ctx, fromAddr.String(), toAddr.String(), amt...)
+	if err != nil {
+		return err
+	}
+
+	err = k.subUnlockedCoins(ctx, fromAddr, amt)
 	if err != nil {
 		return err
 	}
