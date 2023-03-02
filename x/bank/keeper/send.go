@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -450,7 +448,6 @@ func (k *BaseSendKeeper) EnsureSendRestrictions(ctx sdk.Context, from, to string
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("requirements for transfer not met.")
 	}
 	return nil
 }
