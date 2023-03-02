@@ -51,7 +51,7 @@ type Keeper interface {
 
 	GetAuthority() string
 
-	SetMarkerAllowedSend(markerSendAllowed func(sdk.Context, string, string, string) (bool, error))
+	SetSendRestrictionsFunc(sendRestrictionsFunc func(sdk.Context, string, string, string) error)
 
 	types.QueryServer
 }

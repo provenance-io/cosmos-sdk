@@ -43,7 +43,7 @@ func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSe
 		return nil, err
 	}
 
-	if err := k.EnsureAdditionalReqsApply(ctx, msg.FromAddress, msg.ToAddress, msg.Amount...); err != nil {
+	if err := k.EnsureSendRestrictions(ctx, msg.FromAddress, msg.ToAddress, msg.Amount...); err != nil {
 		return nil, err
 	}
 

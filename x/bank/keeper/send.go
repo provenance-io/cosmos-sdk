@@ -39,7 +39,7 @@ type SendKeeper interface {
 
 	IsSendEnabledCoin(ctx sdk.Context, coin sdk.Coin) bool
 	IsSendEnabledCoins(ctx sdk.Context, coins ...sdk.Coin) error
-	EnsureAdditionalReqsApply(ctx sdk.Context, from, to string, coins ...sdk.Coin) error
+	EnsureSendRestrictions(ctx sdk.Context, from, to string, coins ...sdk.Coin) error
 
 	BlockedAddr(addr sdk.AccAddress) bool
 }
@@ -62,7 +62,7 @@ type BaseSendKeeper struct {
 	qk types.QuarantineKeeper
 	sk types.SanctionKeeper
 
-	markerSendAllowed func(sdk.Context, string, string, string) (bool, error)
+	sendRestrictionsFunc func(sdk.Context, string, string, string) error
 }
 
 func NewBaseSendKeeper(
@@ -114,11 +114,11 @@ func (k BaseSendKeeper) GetParams(ctx sdk.Context) (params types.Params) {
 	return params
 }
 
-func (k *BaseSendKeeper) SetMarkerAllowedSend(markerSendAllowed func(sdk.Context, string, string, string) (bool, error)) {
-	if k.markerSendAllowed != nil {
+func (k *BaseSendKeeper) SetSendRestrictionsFunc(sendRestrictionsFunc func(sdk.Context, string, string, string) error) {
+	if k.sendRestrictionsFunc != nil {
 		panic("the marker send allowed function already assigned")
 	}
-	k.markerSendAllowed = markerSendAllowed
+	k.sendRestrictionsFunc = sendRestrictionsFunc
 }
 
 // SetParams sets the total set of bank parameters.
@@ -436,18 +436,16 @@ func (k BaseSendKeeper) IsSendEnabledCoins(ctx sdk.Context, coins ...sdk.Coin) e
 	return nil
 }
 
-func (k *BaseSendKeeper) EnsureAdditionalReqsApply(ctx sdk.Context, from, to string, coins ...sdk.Coin) error {
-	if k.markerSendAllowed == nil {
+func (k *BaseSendKeeper) EnsureSendRestrictions(ctx sdk.Context, from, to string, coins ...sdk.Coin) error {
+	if k.sendRestrictionsFunc == nil {
 		return nil
 	}
 	for _, coin := range coins {
-		result, err := k.markerSendAllowed(ctx, from, to, coin.Denom)
+		err := k.sendRestrictionsFunc(ctx, from, to, coin.Denom)
 		if err != nil {
 			return err
 		}
-		if !result {
-			return fmt.Errorf("requirements for transfer not met.")
-		}
+		return fmt.Errorf("requirements for transfer not met.")
 	}
 	return nil
 }
