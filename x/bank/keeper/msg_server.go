@@ -56,6 +56,11 @@ func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSe
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", msg.ToAddress)
 	}
 
+	err = k.EnsureSendRestrictions(ctx, msg.FromAddress, msg.ToAddress, msg.Amount...)
+	if err != nil {
+		return nil, err
+	}
+
 	err = k.SendCoins(ctx, from, to, msg.Amount)
 	if err != nil {
 		return nil, err
@@ -98,6 +103,15 @@ func (k msgServer) MultiSend(goCtx context.Context, msg *types.MsgMultiSend) (*t
 
 		if k.BlockedAddr(accAddr) {
 			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive transactions", out.Address)
+		}
+	}
+
+	for _, input := range msg.Inputs {
+		for _, output := range msg.Outputs {
+			err := k.EnsureSendRestrictions(ctx, input.Address, output.Address, input.Coins...)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
