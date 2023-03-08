@@ -39,10 +39,6 @@ var _ types.MsgServer = msgServer{}
 func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSendResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if err := k.IsSendEnabledCoins(ctx, msg.Amount...); err != nil {
-		return nil, err
-	}
-
 	from, err := sdk.AccAddressFromBech32(msg.FromAddress)
 	if err != nil {
 		return nil, err
@@ -54,11 +50,6 @@ func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSe
 
 	if k.BlockedAddr(to) {
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", msg.ToAddress)
-	}
-
-	err = k.EnsureSendRestrictions(ctx, msg.FromAddress, msg.ToAddress, msg.Amount...)
-	if err != nil {
-		return nil, err
 	}
 
 	err = k.SendCoins(ctx, from, to, msg.Amount)
@@ -91,27 +82,11 @@ func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSe
 func (k msgServer) MultiSend(goCtx context.Context, msg *types.MsgMultiSend) (*types.MsgMultiSendResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// NOTE: totalIn == totalOut should already have been checked
-	for _, in := range msg.Inputs {
-		if err := k.IsSendEnabledCoins(ctx, in.Coins...); err != nil {
-			return nil, err
-		}
-	}
-
 	for _, out := range msg.Outputs {
 		accAddr := sdk.MustAccAddressFromBech32(out.Address)
 
 		if k.BlockedAddr(accAddr) {
 			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive transactions", out.Address)
-		}
-	}
-
-	for _, input := range msg.Inputs {
-		for _, output := range msg.Outputs {
-			err := k.EnsureSendRestrictions(ctx, input.Address, output.Address, input.Coins...)
-			if err != nil {
-				return nil, err
-			}
 		}
 	}
 

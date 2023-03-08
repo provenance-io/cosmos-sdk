@@ -112,9 +112,11 @@ func (k BaseSendKeeper) GetParams(ctx sdk.Context) (params types.Params) {
 	return params
 }
 
+// SetSendRestrictionsFunc set a function to be called before sends can occur
+// if not set, it is a no-op
 func (k *BaseSendKeeper) SetSendRestrictionsFunc(sendRestrictionsFunc func(sdk.Context, string, string, string) error) {
 	if k.sendRestrictionsFunc != nil {
-		panic("the marker send allowed function already assigned")
+		panic("the send restrictions function has already been set")
 	}
 	k.sendRestrictionsFunc = sendRestrictionsFunc
 }
@@ -136,6 +138,16 @@ func (k BaseSendKeeper) InputOutputCoins(ctx sdk.Context, inputs []types.Input, 
 	// Check supply invariant and validity of Coins.
 	if err := types.ValidateInputsOutputs(inputs, outputs); err != nil {
 		return err
+	}
+
+	// ensure all inputs and outputs pass any restrictions
+	for _, input := range inputs {
+		for _, output := range outputs {
+			err := k.EnsureSendRestrictions(ctx, input.Address, output.Address, input.Coins...)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	allInputAddrs := make([]sdk.AccAddress, len(inputs))
@@ -239,7 +251,12 @@ func (k BaseSendKeeper) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAd
 // of possible quarantine on the toAddr.
 // An error is returned upon failure.
 func (k BaseSendKeeper) SendCoinsBypassQuarantine(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
-	err := k.subUnlockedCoins(ctx, fromAddr, amt)
+	err := k.EnsureSendRestrictions(ctx, fromAddr.String(), toAddr.String(), amt...)
+	if err != nil {
+		return err
+	}
+
+	err = k.subUnlockedCoins(ctx, fromAddr, amt)
 	if err != nil {
 		return err
 	}
@@ -434,6 +451,8 @@ func (k BaseSendKeeper) IsSendEnabledCoins(ctx sdk.Context, coins ...sdk.Coin) e
 	return nil
 }
 
+// EnsureSendRestrictions applies the send restrictions function returns error if send restrictions do not pass
+// no-op if the send restrictions function is not set
 func (k *BaseSendKeeper) EnsureSendRestrictions(ctx sdk.Context, from, to string, coins ...sdk.Coin) error {
 	if k.sendRestrictionsFunc == nil {
 		return nil
