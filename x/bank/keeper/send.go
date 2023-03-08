@@ -112,11 +112,9 @@ func (k BaseSendKeeper) GetParams(ctx sdk.Context) (params types.Params) {
 	return params
 }
 
-// SetSendRestrictionsFunc set a function to be called before sends can occur
-// if not set, it is a no-op
 func (k *BaseSendKeeper) SetSendRestrictionsFunc(sendRestrictionsFunc func(sdk.Context, string, string, string) error) {
 	if k.sendRestrictionsFunc != nil {
-		panic("the send restrictions function has already been set")
+		panic("the marker send allowed function already assigned")
 	}
 	k.sendRestrictionsFunc = sendRestrictionsFunc
 }
@@ -436,7 +434,6 @@ func (k BaseSendKeeper) IsSendEnabledCoins(ctx sdk.Context, coins ...sdk.Coin) e
 	return nil
 }
 
-// EnsureSendRestrictions applies the send restrictions function returns error if send restrictions do not pass
 func (k *BaseSendKeeper) EnsureSendRestrictions(ctx sdk.Context, from, to string, coins ...sdk.Coin) error {
 	if k.sendRestrictionsFunc == nil {
 		return nil
