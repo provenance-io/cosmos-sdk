@@ -39,6 +39,10 @@ var _ types.MsgServer = msgServer{}
 func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSendResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	if err := k.IsSendEnabledCoins(ctx, msg.Amount...); err != nil {
+		return nil, err
+	}
+
 	from, err := sdk.AccAddressFromBech32(msg.FromAddress)
 	if err != nil {
 		return nil, err
@@ -81,6 +85,13 @@ func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSe
 
 func (k msgServer) MultiSend(goCtx context.Context, msg *types.MsgMultiSend) (*types.MsgMultiSendResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// NOTE: totalIn == totalOut should already have been checked
+	for _, in := range msg.Inputs {
+		if err := k.IsSendEnabledCoins(ctx, in.Coins...); err != nil {
+			return nil, err
+		}
+	}
 
 	for _, out := range msg.Outputs {
 		accAddr := sdk.MustAccAddressFromBech32(out.Address)
