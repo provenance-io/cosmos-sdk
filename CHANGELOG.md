@@ -39,7 +39,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* nothing
+### Features
+
+* [#563](https://github.com/provenance-io/cosmos-sdk/pull/563) Add support for applying send restrictions before doing a bank send
 
 ---
 
