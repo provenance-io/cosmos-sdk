@@ -1633,8 +1633,6 @@ func (suite *IntegrationTestSuite) getTestMetadata() []types.Metadata {
 }
 
 func (suite *IntegrationTestSuite) TestMintCoinRestrictions() {
-	type BankMintingRestrictionFn func(ctx sdk.Context, coins sdk.Coins) error
-
 	maccPerms := simapp.GetMaccPerms()
 	maccPerms[multiPerm] = []string{authtypes.Burner, authtypes.Minter, authtypes.Staking}
 
@@ -1651,7 +1649,7 @@ func (suite *IntegrationTestSuite) TestMintCoinRestrictions() {
 
 	tests := []struct {
 		name          string
-		restrictionFn BankMintingRestrictionFn
+		restrictionFn types.MintingRestrictionFn
 		testCases     []testCase
 	}{
 		{
@@ -1680,14 +1678,14 @@ func (suite *IntegrationTestSuite) TestMintCoinRestrictions() {
 	for _, test := range tests {
 		suite.app.BankKeeper = keeper.NewBaseKeeper(suite.app.AppCodec(), suite.app.GetKey(types.StoreKey),
 			suite.app.AccountKeeper, suite.app.GetSubspace(types.ModuleName), nil,
-		).WithMintCoinsRestriction(types.MintingRestrictionFn(test.restrictionFn))
-		for _, testCase := range test.testCases {
-			if testCase.expectPass {
+		).WithMintCoinsRestriction(test.restrictionFn)
+		for _, tc := range test.testCases {
+			if tc.expectPass {
 				suite.Require().NoError(
 					suite.app.BankKeeper.MintCoins(
 						suite.ctx,
 						multiPermAcc.Name,
-						sdk.NewCoins(testCase.coinsToTry),
+						sdk.NewCoins(tc.coinsToTry),
 					),
 				)
 			} else {
@@ -1695,12 +1693,32 @@ func (suite *IntegrationTestSuite) TestMintCoinRestrictions() {
 					suite.app.BankKeeper.MintCoins(
 						suite.ctx,
 						multiPermAcc.Name,
-						sdk.NewCoins(testCase.coinsToTry),
+						sdk.NewCoins(tc.coinsToTry),
 					),
 				)
 			}
 		}
 	}
+
+	suite.Run("WithMintCoinsRestriction does not update original", func() {
+		mintCoinsOrig := func(ctx sdk.Context, coins sdk.Coins) error {
+			return fmt.Errorf("this is the original")
+		}
+		mintCoinsSecond := func(ctx sdk.Context, coins sdk.Coins) error {
+			return fmt.Errorf("no can do: second one")
+		}
+		origKeeper := suite.app.BankKeeper.WithMintCoinsRestriction(mintCoinsOrig)
+		secondKeeper := origKeeper.WithMintCoinsRestriction(mintCoinsSecond)
+
+		amt := sdk.NewCoins(newFooCoin(100))
+		// Make sure the original keeper still uses the original minting restriction.
+		err := origKeeper.MintCoins(suite.ctx, multiPermAcc.Name, amt)
+		suite.Assert().EqualError(err, "this is the original", "origKeeper.MintCoins")
+
+		// Make sure the second keeper has the expected minting restriction.
+		err = secondKeeper.MintCoins(suite.ctx, multiPermAcc.Name, amt)
+		suite.Assert().EqualError(err, "no can do: second one", "secondKeeper.MintCoins")
+	})
 }
 
 func (suite *IntegrationTestSuite) TestIsSendEnabledDenom() {
