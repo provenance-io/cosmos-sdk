@@ -261,6 +261,10 @@ func (k BaseSendKeeper) subUnlockedCoins(ctx sdk.Context, addr sdk.AccAddress, a
 		}
 
 		if _, hasNeg = spendable.SafeSub(coin); hasNeg {
+			// If spendable is zero, .String() would just be "". So give it a zero coin entry for that message.
+			if spendable.IsZero() {
+				spendable = sdk.Coins{sdk.Coin{Denom: coin.Denom, Amount: sdk.ZeroInt()}}
+			}
 			return errorsmod.Wrapf(
 				sdkerrors.ErrInsufficientFunds,
 				"spendable balance %s is smaller than %s",
