@@ -3,6 +3,7 @@ package keeper_test
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/testutil"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/quarantine"
 	"github.com/cosmos/cosmos-sdk/x/quarantine/keeper"
 )
@@ -165,9 +166,9 @@ func (s *TestSuite) TestSendRestrictionFn() {
 	}
 }
 
-func (s *TestSuite) TestBankSendUsesSendRestrictionFn() {
+func (s *TestSuite) TestBankSendCoinsUsesSendRestrictionFn() {
 	// This specifically does NOT mock the bank keeper because it's testing
-	// that the bank keeper is paying attention to quarantine.
+	// that the bank keeper is applying this module's send restriction.
 
 	denom := "greatcoin"
 	cz := func(amt int64) sdk.Coins {
@@ -202,6 +203,87 @@ func (s *TestSuite) TestBankSendUsesSendRestrictionFn() {
 		if s.Assert().NotNil(qReq, "GetQuarantineRecord to addr1 from addr2") {
 			qCoins := qReq.Coins
 			s.Assert().Equal("88"+denom, qCoins.String(), "amount quarantined")
+			expFroms := []sdk.AccAddress{s.addr2}
+			froms := qReq.UnacceptedFromAddresses
+			s.Assert().Equal(expFroms, froms, "UnacceptedFromAddresses")
 		}
 	})
+}
+
+func (s *TestSuite) TestBankInputOutputCoinsUsesSendRestrictionFn() {
+	// This specifically does NOT mock the bank keeper because it's testing
+	// that the bank keeper is applying this module's send restriction.
+
+	denom := "greatercoin"
+	cz := func(amt int64) sdk.Coins {
+		return sdk.Coins{sdk.NewInt64Coin(denom, amt)}
+	}
+
+	// Set up addr1 and addr3 to be quarantined.
+	s.Require().NoError(s.keeper.SetOptIn(s.sdkCtx, s.addr1), "SetOptIn addr1")
+	s.Require().NoError(s.keeper.SetOptIn(s.sdkCtx, s.addr3), "SetOptIn addr3")
+	// Set up addr2 and addr4 to not be quarantined.
+	s.Require().NoError(s.keeper.SetOptOut(s.sdkCtx, s.addr2), "SetOptOut addr2")
+	s.Require().NoError(s.keeper.SetOptOut(s.sdkCtx, s.addr4), "SetOptOut addr4")
+	// Give addr5 some funds.
+	s.Require().NoError(testutil.FundAccount(s.app.BankKeeper, s.sdkCtx, s.addr5, cz(888)), "FundAccount addr5 888%s", denom)
+
+	// Do an InputOutputCoins from 5 to 1, 2, 3, and 4.
+	input := banktypes.Input{Address: s.addr5.String(), Coins: cz(322)}
+	outputs := []banktypes.Output{
+		{Address: s.addr1.String(), Coins: cz(33)},
+		{Address: s.addr2.String(), Coins: cz(55)},
+		{Address: s.addr3.String(), Coins: cz(89)},
+		{Address: s.addr4.String(), Coins: cz(145)},
+	}
+	s.Require().NoError(s.app.BankKeeper.InputOutputCoins(s.sdkCtx, input, outputs), "InputOutputCoins")
+
+	expBalances := []struct {
+		name string
+		addr sdk.AccAddress
+		exp  sdk.Coins
+	}{
+		{name: "quarantined addr1 did not get funds", addr: s.addr1, exp: cz(0)},
+		{name: "non-quarantined addr2 received their funds", addr: s.addr2, exp: cz(55)},
+		{name: "quarantined addr3 did not get funds", addr: s.addr3, exp: cz(0)},
+		{name: "non-quarantined addr4 received their funds", addr: s.addr4, exp: cz(145)},
+		{name: "all funds were removed from input", addr: s.addr5, exp: cz(566)},
+		{name: "the funds holder account has all quarantined funds", addr: s.keeper.GetFundsHolder(), exp: cz(122)},
+	}
+
+	for _, bal := range expBalances {
+		s.Run(bal.name, func() {
+			actual := s.app.BankKeeper.GetBalance(s.sdkCtx, bal.addr, denom)
+			s.Assert().Equal(bal.exp.String(), actual.String(), "GetBalance")
+		})
+	}
+
+	expQRecs := []struct {
+		name     string
+		toAddr   sdk.AccAddress
+		fromAddr sdk.AccAddress
+		exp      sdk.Coins
+	}{
+		{name: "quarantined addr1 has a record of quarantined funds", toAddr: s.addr1, fromAddr: s.addr5, exp: cz(33)},
+		{name: "non-quarantined addr2 does not have a quarantined funds record", toAddr: s.addr2, fromAddr: s.addr5, exp: nil},
+		{name: "quarantined addr3 has a record of quarantined funds", toAddr: s.addr3, fromAddr: s.addr5, exp: cz(89)},
+		{name: "non-quarantined addr4 does not have a quarantined funds record", toAddr: s.addr4, fromAddr: s.addr5, exp: nil},
+	}
+
+	for _, tc := range expQRecs {
+		s.Run(tc.name, func() {
+			qReq := s.keeper.GetQuarantineRecord(s.sdkCtx, tc.toAddr, tc.fromAddr)
+			if tc.exp != nil {
+				if s.Assert().NotNil(qReq, "GetQuarantineRecord") {
+					qCoins := qReq.Coins
+					s.Assert().Equal(tc.exp.String(), qCoins.String(), "amount quarantined")
+					expFroms := []sdk.AccAddress{s.addr5}
+					froms := qReq.UnacceptedFromAddresses
+					s.Assert().Equal(expFroms, froms, "UnacceptedFromAddresses")
+				}
+			} else {
+				s.Assert().Nil(qReq, "GetQuarantineRecord")
+			}
+		})
+	}
 }

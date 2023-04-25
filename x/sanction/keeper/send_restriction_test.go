@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/testutil"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/sanction"
 )
 
@@ -49,7 +50,7 @@ func (s *SendRestrictionTestSuite) TestSendRestrictionFn() {
 			name:     "from sanctioned address",
 			fromAddr: addrSanctioned,
 			toAddr:   addrOther,
-			expErr:   []string{"account is sanctioned", addrSanctioned.String()},
+			expErr:   []string{"account is sanctioned", "cannot send from " + addrSanctioned.String()},
 		},
 		{
 			name:     "from unsanctioned address",
@@ -86,9 +87,9 @@ func (s *SendRestrictionTestSuite) TestSendRestrictionFn() {
 	}
 }
 
-func (s *SendRestrictionTestSuite) TestBankSendUsesSendRestrictionFn() {
+func (s *SendRestrictionTestSuite) TestBankSendCoinsUsesSendRestrictionFn() {
 	// This specifically does NOT mock the bank keeper because it's testing
-	// that the bank keeper is paying attention to quarantine.
+	// that the bank keeper is applying this module's send restriction.
 
 	denom := "greatcoin"
 	cz := func(amt int64) sdk.Coins {
@@ -106,7 +107,7 @@ func (s *SendRestrictionTestSuite) TestBankSendUsesSendRestrictionFn() {
 	s.ReqOKAddPermSanct("sanctionedAddr", sanctionedAddr)
 
 	s.Run("SendCoins from sanctioned addr returns error", func() {
-		expErr := sanctionedAddr.String() + ": account is sanctioned"
+		expErr := "cannot send from " + sanctionedAddr.String() + ": account is sanctioned"
 		err := s.App.BankKeeper.SendCoins(s.SdkCtx, sanctionedAddr, otherAddr, cz(5_000_000_000))
 		s.Assert().EqualError(err, expErr, "SendCoins from sanctioned address error")
 	})
@@ -125,4 +126,65 @@ func (s *SendRestrictionTestSuite) TestBankSendUsesSendRestrictionFn() {
 		bal := s.App.BankKeeper.GetBalance(s.SdkCtx, otherAddr, denom)
 		s.Assert().Equal("0"+denom, bal.String(), "GetBalance otherAddr")
 	})
+}
+
+func (s *SendRestrictionTestSuite) TestBankInputOutputCoinsUsesSendRestrictionFn() {
+	// This specifically does NOT mock the bank keeper because it's testing
+	// that the bank keeper is applying this module's send restriction.
+
+	denom := "goodcoin"
+	cz := func(amt int64) sdk.Coins {
+		return sdk.NewCoins(sdk.NewInt64Coin(denom, amt))
+	}
+
+	sanctionedAddr := sdk.AccAddress("sanctionedAddr______")
+	otherAddr1 := sdk.AccAddress("otherAddr1__________")
+	otherAddr2 := sdk.AccAddress("otherAddr2__________")
+	otherAddr3 := sdk.AccAddress("otherAddr3__________")
+
+	// Fund the addresses
+	s.Require().NoError(testutil.FundAccount(s.App.BankKeeper, s.SdkCtx, sanctionedAddr, cz(6_006)), "FundAccount sanctionedAddr")
+	s.Require().NoError(testutil.FundAccount(s.App.BankKeeper, s.SdkCtx, otherAddr1, cz(1)), "FundAccount otherAddr1")
+	s.Require().NoError(testutil.FundAccount(s.App.BankKeeper, s.SdkCtx, otherAddr2, cz(2)), "FundAccount otherAddr2")
+	s.Require().NoError(testutil.FundAccount(s.App.BankKeeper, s.SdkCtx, otherAddr3, cz(3)), "FundAccount otherAddr3")
+
+	// Sanction the account.
+	s.ReqOKAddPermSanct("sanctionedAddr", sanctionedAddr)
+
+	// Do an InputOutputCoins from the sanctioned address to the others.
+	input := banktypes.Input{Address: sanctionedAddr.String(), Coins: cz(6_000)}
+	outputs := []banktypes.Output{
+		{Address: otherAddr1.String(), Coins: cz(1_000)},
+		{Address: otherAddr2.String(), Coins: cz(2_000)},
+		{Address: otherAddr3.String(), Coins: cz(3_000)},
+	}
+	err := s.App.BankKeeper.InputOutputCoins(s.SdkCtx, input, outputs)
+
+	s.Run("error is as expected", func() {
+		exp := "cannot send from " + sanctionedAddr.String() + ": account is sanctioned"
+		s.Assert().EqualError(err, exp, "InputOutputCoins")
+	})
+
+	// Note: In InputOutputCoins, the funds are removed from the input before calling the restriction function.
+	//       This is okay because it's usually being called in a transaction where an error will cause a rollback.
+	//       Rather than having a test that passes, but technically contrary to desired behavior,
+	//       the input balance is just not checked.
+
+	expBals := []struct {
+		name string
+		addr sdk.AccAddress
+		exp  sdk.Coins
+	}{
+		// not checking input balance (see comment above).
+		{name: "funds not removed from output[0]", addr: otherAddr1, exp: cz(1)},
+		{name: "funds not removed from output[1]", addr: otherAddr2, exp: cz(2)},
+		{name: "funds not removed from output[2]", addr: otherAddr3, exp: cz(3)},
+	}
+
+	for _, tc := range expBals {
+		s.Run(tc.name, func() {
+			bal := s.App.BankKeeper.GetBalance(s.SdkCtx, tc.addr, denom)
+			s.Assert().Equal(tc.exp.String(), bal.String(), "GetBalance")
+		})
+	}
 }

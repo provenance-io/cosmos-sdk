@@ -11,7 +11,7 @@ var _ banktypes.SendRestrictionFn = Keeper{}.SendRestrictionFn
 
 func (k Keeper) SendRestrictionFn(ctx sdk.Context, fromAddr, toAddr sdk.AccAddress, _ sdk.Coins) (sdk.AccAddress, error) {
 	if !sanction.HasBypass(ctx) && k.IsSanctionedAddr(ctx, fromAddr) {
-		return nil, errors.ErrSanctionedAccount.Wrap(fromAddr.String())
+		return nil, errors.ErrSanctionedAccount.Wrapf("cannot send from %s", fromAddr.String())
 	}
 	return toAddr, nil
 }
