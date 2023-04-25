@@ -131,12 +131,6 @@ func (s *SimTestSuite) nextBlock() {
 	s.freshCtx()
 }
 
-// assertErrorContents calls AssertErrorContents using this suite's t.
-func (s *SimTestSuite) assertErrorContents(theError error, contains []string, msgAndArgs ...interface{}) bool {
-	s.T().Helper()
-	return testutil.AssertErrorContents(s.T(), theError, contains, msgAndArgs...)
-}
-
 func (s *SimTestSuite) TestWeightedOperations() {
 	s.setSanctionParamsAboveGovDeposit()
 	testutil.RequireNotPanicsNoError(s.T(), func() error {
@@ -328,7 +322,7 @@ func (s *SimTestSuite) TestSendGovMsg() {
 				skip, opMsg, err = simulation.SendGovMsg(args)
 			}
 			s.Require().NotPanics(testFunc, "SendGovMsg")
-			s.assertErrorContents(err, tc.expInErr, "SendGovMsg error")
+			testutil.AssertErrorContents(s.T(), err, tc.expInErr, "SendGovMsg error")
 			s.Assert().Equal(tc.expSkip, skip, "SendGovMsg result skip bool")
 			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "SendGovMsg result op msg route")
 			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "SendGovMsg result op msg name")
@@ -519,7 +513,7 @@ func (s *SimTestSuite) TestOperationMsgVote() {
 				opMsg, fops, err = op(rand.New(rand.NewSource(1)), s.app.BaseApp, s.ctx, accounts, chainID)
 			}
 			s.Require().NotPanics(testOp, "calling Operation returned by OperationMsgVote")
-			s.assertErrorContents(err, tc.expInErr, "op error")
+			testutil.AssertErrorContents(s.T(), err, tc.expInErr, "op error")
 			s.Assert().Equal(tc.expOpMsgOK, opMsg.OK, "op msg ok")
 			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "op msg route")
 			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "op msg name")
@@ -807,7 +801,7 @@ func (s *SimTestSuite) TestSimulateGovMsgSanction() {
 				opMsg, fops, err = op(rand.New(rand.NewSource(1)), s.app.BaseApp, s.ctx, tc.accs, chainID)
 			}
 			s.Require().NotPanics(testOp, "SimulateGovMsgSanction op execution")
-			s.assertErrorContents(err, tc.expInErr, "op error")
+			testutil.AssertErrorContents(s.T(), err, tc.expInErr, "op error")
 			s.Assert().Equal(tc.expOpMsgOK, opMsg.OK, "op msg ok")
 			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "op msg route")
 			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "op msg name")
@@ -1048,7 +1042,7 @@ func (s *SimTestSuite) TestSimulateGovMsgSanctionImmediate() {
 				opMsg, fops, err = op(tc.r, s.app.BaseApp, s.ctx, tc.accs, chainID)
 			}
 			s.Require().NotPanics(testOp, "SimulateGovMsgSanctionImmediate op execution")
-			s.assertErrorContents(err, tc.expInErr, "op error")
+			testutil.AssertErrorContents(s.T(), err, tc.expInErr, "op error")
 			s.Assert().Equal(tc.expOpMsgOK, opMsg.OK, "op msg ok")
 			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "op msg route")
 			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "op msg name")
@@ -1324,7 +1318,7 @@ func (s *SimTestSuite) TestSimulateGovMsgUnsanction() {
 				opMsg, fops, err = op(rand.New(rand.NewSource(1)), s.app.BaseApp, s.ctx, tc.accs, chainID)
 			}
 			s.Require().NotPanics(testOp, "SimulateGovMsgUnsanction op execution")
-			s.assertErrorContents(err, tc.expInErr, "op error")
+			testutil.AssertErrorContents(s.T(), err, tc.expInErr, "op error")
 			s.Assert().Equal(tc.expOpMsgOK, opMsg.OK, "op msg ok")
 			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "op msg route")
 			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "op msg name")
@@ -1737,7 +1731,7 @@ func (s *SimTestSuite) TestSimulateGovMsgUnsanctionImmediate() {
 				opMsg, fops, err = op(tc.r, s.app.BaseApp, s.ctx, tc.accs, chainID)
 			}
 			s.Require().NotPanics(testOp, "SimulateGovMsgUnsanctionImmediate op execution")
-			s.assertErrorContents(err, tc.expInErr, "op error")
+			testutil.AssertErrorContents(s.T(), err, tc.expInErr, "op error")
 			s.Assert().Equal(tc.expOpMsgOK, opMsg.OK, "op msg ok")
 			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "op msg route")
 			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "op msg name")
@@ -1898,7 +1892,7 @@ func (s *SimTestSuite) TestSimulateGovMsgUpdateParams() {
 				opMsg, fops, err = op(tc.r, s.app.BaseApp, s.ctx, tc.accs, chainID)
 			}
 			s.Require().NotPanics(testOp, "SimulateGovMsgUpdateParams op execution")
-			s.assertErrorContents(err, tc.expInErr, "op error")
+			testutil.AssertErrorContents(s.T(), err, tc.expInErr, "op error")
 			s.Assert().Equal(tc.expOpMsgOK, opMsg.OK, "op msg ok")
 			s.Assert().Equal(tc.expOpMsgRoute, opMsg.Route, "op msg route")
 			s.Assert().Equal(tc.expOpMsgName, opMsg.Name, "op msg name")
