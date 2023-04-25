@@ -101,7 +101,7 @@ func NewBaseKeeper(
 	paramSpace paramtypes.Subspace,
 	blockedAddrs map[string]bool,
 ) *BaseKeeper {
-	// hardcoded till all transitive dependencies can be updated to pass in the constructor instead
+	// hardcoded till all transitive dependencies (e.g. x/wasm tests) can be updated to pass in the constructor instead
 	authority := authtypes.NewModuleAddress(govModuleName).String()
 
 	// set KeyTable if it has not already been set
