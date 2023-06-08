@@ -1,6 +1,8 @@
 package simulation
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -67,9 +69,14 @@ func getGroupMembers(r *rand.Rand, accounts []simtypes.Account) []*group.GroupMe
 
 func getGroupPolicies(r *rand.Rand, simState *module.SimulationState) []*group.GroupPolicyInfo {
 	groupPolicies := make([]*group.GroupPolicyInfo, 3)
-	for i := 0; i < 3; i++ {
-		acc, _ := simtypes.RandomAcc(r, simState.Accounts)
-		any, err := codectypes.NewAnyWithValue(group.NewThresholdDecisionPolicy("10", time.Second, 0))
+	raccs := make([]simtypes.Account, 0, len(simState.Accounts))
+	raccs = append(raccs, simState.Accounts...)
+	r.Shuffle(len(raccs), func(i, j int) {
+		raccs[i], raccs[j] = raccs[j], raccs[i]
+	})
+	for i := range groupPolicies {
+		acc := raccs[i]
+		policy, err := codectypes.NewAnyWithValue(group.NewThresholdDecisionPolicy("10", time.Second, 0))
 		if err != nil {
 			panic(err)
 		}
@@ -78,7 +85,7 @@ func getGroupPolicies(r *rand.Rand, simState *module.SimulationState) []*group.G
 			Admin:          acc.Address.String(),
 			Address:        acc.Address.String(),
 			Version:        1,
-			DecisionPolicy: any,
+			DecisionPolicy: policy,
 			Metadata:       simtypes.RandStringOfLength(r, 10),
 		}
 	}
@@ -212,4 +219,8 @@ func RandomizedGenState(simState *module.SimulationState) {
 	}
 
 	simState.GenState[group.ModuleName] = simState.Cdc.MustMarshalJSON(&groupGenesis)
+	bz, err := json.MarshalIndent(simState.GenState[group.ModuleName], "", " ")
+	if err == nil {
+		fmt.Printf("Selected randomly generated group parameters:\n%s\n", bz)
+	}
 }
