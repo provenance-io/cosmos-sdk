@@ -39,6 +39,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
+### Improvements
+
+* [570](https://github.com/provenance-io/cosmos-sdk/pull/570) Fix authz grant cli usage example.
+
 ### Bug Fixes
 
 * (x/auth/vesting) [GHSA-4j93-fm92-rp4m](https://github.com/cosmos/cosmos-sdk/security/advisories/GHSA-4j93-fm92-rp4m) Add `BlockedAddr` check in `CreatePeriodicVestingAccount`.
