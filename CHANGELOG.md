@@ -39,7 +39,14 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* nothing
+### Improvements
+
+* [#572](https://github.com/provenance-io/cosmos-sdk/pull/572) Bring in Cosmos-SDK [v0.46.11](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.11), [v0.46.12](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.12), and [v0.46.13](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.46.13) changes.
+* [#572](https://github.com/provenance-io/cosmos-sdk/pull/572) Add the better legacy gov prop error handling fix back in.
+
+### Bug Fixes
+
+* [#572](https://github.com/provenance-io/cosmos-sdk/pull/572) Fix group sims from creating multiple group policies with the same address.
 
 ---
 
