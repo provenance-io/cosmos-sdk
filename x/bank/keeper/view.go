@@ -59,13 +59,15 @@ func NewBaseViewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey, ak t
 }
 
 // AppendLockedCoinsGetter adds the provided GetLockedCoinsFn to run after previously provided getters.
+// The provided getter is wrapped in another that prevents it from returning zero and negative coin amounts.
 func (k BaseViewKeeper) AppendLockedCoinsGetter(getter types.GetLockedCoinsFn) {
-	k.lockedCoinsGetter.append(getter)
+	k.lockedCoinsGetter.append(getLockedCoinsFnWrapper(getter))
 }
 
 // PrependLockedCoinsGetter adds the provided GetLockedCoinsFn to run before previously provided getters.
+// The provided getter is wrapped in another that prevents it from returning zero and negative coin amounts.
 func (k BaseViewKeeper) PrependLockedCoinsGetter(getter types.GetLockedCoinsFn) {
-	k.lockedCoinsGetter.prepend(getter)
+	k.lockedCoinsGetter.prepend(getLockedCoinsFnWrapper(getter))
 }
 
 // ClearLockedCoinsGetter removes the locked coins getter (if there is one).
@@ -210,23 +212,21 @@ func (k BaseViewKeeper) UnvestedCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.
 // by address. If the account has no spendable coins, an empty Coins slice is
 // returned.
 func (k BaseViewKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
-	spendable, _ := k.spendableCoins(ctx, addr)
-	return spendable
-}
-
-// spendableCoins returns the coins the given address can spend alongside the total amount of coins it holds.
-// It exists for gas efficiency, in order to avoid to have to get balance multiple times.
-func (k BaseViewKeeper) spendableCoins(ctx sdk.Context, addr sdk.AccAddress) (spendable, total sdk.Coins) {
-	total = k.GetAllBalances(ctx, addr)
+	total := k.GetAllBalances(ctx, addr)
 	locked := k.LockedCoins(ctx, addr)
 
-	spendable, hasNeg := total.SafeSub(locked...)
-	if hasNeg {
-		spendable = sdk.NewCoins()
-		return
+	unlocked, hasNeg := total.SafeSub(locked...)
+	if !hasNeg {
+		return unlocked
 	}
 
-	return
+	spendable := sdk.Coins{}
+	for _, coin := range unlocked {
+		if coin.IsPositive() {
+			spendable = append(spendable, coin)
+		}
+	}
+	return spendable
 }
 
 // ValidateBalance validates all balances for a given account address returning
@@ -326,4 +326,19 @@ func (r lockedCoinsGetter) getLockedCoins(ctx sdk.Context, addr sdk.AccAddress) 
 		return sdk.NewCoins()
 	}
 	return r.fn(ctx, addr)
+}
+
+// getLockedCoinsFnWrapper returns a new GetLockedCoinsFn that calls the provided getter but ensures
+// only positive coin entries are returned. Coin entries with zero or negative amounts are ignored.
+func getLockedCoinsFnWrapper(getter types.GetLockedCoinsFn) types.GetLockedCoinsFn {
+	return func(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+		locked := getter(ctx, addr)
+		rv := sdk.Coins{}
+		for _, coin := range locked {
+			if coin.IsPositive() {
+				rv = rv.Add(coin)
+			}
+		}
+		return rv
+	}
 }

@@ -1167,6 +1167,73 @@ func (suite *IntegrationTestSuite) TestMsgMultiSendEvents() {
 	}
 }
 
+func (suite *IntegrationTestSuite) TestGetLockedCoinsFnWrapper() {
+	// Not using the coin/coins constructors since we want to be able to create bad ones.
+	c := func(amt int64, denom string) sdk.Coin {
+		return sdk.Coin{Amount: sdk.NewInt(amt), Denom: denom}
+	}
+	cz := func(coins ...sdk.Coin) sdk.Coins {
+		return coins
+	}
+
+	tests := []struct {
+		name string
+		rv   sdk.Coins
+		exp  sdk.Coins
+	}{
+		{
+			name: "one positive coin",
+			rv:   cz(c(1, "okcoin")),
+			exp:  cz(c(1, "okcoin")),
+		},
+		{
+			name: "one zero coin",
+			rv:   cz(c(0, "zerocoin")),
+			exp:  sdk.Coins{},
+		},
+		{
+			name: "one negative coin",
+			rv:   cz(c(-1, "negcoin")),
+			exp:  sdk.Coins{},
+		},
+		{
+			name: "one positive one zero and one negative",
+			rv:   cz(c(1, "okcoin"), c(0, "zerocoin"), c(-1, "negcoin")),
+			exp:  cz(c(1, "okcoin")),
+		},
+		{
+			name: "two of same denom both positive",
+			rv:   cz(c(1, "twocoin"), c(4, "twocoin")),
+			exp:  cz(c(5, "twocoin")),
+		},
+		{
+			name: "two of same denom but one is negative",
+			rv:   cz(c(1, "badcoin"), c(-1, "badcoin")),
+			exp:  cz(c(1, "badcoin")),
+		},
+		{
+			name: "a bit of everything",
+			rv:   cz(c(-1, "weird"), c(1, "weird"), c(0, "weird"), c(8, "okay"), c(4, "weird"), c(0, "zero")),
+			exp:  cz(c(8, "okay"), c(5, "weird")),
+		},
+	}
+
+	for _, tc := range tests {
+		suite.Run(tc.name, func() {
+			testAddr := sdk.AccAddress("testAddr____________")
+			var addr sdk.AccAddress
+			getter := func(_ sdk.Context, getterAddr sdk.AccAddress) sdk.Coins {
+				addr = getterAddr
+				return tc.rv
+			}
+			wrapped := keeper.GetLockedCoinsFnWrapper(getter)
+			coins := wrapped(sdk.Context{}, testAddr)
+			suite.Assert().Equal(tc.exp.String(), coins.String(), "wrapped result")
+			suite.Assert().Equal(testAddr, addr, "address provided to wrapped getter")
+		})
+	}
+}
+
 func (suite *IntegrationTestSuite) TestSpendableCoins() {
 	app, ctx := suite.app, suite.ctx
 	now := tmtime.Now()
@@ -1196,6 +1263,138 @@ func (suite *IntegrationTestSuite) TestSpendableCoins() {
 	ctx = ctx.WithBlockTime(now.Add(12 * time.Hour))
 	suite.Require().NoError(app.BankKeeper.DelegateCoins(ctx, addr2, addrModule, delCoins))
 	suite.Require().Equal(origCoins.Sub(delCoins...), app.BankKeeper.SpendableCoins(ctx, addr1))
+}
+
+func (suite *IntegrationTestSuite) TestSpendableCoinsWithInjection() {
+	app, ctx := suite.app, suite.ctx
+	now := time.Unix(1713586800, 0).UTC()
+	ctx = ctx.WithBlockHeader(tmproto.Header{Time: now})
+	endTime := now.Add(12 * time.Hour)
+	bk := app.BankKeeper.(*keeper.BaseKeeper)
+	origGetter := bk.GetLockedCoinsGetter()
+	defer bk.SetLockedCoinsGetter(origGetter)
+
+	baseStake := sdk.NewCoins(sdk.NewInt64Coin("stake", 100))
+	baseOther := sdk.NewCoins(sdk.NewInt64Coin("other", 50))
+	baseCoins := baseStake.Add(baseOther...)
+	vestingCoins := sdk.NewCoins(sdk.NewInt64Coin("vest", 88))
+	expVestingBalances := baseCoins.Add(vestingCoins...)
+
+	addr1 := sdk.AccAddress("addr1_______________")
+	addr2 := sdk.AccAddress("addr2_______________")
+	addrV := sdk.AccAddress("addrV_______________")
+
+	bacc := authtypes.NewBaseAccountWithAddress(addrV)
+	vacc := vesting.NewDelayedVestingAccount(bacc, vestingCoins, endTime.Unix())
+	app.AccountKeeper.SetAccount(ctx, vacc)
+
+	suite.Require().NoError(testutil.FundAccount(app.BankKeeper, ctx, addr1, baseCoins), "FundAccount(addr1)")
+	suite.Require().NoError(testutil.FundAccount(app.BankKeeper, ctx, addr2, baseCoins), "FundAccount(addr2)")
+	suite.Require().NoError(testutil.FundAccount(app.BankKeeper, ctx, addrV, expVestingBalances), "FundAccount(addrV)")
+
+	ctx = ctx.WithBlockTime(now.Add(1 * time.Hour))
+
+	bal1 := app.BankKeeper.GetAllBalances(ctx, addr1)
+	bal2 := app.BankKeeper.GetAllBalances(ctx, addr2)
+	balV := app.BankKeeper.GetAllBalances(ctx, addrV)
+	suite.Require().Equal(baseCoins.String(), bal1.String(), "GetAllBalances(addr1)")
+	suite.Require().Equal(baseCoins.String(), bal2.String(), "GetAllBalances(addr2)")
+	suite.Require().Equal(expVestingBalances.String(), balV.String(), "GetAllBalances(addrV)")
+
+	tests := []struct {
+		name     string
+		setup    func()
+		expAddr1 sdk.Coins
+		expAddr2 sdk.Coins
+		expAddrV sdk.Coins
+	}{
+		{
+			name:     "no locked coins getter",
+			expAddr1: baseCoins,
+			expAddr2: baseCoins,
+			expAddrV: expVestingBalances,
+		},
+		{
+			name:     "with only unvested coins getter",
+			setup:    func() { app.BankKeeper.AppendLockedCoinsGetter(app.BankKeeper.UnvestedCoins) },
+			expAddr1: baseCoins,
+			expAddr2: baseCoins,
+			expAddrV: baseCoins,
+		},
+		{
+			name: "with extra locked coins getters too",
+			setup: func() {
+				app.BankKeeper.AppendLockedCoinsGetter(app.BankKeeper.UnvestedCoins)
+				app.BankKeeper.AppendLockedCoinsGetter(func(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+					if addr1.Equals(addr) {
+						return sdk.NewCoins(sdk.NewInt64Coin("stake", 15), sdk.NewInt64Coin("other", 32))
+					}
+					return sdk.NewCoins()
+				})
+				app.BankKeeper.AppendLockedCoinsGetter(func(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+					if addr1.Equals(addr) {
+						return sdk.NewCoins(sdk.NewInt64Coin("stake", 10), sdk.NewInt64Coin("other", 18))
+					}
+					return sdk.NewCoins()
+				})
+			},
+			expAddr1: sdk.NewCoins(sdk.NewInt64Coin("stake", 75)),
+			expAddr2: baseCoins,
+			expAddrV: baseCoins,
+		},
+		{
+			name: "only appended getter that returns a negative amount",
+			setup: func() {
+				app.BankKeeper.AppendLockedCoinsGetter(func(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+					return sdk.Coins{sdk.Coin{Denom: "stake", Amount: sdk.NewInt(-1)}}
+				})
+			},
+			expAddr1: baseCoins,
+			expAddr2: baseCoins,
+			expAddrV: expVestingBalances,
+		},
+		{
+			name: "only prepended getter that returns a negative amount",
+			setup: func() {
+				app.BankKeeper.PrependLockedCoinsGetter(func(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+					return sdk.Coins{sdk.Coin{Denom: "stake", Amount: sdk.NewInt(-1)}}
+				})
+			},
+			expAddr1: baseCoins,
+			expAddr2: baseCoins,
+			expAddrV: expVestingBalances,
+		},
+		{
+			name: "getters return more than account has for a denom",
+			setup: func() {
+				app.BankKeeper.AppendLockedCoinsGetter(func(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+					return sdk.NewCoins(sdk.NewInt64Coin("stake", 1))
+				})
+				app.BankKeeper.AppendLockedCoinsGetter(func(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+					return baseStake
+				})
+			},
+			expAddr1: baseOther,
+			expAddr2: baseOther,
+			expAddrV: baseOther.Add(vestingCoins...),
+		},
+	}
+
+	for _, tc := range tests {
+		suite.Run(tc.name, func() {
+			app.BankKeeper.ClearLockedCoinsGetter()
+			if tc.setup != nil {
+				tc.setup()
+			}
+
+			spend1 := app.BankKeeper.SpendableCoins(ctx, addr1)
+			suite.Assert().Equal(tc.expAddr1.String(), spend1.String(), "SpendableCoins(addr1)")
+			spend2 := app.BankKeeper.SpendableCoins(ctx, addr2)
+			suite.Assert().Equal(tc.expAddr2.String(), spend2.String(), "SpendableCoins(addr2)")
+			spendV := app.BankKeeper.SpendableCoins(ctx, addrV)
+			suite.Assert().Equal(tc.expAddrV.String(), spendV.String(), "SpendableCoins(addrV)")
+		})
+	}
 }
 
 func (suite *IntegrationTestSuite) TestVestingAccountSend() {
@@ -1377,8 +1576,6 @@ func (suite *IntegrationTestSuite) TestDelegateCoins() {
 
 func (suite *IntegrationTestSuite) TestDelegateCoinsWithRestriction() {
 	app, ctx := suite.app, suite.ctx
-	now := time.Unix(1713608400, 0)
-	ctx = ctx.WithBlockHeader(tmproto.Header{Time: now})
 
 	origCoins := sdk.NewCoins(sdk.NewInt64Coin("stake", 100))
 	delCoins := sdk.NewCoins(sdk.NewInt64Coin("stake", 50))
@@ -1399,9 +1596,9 @@ func (suite *IntegrationTestSuite) TestDelegateCoinsWithRestriction() {
 		return nil, errors.New(expErr)
 	}
 	app.BankKeeper.AppendSendRestriction(restrictionOfNo)
-	ctx = ctx.WithBlockTime(now.Add(12 * time.Hour))
 
-	suite.Require().EqualError(app.BankKeeper.DelegateCoins(ctx, addr1, addrModule, delCoins), expErr, "DelegateCoins")
+	err := app.BankKeeper.DelegateCoins(ctx, addr1, addrModule, delCoins)
+	suite.Require().EqualError(err, expErr, "DelegateCoins")
 }
 
 func (suite *IntegrationTestSuite) TestDelegateCoins_Invalid() {
