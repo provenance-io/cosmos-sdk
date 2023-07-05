@@ -119,7 +119,7 @@ func (s *SendRestrictionTestSuite) TestBankSendCoinsUsesSendRestrictionFn() {
 
 	s.Run("sanctioned address has expected balance", func() {
 		bal := s.App.BankKeeper.GetBalance(s.SdkCtx, sanctionedAddr, denom)
-		s.Assert().Equal(cz(1_000_005_000_003_000).String(), bal.String(), "GetBalance sanctionedAddr")
+		s.Assert().Equal(cz(1_000_000_000_003_000).String(), bal.String(), "GetBalance sanctionedAddr")
 	})
 
 	s.Run("other address has expected balance", func() {

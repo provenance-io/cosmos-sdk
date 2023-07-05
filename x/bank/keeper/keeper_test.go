@@ -896,7 +896,7 @@ func (suite *IntegrationTestSuite) TestSendCoinsWithRestrictions() {
 			},
 			expErr: "test restriction error",
 			expBals: expBals{
-				from: sdk.NewCoins(newFooCoin(985), newBarCoin(473)),
+				from: sdk.NewCoins(newFooCoin(885), newBarCoin(273)),
 				to1:  sdk.NewCoins(newFooCoin(15)),
 				to2:  sdk.NewCoins(newBarCoin(27)),
 			},
