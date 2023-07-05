@@ -134,10 +134,6 @@ type SendKeeper interface {
 
 The view keeper provides read-only access to account balances. The view keeper does not have balance alteration functionality. All balance lookups are `O(1)`.
 
-By default, the `LockedCoins` function only returns `UnvestedCoins`.
-Additional lookups can be injected using `AppendLockedCoinsGetter` and/or `PrependLockedCoinsGetter`.
-The `ClearLockedCoinsGetter` function clears all previously provided `GetLockedCoinsFn`s including `UnvestedCoins`.
-
 ```go
 // ViewKeeper defines a module interface that facilitates read only access to
 // account balances.
@@ -160,3 +156,13 @@ type ViewKeeper interface {
     IterateAllBalances(ctx sdk.Context, cb func(address sdk.AccAddress, coin sdk.Coin) (stop bool))
 }
 ```
+
+By default, the `LockedCoins` function only returns `UnvestedCoins`.
+Additional lookups can be injected using `AppendLockedCoinsGetter` and/or `PrependLockedCoinsGetter`.
+The `ClearLockedCoinsGetter` function clears all previously provided `GetLockedCoinsFn`s including `UnvestedCoins`.
+When there are multiple `GetLockedCoinsFn`s, the result of `LockedCoins` is the sum of each result.
+
+A `GetLockedCoinsFn` should not return any zero or negative coin amounts.
+Each `GetLockedCoinsFn` is wrapped to prevent this by removing such entries, and also combining positive coin entries with the same denom.
+This wrapping is applied to each individual `GetLockedCoinsFn` result before it is added to the total.
+In other words, one `GetLockedCoinsFn` cannot "unlock" coins that should be otherwise locked.
