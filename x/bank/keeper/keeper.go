@@ -144,6 +144,10 @@ func (k BaseKeeper) DelegateCoins(ctx sdk.Context, delegatorAddr, moduleAccAddr 
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, amt.String())
 	}
 
+	if _, err := k.sendRestriction.apply(ctx, delegatorAddr, moduleAccAddr, amt); err != nil {
+		return err
+	}
+
 	balances := sdk.NewCoins()
 
 	for _, coin := range amt {

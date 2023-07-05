@@ -95,6 +95,11 @@ type Keeper interface {
 The send keeper provides access to account balances and the ability to transfer coins between
 accounts. The send keeper does not alter the total supply (mint or burn coins).
 
+Custom restrictions on movement of funds can be injected using the `AppendSendRestriction` and/or
+`PrependSendRestriction` functions.
+There are no `SendRestrictionFn`s defined by default.
+The `ClearSendRestriction` function clears all previously provided `SendRestrictionFn`s.
+
 ```go
 // SendKeeper defines a module interface that facilitates the transfer of coins
 // between accounts without the possibility of creating coins.
@@ -129,10 +134,18 @@ type SendKeeper interface {
 
 The view keeper provides read-only access to account balances. The view keeper does not have balance alteration functionality. All balance lookups are `O(1)`.
 
+By default, the `LockedCoins` function only returns `UnvestedCoins`.
+Additional lookups can be injected using `AppendLockedCoinsGetter` and/or `PrependLockedCoinsGetter`.
+The `ClearLockedCoinsGetter` function clears all previously provided `GetLockedCoinsFn`s including `UnvestedCoins`.
+
 ```go
 // ViewKeeper defines a module interface that facilitates read only access to
 // account balances.
 type ViewKeeper interface {
+    AppendLockedCoinsGetter(getter types.GetLockedCoinsFn)
+    PrependLockedCoinsGetter(getter types.GetLockedCoinsFn)
+    ClearLockedCoinsGetter()
+
     ValidateBalance(ctx sdk.Context, addr sdk.AccAddress) error
     HasBalance(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coin) bool
 
@@ -140,6 +153,7 @@ type ViewKeeper interface {
     GetAccountsBalances(ctx sdk.Context) []types.Balance
     GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
     LockedCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
+    UnvestedCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
     SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 
     IterateAccountBalances(ctx sdk.Context, addr sdk.AccAddress, cb func(coin sdk.Coin) (stop bool))

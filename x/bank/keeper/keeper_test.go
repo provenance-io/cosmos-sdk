@@ -414,13 +414,13 @@ func (suite *IntegrationTestSuite) TestInputOutputCoins() {
 
 	acc1Balances := app.BankKeeper.GetAllBalances(ctx, addr1)
 	expected := sdk.NewCoins(newFooCoin(30), newBarCoin(10))
-	suite.Require().Equal(expected, acc1Balances)
+	suite.Assert().Equal(expected, acc1Balances, "addr1 balances")
 
 	acc2Balances := app.BankKeeper.GetAllBalances(ctx, addr2)
-	suite.Require().Equal(expected, acc2Balances)
+	suite.Assert().Equal(expected, acc2Balances, "addr2 balances")
 
 	acc3Balances := app.BankKeeper.GetAllBalances(ctx, addr3)
-	suite.Require().Equal(expected, acc3Balances)
+	suite.Assert().Equal(expected, acc3Balances, "addr3 balances")
 }
 
 func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
@@ -1096,56 +1096,75 @@ func (suite *IntegrationTestSuite) TestMsgMultiSendEvents() {
 		{Address: addr4.String(), Coins: newCoins2},
 	}
 
-	ctx = ctx.WithEventManager(sdk.NewEventManager())
-	suite.Require().Error(app.BankKeeper.InputOutputCoins(ctx, input, outputs))
+	abciEventsStrings := func(events []abci.Event) []string {
+		rv := []string(nil)
+		for i, event := range events {
+			if len(event.Type) == 0 {
+				rv = append(rv, fmt.Sprintf("[%d]{ignored}", i))
+			}
+			for j, attr := range event.Attributes {
+				rv = append(rv, fmt.Sprintf("[%d]%s[%d]: %q = %q", i, event.Type, j, string(attr.Key), string(attr.Value)))
+			}
+		}
+		return rv
+	}
 
-	events := ctx.EventManager().ABCIEvents()
-	suite.Require().Equal(0, len(events))
+	abciEvent := func(typeName string, attrs ...abci.EventAttribute) abci.Event {
+		return abci.Event{
+			Type:       typeName,
+			Attributes: attrs,
+		}
+	}
+	abciAttr := func(key, value string) abci.EventAttribute {
+		return abci.EventAttribute{
+			Key:   []byte(key),
+			Value: []byte(value),
+		}
+	}
+
+	coinReceived := types.EventTypeCoinReceived
+	transfer := types.EventTypeTransfer
+	receiver := types.AttributeKeyReceiver
+	recipient := types.AttributeKeyRecipient
+	amount := sdk.AttributeKeyAmount
+
+	expFailEvents := []abci.Event{}
+
+	emF := sdk.NewEventManager()
+	ctx = ctx.WithEventManager(emF)
+	suite.Require().Error(app.BankKeeper.InputOutputCoins(ctx, input, outputs))
+	events := emF.ABCIEvents()
+	if !suite.Assert().Equal(expFailEvents, events, "events after InputOutputCoins failure") {
+		suite.T().Logf("Expected Events:\n%s", strings.Join(abciEventsStrings(expFailEvents), "\n"))
+		suite.T().Logf("Actual Events:\n%s", strings.Join(abciEventsStrings(events), "\n"))
+	}
 
 	// Set addr's coins
 	suite.Require().NoError(testutil.FundAccount(app.BankKeeper, ctx, addr, coins))
 	newCoins = sdk.NewCoins(sdk.NewInt64Coin(fooDenom, 50))
 
-	ctx = ctx.WithEventManager(sdk.NewEventManager())
+	coinSpent := types.EventTypeCoinSpent
+	spender := types.AttributeKeySpender
+	message := sdk.EventTypeMessage
+	sender := types.AttributeKeySender
+
+	expPassEvents := []abci.Event{
+		abciEvent(coinSpent, abciAttr(spender, addr.String()), abciAttr(amount, coins.String())),
+		abciEvent(message, abciAttr(sender, addr.String())),
+		abciEvent(coinReceived, abciAttr(receiver, addr3.String()), abciAttr(amount, newCoins.String())),
+		abciEvent(transfer, abciAttr(recipient, addr3.String()), abciAttr(amount, newCoins.String())),
+		abciEvent(coinReceived, abciAttr(receiver, addr4.String()), abciAttr(amount, newCoins2.String())),
+		abciEvent(transfer, abciAttr(recipient, addr4.String()), abciAttr(amount, newCoins2.String())),
+	}
+
+	emS := sdk.NewEventManager()
+	ctx = ctx.WithEventManager(emS)
 	suite.Require().NoError(app.BankKeeper.InputOutputCoins(ctx, input, outputs))
-
-	events = ctx.EventManager().ABCIEvents()
-	suite.Require().Len(events, 6)
-
-	event2 := sdk.Event{
-		Type:       sdk.EventTypeMessage,
-		Attributes: []abci.EventAttribute{},
+	events = emS.ABCIEvents()
+	if !suite.Assert().Equal(expPassEvents, events, "events after InputOutputCoins success") {
+		suite.T().Logf("Expected Events:\n%s", strings.Join(abciEventsStrings(expPassEvents), "\n"))
+		suite.T().Logf("Actual Events:\n%s", strings.Join(abciEventsStrings(events), "\n"))
 	}
-	event2.Attributes = append(
-		event2.Attributes,
-		abci.EventAttribute{Key: []byte(types.AttributeKeySender), Value: []byte(addr.String())},
-	)
-	event3 := sdk.Event{
-		Type:       types.EventTypeTransfer,
-		Attributes: []abci.EventAttribute{},
-	}
-	event3.Attributes = append(
-		event3.Attributes,
-		abci.EventAttribute{Key: []byte(types.AttributeKeyRecipient), Value: []byte(addr3.String())},
-	)
-	event3.Attributes = append(
-		event3.Attributes,
-		abci.EventAttribute{Key: []byte(sdk.AttributeKeyAmount), Value: []byte(newCoins.String())})
-	event4 := sdk.Event{
-		Type:       types.EventTypeTransfer,
-		Attributes: []abci.EventAttribute{},
-	}
-	event4.Attributes = append(
-		event4.Attributes,
-		abci.EventAttribute{Key: []byte(types.AttributeKeyRecipient), Value: []byte(addr4.String())},
-	)
-	event4.Attributes = append(
-		event4.Attributes,
-		abci.EventAttribute{Key: []byte(sdk.AttributeKeyAmount), Value: []byte(newCoins2.String())},
-	)
-	suite.Assert().Equal(abci.Event(event2), events[1])
-	suite.Assert().Equal(abci.Event(event3), events[3])
-	suite.Assert().Equal(abci.Event(event4), events[5])
 }
 
 func (suite *IntegrationTestSuite) TestSpendableCoins() {
@@ -1354,6 +1373,35 @@ func (suite *IntegrationTestSuite) TestDelegateCoins() {
 	vestingAcc, ok := acc.(types.VestingAccount)
 	suite.Require().True(ok)
 	suite.Require().Equal(delCoins, vestingAcc.GetDelegatedVesting())
+}
+
+func (suite *IntegrationTestSuite) TestDelegateCoinsWithRestriction() {
+	app, ctx := suite.app, suite.ctx
+	now := time.Unix(1713608400, 0)
+	ctx = ctx.WithBlockHeader(tmproto.Header{Time: now})
+
+	origCoins := sdk.NewCoins(sdk.NewInt64Coin("stake", 100))
+	delCoins := sdk.NewCoins(sdk.NewInt64Coin("stake", 50))
+
+	addr1 := sdk.AccAddress("addr1_______________")
+	addrModule := sdk.AccAddress("moduleAcc___________")
+
+	acc := app.AccountKeeper.NewAccountWithAddress(ctx, addr1)
+	macc := app.AccountKeeper.NewAccountWithAddress(ctx, addrModule) // we don't need to define an actual module account bc we just need the address for testing
+
+	app.AccountKeeper.SetAccount(ctx, acc)
+	app.AccountKeeper.SetAccount(ctx, macc)
+	suite.Require().NoError(testutil.FundAccount(app.BankKeeper, ctx, addr1, origCoins))
+
+	// Now that the accounts are set up and funded, add a send restriction that just blocks everything.
+	expErr := "this is a test restriction: restriction of no"
+	restrictionOfNo := func(_ sdk.Context, _, _ sdk.AccAddress, _ sdk.Coins) (sdk.AccAddress, error) {
+		return nil, errors.New(expErr)
+	}
+	app.BankKeeper.AppendSendRestriction(restrictionOfNo)
+	ctx = ctx.WithBlockTime(now.Add(12 * time.Hour))
+
+	suite.Require().EqualError(app.BankKeeper.DelegateCoins(ctx, addr1, addrModule, delCoins), expErr, "DelegateCoins")
 }
 
 func (suite *IntegrationTestSuite) TestDelegateCoins_Invalid() {
