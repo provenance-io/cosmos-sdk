@@ -414,13 +414,13 @@ func (suite *IntegrationTestSuite) TestInputOutputCoins() {
 
 	acc1Balances := app.BankKeeper.GetAllBalances(ctx, addr1)
 	expected := sdk.NewCoins(newFooCoin(30), newBarCoin(10))
-	suite.Assert().Equal(expected, acc1Balances, "addr1 balances")
+	suite.Require().Equal(expected, acc1Balances)
 
 	acc2Balances := app.BankKeeper.GetAllBalances(ctx, addr2)
-	suite.Assert().Equal(expected, acc2Balances, "addr2 balances")
+	suite.Require().Equal(expected, acc2Balances)
 
 	acc3Balances := app.BankKeeper.GetAllBalances(ctx, addr3)
-	suite.Assert().Equal(expected, acc3Balances, "addr3 balances")
+	suite.Require().Equal(expected, acc3Balances)
 }
 
 func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
@@ -531,14 +531,7 @@ func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
 			inputCoins:  sdk.NewCoins(newFooCoin(10)),
 			outputs:     []types.Output{{Address: toAddr1.String(), Coins: sdk.NewCoins(newFooCoin(10))}},
 			outputAddrs: []sdk.AccAddress{toAddr1},
-			expArgs: []*restrictionArgs{
-				{
-					ctx:      suite.ctx,
-					fromAddr: fromAddr,
-					toAddr:   toAddr1,
-					amt:      sdk.NewCoins(newFooCoin(10)),
-				},
-			},
+			expArgs:     []*restrictionArgs{{fromAddr: fromAddr, toAddr: toAddr1, amt: sdk.NewCoins(newFooCoin(10))}},
 			expBals: expBals{
 				from: sdk.NewCoins(newFooCoin(985), newBarCoin(500)),
 				to1:  sdk.NewCoins(newFooCoin(15)),
@@ -551,14 +544,7 @@ func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
 			inputCoins:  sdk.NewCoins(newFooCoin(26)),
 			outputs:     []types.Output{{Address: toAddr1.String(), Coins: sdk.NewCoins(newFooCoin(26))}},
 			outputAddrs: []sdk.AccAddress{toAddr2},
-			expArgs: []*restrictionArgs{
-				{
-					ctx:      suite.ctx,
-					fromAddr: fromAddr,
-					toAddr:   toAddr1,
-					amt:      sdk.NewCoins(newFooCoin(26)),
-				},
-			},
+			expArgs:     []*restrictionArgs{{fromAddr: fromAddr, toAddr: toAddr1, amt: sdk.NewCoins(newFooCoin(26))}},
 			expBals: expBals{
 				from: sdk.NewCoins(newFooCoin(959), newBarCoin(500)),
 				to1:  sdk.NewCoins(newFooCoin(15)),
@@ -571,17 +557,10 @@ func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
 			inputCoins:  sdk.NewCoins(newBarCoin(88)),
 			outputs:     []types.Output{{Address: toAddr1.String(), Coins: sdk.NewCoins(newBarCoin(88))}},
 			outputAddrs: []sdk.AccAddress{},
-			expArgs: []*restrictionArgs{
-				{
-					ctx:      suite.ctx,
-					fromAddr: fromAddr,
-					toAddr:   toAddr1,
-					amt:      sdk.NewCoins(newBarCoin(88)),
-				},
-			},
-			expErr: "restriction test error",
+			expArgs:     []*restrictionArgs{{fromAddr: fromAddr, toAddr: toAddr1, amt: sdk.NewCoins(newBarCoin(88))}},
+			expErr:      "restriction test error",
 			expBals: expBals{
-				from: sdk.NewCoins(newFooCoin(959), newBarCoin(412)),
+				from: sdk.NewCoins(newFooCoin(959), newBarCoin(500)),
 				to1:  sdk.NewCoins(newFooCoin(15)),
 				to2:  sdk.NewCoins(newFooCoin(26)),
 			},
@@ -596,21 +575,11 @@ func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
 			},
 			outputAddrs: []sdk.AccAddress{toAddr1, toAddr2},
 			expArgs: []*restrictionArgs{
-				{
-					ctx:      suite.ctx,
-					fromAddr: fromAddr,
-					toAddr:   toAddr1,
-					amt:      sdk.NewCoins(newFooCoin(11)),
-				},
-				{
-					ctx:      suite.ctx,
-					fromAddr: fromAddr,
-					toAddr:   toAddr2,
-					amt:      sdk.NewCoins(newBarCoin(12)),
-				},
+				{fromAddr: fromAddr, toAddr: toAddr1, amt: sdk.NewCoins(newFooCoin(11))},
+				{fromAddr: fromAddr, toAddr: toAddr2, amt: sdk.NewCoins(newBarCoin(12))},
 			},
 			expBals: expBals{
-				from: sdk.NewCoins(newFooCoin(948), newBarCoin(400)),
+				from: sdk.NewCoins(newFooCoin(948), newBarCoin(488)),
 				to1:  sdk.NewCoins(newFooCoin(26)),
 				to2:  sdk.NewCoins(newFooCoin(26), newBarCoin(12)),
 			},
@@ -625,23 +594,13 @@ func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
 			},
 			outputAddrs: []sdk.AccAddress{toAddr1},
 			expArgs: []*restrictionArgs{
-				{
-					ctx:      suite.ctx,
-					fromAddr: fromAddr,
-					toAddr:   toAddr1,
-					amt:      sdk.NewCoins(newFooCoin(12)),
-				},
-				{
-					ctx:      suite.ctx,
-					fromAddr: fromAddr,
-					toAddr:   toAddr2,
-					amt:      sdk.NewCoins(newFooCoin(32)),
-				},
+				{fromAddr: fromAddr, toAddr: toAddr1, amt: sdk.NewCoins(newFooCoin(12))},
+				{fromAddr: fromAddr, toAddr: toAddr2, amt: sdk.NewCoins(newFooCoin(32))},
 			},
 			expErr: "second restriction error",
 			expBals: expBals{
-				from: sdk.NewCoins(newFooCoin(904), newBarCoin(400)),
-				to1:  sdk.NewCoins(newFooCoin(38)),
+				from: sdk.NewCoins(newFooCoin(948), newBarCoin(488)),
+				to1:  sdk.NewCoins(newFooCoin(26)),
 				to2:  sdk.NewCoins(newFooCoin(26), newBarCoin(12)),
 			},
 		},
@@ -655,22 +614,12 @@ func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
 			},
 			outputAddrs: []sdk.AccAddress{toAddr1, toAddr2},
 			expArgs: []*restrictionArgs{
-				{
-					ctx:      suite.ctx,
-					fromAddr: fromAddr,
-					toAddr:   toAddr1,
-					amt:      sdk.NewCoins(newBarCoin(10)),
-				},
-				{
-					ctx:      suite.ctx,
-					fromAddr: fromAddr,
-					toAddr:   toAddr2,
-					amt:      sdk.NewCoins(newBarCoin(25)),
-				},
+				{fromAddr: fromAddr, toAddr: toAddr1, amt: sdk.NewCoins(newBarCoin(10))},
+				{fromAddr: fromAddr, toAddr: toAddr2, amt: sdk.NewCoins(newBarCoin(25))},
 			},
 			expBals: expBals{
-				from: sdk.NewCoins(newFooCoin(904), newBarCoin(365)),
-				to1:  sdk.NewCoins(newFooCoin(38), newBarCoin(25)),
+				from: sdk.NewCoins(newFooCoin(948), newBarCoin(453)),
+				to1:  sdk.NewCoins(newFooCoin(26), newBarCoin(25)),
 				to2:  sdk.NewCoins(newFooCoin(26), newBarCoin(22)),
 			},
 		},
@@ -685,7 +634,7 @@ func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
 			actualRestrictionArgs = nil
 			baseKeeper.SetSendRestriction(tc.fn)
 
-			ctx := suite.ctx
+			ctx, writeCache := suite.ctx.CacheContext()
 			input := types.Input{
 				Address: fromAddr.String(),
 				Coins:   tc.inputCoins,
@@ -696,6 +645,9 @@ func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
 				err = baseKeeper.InputOutputCoins(ctx, input, tc.outputs)
 			}
 			suite.Require().NotPanics(testFunc, "InputOutputCoins")
+			if err == nil {
+				writeCache()
+			}
 			if len(tc.expErr) > 0 {
 				suite.Assert().EqualError(err, tc.expErr, "InputOutputCoins error")
 			} else {
@@ -703,7 +655,7 @@ func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
 			}
 			if len(tc.expArgs) > 0 {
 				for i, expArgs := range tc.expArgs {
-					suite.Assert().Equal(expArgs.ctx, actualRestrictionArgs[i].ctx, "[%d] ctx provided to restriction", i)
+					suite.Assert().Equal(ctx, actualRestrictionArgs[i].ctx, "[%d] ctx provided to restriction", i)
 					suite.Assert().Equal(expArgs.fromAddr, actualRestrictionArgs[i].fromAddr, "[%d] fromAddr provided to restriction", i)
 					suite.Assert().Equal(expArgs.toAddr, actualRestrictionArgs[i].toAddr, "[%d] toAddr provided to restriction", i)
 					suite.Assert().Equal(expArgs.amt.String(), actualRestrictionArgs[i].amt.String(), "[%d] amt provided to restriction", i)
@@ -711,11 +663,11 @@ func (suite *IntegrationTestSuite) TestInputOutputCoinsWithRestrictions() {
 			} else {
 				suite.Assert().Nil(actualRestrictionArgs, "args provided to a restriction")
 			}
-			fromBal := baseKeeper.GetAllBalances(ctx, fromAddr)
+			fromBal := baseKeeper.GetAllBalances(suite.ctx, fromAddr)
 			suite.Assert().Equal(tc.expBals.from.String(), fromBal.String(), "fromAddr balance")
-			to1Bal := baseKeeper.GetAllBalances(ctx, toAddr1)
+			to1Bal := baseKeeper.GetAllBalances(suite.ctx, toAddr1)
 			suite.Assert().Equal(tc.expBals.to1.String(), to1Bal.String(), "toAddr1 balance")
-			to2Bal := baseKeeper.GetAllBalances(ctx, toAddr2)
+			to2Bal := baseKeeper.GetAllBalances(suite.ctx, toAddr2)
 			suite.Assert().Equal(tc.expBals.to2.String(), to2Bal.String(), "toAddr2 balance")
 		})
 	}
@@ -805,9 +757,9 @@ func (suite *IntegrationTestSuite) TestSendCoinsWithRestrictions() {
 		to2  sdk.Coins
 	}
 
-	addr1 := sdk.AccAddress("addr1_iocoinsr______")
-	addr2 := sdk.AccAddress("addr2_iocoinsr______")
-	addr3 := sdk.AccAddress("addr3_iocoinsr______")
+	addr1 := sdk.AccAddress("addr1_sendcoinsr____")
+	addr2 := sdk.AccAddress("addr2_sendcoinsr____")
+	addr3 := sdk.AccAddress("addr3_sendcoinsr____")
 
 	app, setupCtx := suite.app, suite.ctx
 	balances := sdk.NewCoins(newFooCoin(1000), newBarCoin(500))
@@ -852,12 +804,7 @@ func (suite *IntegrationTestSuite) TestSendCoinsWithRestrictions() {
 			toAddr:    toAddr1,
 			finalAddr: toAddr1,
 			amt:       sdk.NewCoins(newFooCoin(10)),
-			expArgs: &restrictionArgs{
-				ctx:      suite.ctx,
-				fromAddr: fromAddr,
-				toAddr:   toAddr1,
-				amt:      sdk.NewCoins(newFooCoin(10)),
-			},
+			expArgs:   &restrictionArgs{fromAddr: fromAddr, toAddr: toAddr1, amt: sdk.NewCoins(newFooCoin(10))},
 			expBals: expBals{
 				from: sdk.NewCoins(newFooCoin(985), newBarCoin(500)),
 				to1:  sdk.NewCoins(newFooCoin(15)),
@@ -870,12 +817,7 @@ func (suite *IntegrationTestSuite) TestSendCoinsWithRestrictions() {
 			toAddr:    toAddr1,
 			finalAddr: toAddr2,
 			amt:       sdk.NewCoins(newBarCoin(27)),
-			expArgs: &restrictionArgs{
-				ctx:      suite.ctx,
-				fromAddr: fromAddr,
-				toAddr:   toAddr1,
-				amt:      sdk.NewCoins(newBarCoin(27)),
-			},
+			expArgs:   &restrictionArgs{fromAddr: fromAddr, toAddr: toAddr1, amt: sdk.NewCoins(newBarCoin(27))},
 			expBals: expBals{
 				from: sdk.NewCoins(newFooCoin(985), newBarCoin(473)),
 				to1:  sdk.NewCoins(newFooCoin(15)),
@@ -888,15 +830,10 @@ func (suite *IntegrationTestSuite) TestSendCoinsWithRestrictions() {
 			toAddr:    toAddr1,
 			finalAddr: toAddr1,
 			amt:       sdk.NewCoins(newFooCoin(100), newBarCoin(200)),
-			expArgs: &restrictionArgs{
-				ctx:      suite.ctx,
-				fromAddr: fromAddr,
-				toAddr:   toAddr1,
-				amt:      sdk.NewCoins(newFooCoin(100), newBarCoin(200)),
-			},
-			expErr: "test restriction error",
+			expArgs:   &restrictionArgs{fromAddr: fromAddr, toAddr: toAddr1, amt: sdk.NewCoins(newFooCoin(100), newBarCoin(200))},
+			expErr:    "test restriction error",
 			expBals: expBals{
-				from: sdk.NewCoins(newFooCoin(885), newBarCoin(273)),
+				from: sdk.NewCoins(newFooCoin(985), newBarCoin(473)),
 				to1:  sdk.NewCoins(newFooCoin(15)),
 				to2:  sdk.NewCoins(newBarCoin(27)),
 			},
@@ -911,31 +848,34 @@ func (suite *IntegrationTestSuite) TestSendCoinsWithRestrictions() {
 			defer baseKeeper.SetSendRestriction(existingSendRestrictionFn)
 			actualRestrictionArgs = nil
 			baseKeeper.SetSendRestriction(tc.fn)
-			ctx := suite.ctx
+			ctx, writeCache := suite.ctx.CacheContext()
 
 			var err error
 			testFunc := func() {
 				err = baseKeeper.SendCoins(ctx, fromAddr, tc.toAddr, tc.amt)
 			}
 			suite.Require().NotPanics(testFunc, "SendCoins")
+			if err == nil {
+				writeCache()
+			}
 			if len(tc.expErr) > 0 {
 				suite.Assert().EqualError(err, tc.expErr, "SendCoins error")
 			} else {
 				suite.Assert().NoError(err, "SendCoins error")
 			}
 			if tc.expArgs != nil {
-				suite.Assert().Equal(tc.expArgs.ctx, actualRestrictionArgs.ctx, "ctx provided to restriction")
+				suite.Assert().Equal(ctx, actualRestrictionArgs.ctx, "ctx provided to restriction")
 				suite.Assert().Equal(tc.expArgs.fromAddr, actualRestrictionArgs.fromAddr, "fromAddr provided to restriction")
 				suite.Assert().Equal(tc.expArgs.toAddr, actualRestrictionArgs.toAddr, "toAddr provided to restriction")
 				suite.Assert().Equal(tc.expArgs.amt.String(), actualRestrictionArgs.amt.String(), "amt provided to restriction")
 			} else {
 				suite.Assert().Nil(actualRestrictionArgs, "args provided to a restriction")
 			}
-			fromBal := baseKeeper.GetAllBalances(ctx, fromAddr)
+			fromBal := baseKeeper.GetAllBalances(suite.ctx, fromAddr)
 			suite.Assert().Equal(tc.expBals.from.String(), fromBal.String(), "fromAddr balance")
-			to1Bal := baseKeeper.GetAllBalances(ctx, toAddr1)
+			to1Bal := baseKeeper.GetAllBalances(suite.ctx, toAddr1)
 			suite.Assert().Equal(tc.expBals.to1.String(), to1Bal.String(), "toAddr1 balance")
-			to2Bal := baseKeeper.GetAllBalances(ctx, toAddr2)
+			to2Bal := baseKeeper.GetAllBalances(suite.ctx, toAddr2)
 			suite.Assert().Equal(tc.expBals.to2.String(), to2Bal.String(), "toAddr2 balance")
 		})
 	}
