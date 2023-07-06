@@ -26,7 +26,7 @@ func NewMintingRestrictionTestHelper() *MintingRestrictionTestHelper {
 	return &MintingRestrictionTestHelper{Calls: make([]*MintingRestrictionArgs, 0, 2)}
 }
 
-// RecordCall makes note that the provided args were used as a funcion call.
+// RecordCall makes note that the provided args were used as a MintingRestrictionFn call.
 func (s *MintingRestrictionTestHelper) RecordCall(name string, coins sdk.Coins) {
 	s.Calls = append(s.Calls, s.NewArgs(name, coins))
 }
@@ -410,7 +410,7 @@ func NewSendRestrictionTestHelper() *SendRestrictionTestHelper {
 	return &SendRestrictionTestHelper{Calls: make([]*SendRestrictionArgs, 0, 2)}
 }
 
-// RecordCall makes note that the provided args were used as a funcion call.
+// RecordCall makes note that the provided args were used as a SendRestrictionFn call.
 func (s *SendRestrictionTestHelper) RecordCall(name string, fromAddr, toAddr sdk.AccAddress, coins sdk.Coins) {
 	s.Calls = append(s.Calls, s.NewArgs(name, fromAddr, toAddr, coins))
 }
@@ -917,13 +917,13 @@ func TestNoOpSendRestrictionFn(t *testing.T) {
 	assert.Equal(t, expAddr, addr, "NoOpSendRestrictionFn addr")
 }
 
-// MintingRestrictionArgs are the args provided to a MintingRestrictionFn function.
+// GetLockedCoinsArgs are the args provided to a GetLockedCoinsFn function.
 type GetLockedCoinsArgs struct {
 	Name string
 	Addr sdk.AccAddress
 }
 
-// MintingRestrictionTestHelper is a struct with stuff helpful for testing the MintingRestrictionFn stuff.
+// GetLockedCoinsTestHelper is a struct with stuff helpful for testing the GetLockedCoinsFn stuff.
 type GetLockedCoinsTestHelper struct {
 	Calls []*GetLockedCoinsArgs
 }
@@ -932,7 +932,7 @@ func NewGetLockedCoinsTestHelper() *GetLockedCoinsTestHelper {
 	return &GetLockedCoinsTestHelper{Calls: make([]*GetLockedCoinsArgs, 0, 2)}
 }
 
-// RecordCall makes note that the provided args were used as a funcion call.
+// RecordCall makes note that the provided args were used as a GetLockedCoinsFn call.
 func (s *GetLockedCoinsTestHelper) RecordCall(name string, addr sdk.AccAddress) {
 	s.Calls = append(s.Calls, s.NewArgs(name, addr))
 }
@@ -950,7 +950,7 @@ func (s *GetLockedCoinsTestHelper) NewArgs(name string, addr sdk.AccAddress) *Ge
 	}
 }
 
-// NamedRestriction creates a new GetLockedCoinsFn function that records the arguments it's called with and returns an amount.
+// NamedGetter creates a new GetLockedCoinsFn function that records the arguments it's called with and returns an amount.
 func (s *GetLockedCoinsTestHelper) NamedGetter(name string, amt sdk.Coins) types.GetLockedCoinsFn {
 	return func(_ sdk.Context, addr sdk.AccAddress) sdk.Coins {
 		s.RecordCall(name, addr)
@@ -971,7 +971,7 @@ type GetLockedCoinsTestParams struct {
 	ExpCalls []*GetLockedCoinsArgs
 }
 
-// TestActual tests the provided MintingRestrictionFn using the provided test parameters.
+// TestActual tests the provided GetLockedCoinsFn using the provided test parameters.
 func (s *GetLockedCoinsTestHelper) TestActual(t *testing.T, tp *GetLockedCoinsTestParams, actual types.GetLockedCoinsFn) {
 	t.Helper()
 	if tp.ExpNil {

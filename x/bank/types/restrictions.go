@@ -94,7 +94,7 @@ func ComposeSendRestrictions(restrictions ...SendRestrictionFn) SendRestrictionF
 	}
 }
 
-// A GetLockedCoinsFn returns the coins locked for an address.
+// A GetLockedCoinsFn returns some coins locked for an address.
 type GetLockedCoinsFn func(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 
 var _ GetLockedCoinsFn = NoOpGetLockedCoinsFn
