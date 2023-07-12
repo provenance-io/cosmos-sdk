@@ -41,10 +41,10 @@ func (s *IntegrationTestSuite) TestStatusCommand() {
 	s.Require().NoError(err)
 
 	// Make sure the output has the validator moniker.
-	s.Require().Contains(out.String(), fmt.Sprintf("\"Moniker\":\"%s\"", val0.Moniker))
+	s.Require().Contains(out.String(), fmt.Sprintf("\"moniker\":\"%s\"", val0.Moniker))
 
 	// Make sure the output has the binary name.
-	s.Require().Contains(out.String(), fmt.Sprintf("\"BinaryVersion\":\"%s\"", version.NewInfo().Version))
+	s.Require().Contains(out.String(), fmt.Sprintf("\"binary_version\":\"%s\"", version.NewInfo().Version))
 }
 
 func TestIntegrationTestSuite(t *testing.T) {

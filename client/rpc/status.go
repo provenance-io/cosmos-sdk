@@ -33,15 +33,15 @@ type resultStatus struct {
 }
 
 type nodeInfo struct {
-	ProtocolVersion p2p.ProtocolVersion
-	DefaultNodeID   p2p.ID
-	ListenAddr      string
-	Network         string
-	Version         string
-	Channels        bytes.HexBytes
-	Moniker         string
-	Other           p2p.DefaultNodeInfoOther
-	BinaryVersion   string
+	ProtocolVersion p2p.ProtocolVersion      `json:"protocol_version"`
+	DefaultNodeID   p2p.ID                   `json:"default_node_id,omitempty"`
+	ListenAddr      string                   `json:"listen_addr,omitempty"`
+	Network         string                   `json:"network,omitempty"`
+	Version         string                   `json:"version,omitempty"`
+	Channels        bytes.HexBytes           `json:"channels,omitempty"`
+	Moniker         string                   `json:"moniker,omitempty"`
+	Other           p2p.DefaultNodeInfoOther `json:"other"`
+	BinaryVersion   string                   `json:"binary_version"`
 }
 
 // StatusCommand returns the command to return the status of the network.
