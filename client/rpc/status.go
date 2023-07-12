@@ -81,10 +81,7 @@ func StatusCommand() *cobra.Command {
 				Channels:        status.NodeInfo.Channels,
 				Moniker:         status.NodeInfo.Moniker,
 				Other:           status.NodeInfo.Other,
-				// How do I get the binary version?
-				// This needs to be obtained remotely.
-				// We need a query
-				BinaryVersion: res.ApplicationVersion.GetVersion(),
+				BinaryVersion:   res.ApplicationVersion.GetVersion(),
 			}
 
 			statusWithPk := resultStatus{
