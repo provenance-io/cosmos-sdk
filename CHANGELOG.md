@@ -39,7 +39,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
-* nothing
+### Features
+
+* [#578](https://github.com/provenance-io/cosmos-sdk/pull/578) Add `binary_version` to the `NodeInfo` object returned by status command.
+* [#577](https://github.com/provenance-io/cosmos-sdk/pull/577) Add an injectable `GetLockedCoinsFn` to the bank module.
 
 ---
 
