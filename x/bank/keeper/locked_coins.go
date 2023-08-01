@@ -13,6 +13,9 @@ var _ types.GetLockedCoinsFn = BaseViewKeeper{}.UnvestedCoins
 // You probably want to call LockedCoins instead. This function is primarily made public
 // so that, externally, it can be re-injected after a call to ClearLockedCoinsGetter.
 func (k BaseViewKeeper) UnvestedCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+	if types.HasBypass(ctx) {
+		return sdk.NewCoins()
+	}
 	acc := k.ak.GetAccount(ctx, addr)
 	if acc != nil {
 		vacc, ok := acc.(types.VestingAccount)
