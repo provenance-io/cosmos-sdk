@@ -9,7 +9,7 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
-func TestSendRestrictionContextFuncs(t *testing.T) {
+func TestVestingLockedContextFuncs(t *testing.T) {
 	tests := []struct {
 		name string
 		ctx  sdk.Context
@@ -22,54 +22,54 @@ func TestSendRestrictionContextFuncs(t *testing.T) {
 		},
 		{
 			name: "context with bypass",
-			ctx:  WithBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil)),
+			ctx:  WithVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil)),
 			exp:  true,
 		},
 		{
 			name: "context with bypass on one that originally was without it",
-			ctx:  WithBypass(WithoutBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
+			ctx:  WithVestingLockedBypass(WithoutVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
 			exp:  true,
 		},
 		{
 			name: "context with bypass twice",
-			ctx:  WithBypass(WithBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
+			ctx:  WithVestingLockedBypass(WithVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
 			exp:  true,
 		},
 		{
 			name: "context without bypass",
-			ctx:  WithoutBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil)),
+			ctx:  WithoutVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil)),
 			exp:  false,
 		},
 		{
 			name: "context without bypass on one that originally had it",
-			ctx:  WithoutBypass(WithBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
+			ctx:  WithoutVestingLockedBypass(WithVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
 			exp:  false,
 		},
 		{
 			name: "context without bypass twice",
-			ctx:  WithoutBypass(WithoutBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
+			ctx:  WithoutVestingLockedBypass(WithoutVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
 			exp:  false,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := HasBypass(tc.ctx)
-			assert.Equal(t, tc.exp, actual, "HasBypass")
+			actual := HasVestingLockedBypass(tc.ctx)
+			assert.Equal(t, tc.exp, actual, "HasVestingLockedBypass")
 		})
 	}
 }
 
 func TestContextFuncsDoNotModifyProvided(t *testing.T) {
 	origCtx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
-	assert.False(t, HasBypass(origCtx), "HasBypass(origCtx)")
-	afterWith := WithBypass(origCtx)
-	assert.True(t, HasBypass(afterWith), "HasBypass(afterWith)")
-	assert.False(t, HasBypass(origCtx), "HasBypass(origCtx) after giving it to WithBypass")
-	afterWithout := WithoutBypass(afterWith)
-	assert.False(t, HasBypass(afterWithout), "HasBypass(afterWithout)")
-	assert.True(t, HasBypass(afterWith), "HasBypass(afterWith) after giving it to WithoutBypass")
-	assert.False(t, HasBypass(origCtx), "HasBypass(origCtx) after giving afterWith to WithoutBypass")
+	assert.False(t, HasVestingLockedBypass(origCtx), "HasVestingLockedBypass(origCtx)")
+	afterWith := WithVestingLockedBypass(origCtx)
+	assert.True(t, HasVestingLockedBypass(afterWith), "HasVestingLockedBypass(afterWith)")
+	assert.False(t, HasVestingLockedBypass(origCtx), "HasVestingLockedBypass(origCtx) after giving it to WithVestingLockedBypass")
+	afterWithout := WithoutVestingLockedBypass(afterWith)
+	assert.False(t, HasVestingLockedBypass(afterWithout), "HasVestingLockedBypass(afterWithout)")
+	assert.True(t, HasVestingLockedBypass(afterWith), "HasVestingLockedBypass(afterWith) after giving it to WithoutVestingLockedBypass")
+	assert.False(t, HasVestingLockedBypass(origCtx), "HasVestingLockedBypass(origCtx) after giving afterWith to WithoutVestingLockedBypass")
 }
 
 func TestKeyContainsSpecificName(t *testing.T) {
