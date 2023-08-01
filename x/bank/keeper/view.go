@@ -192,22 +192,6 @@ func (k BaseViewKeeper) LockedCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Co
 	return k.lockedCoinsGetter.getLockedCoins(ctx, addr)
 }
 
-// UnvestedCoins returns all the coins that are locked due to a vesting schedule.
-// It is appended as a GetLockedCoinsFn during NewBaseViewKeeper.
-//
-// You probably want to call LockedCoins instead. This function is primarily made public
-// so that, externally, it can be re-injected after a call to ClearLockedCoinsGetter.
-func (k BaseViewKeeper) UnvestedCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
-	acc := k.ak.GetAccount(ctx, addr)
-	if acc != nil {
-		vacc, ok := acc.(types.VestingAccount)
-		if ok {
-			return vacc.LockedCoins(ctx.BlockTime())
-		}
-	}
-	return sdk.NewCoins()
-}
-
 // SpendableCoins returns the total balances of spendable coins for an account
 // by address. If the account has no spendable coins, an empty Coins slice is
 // returned.
