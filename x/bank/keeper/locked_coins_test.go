@@ -79,12 +79,12 @@ func (suite *IntegrationTestSuite) TestUnvestedCoins() {
 	suite.app.AccountKeeper.SetAccount(suite.ctx, accPerVest)
 	suite.reqFundAcc(addrPerVest, totalBal)
 
-	// A delayed vesting account that vests 1_000_000 fish after 1_000_000 seconds.
+	// A delayed vesting account that vests 1,000,000 fish after 1,000,000 seconds.
 	accDelVest := vesting.NewDelayedVestingAccount(newBaseAcc(addrDelVest), vestBal, endTime.Unix())
 	suite.app.AccountKeeper.SetAccount(suite.ctx, accDelVest)
 	suite.reqFundAcc(addrDelVest, totalBal)
 
-	// A permanent locked account with 1_000_000 fish locked, and 1_000 fish unlocked.
+	// A permanent locked account with 1,000,000 fish locked.
 	accPermLock := vesting.NewPermanentLockedAccount(newBaseAcc(addrPermLock), vestBal)
 	suite.app.AccountKeeper.SetAccount(suite.ctx, accPermLock)
 	suite.reqFundAcc(addrPermLock, totalBal)
