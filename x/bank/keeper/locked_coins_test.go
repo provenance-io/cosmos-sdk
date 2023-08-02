@@ -549,9 +549,9 @@ func (suite *IntegrationTestSuite) TestLockedCoins_InputOutputCoins() {
 	})
 
 	expErr := "spendable balance 7acorn is smaller than 8acorn: insufficient funds"
-	input := types.Input{Address: fromAddr.String(), Coins: toSend}
+	inputs := []types.Input{{Address: fromAddr.String(), Coins: toSend}}
 	outputs := []types.Output{{Address: toAddr.String(), Coins: toSend}}
-	err := suite.app.BankKeeper.InputOutputCoins(suite.ctx, input, outputs)
+	err := suite.app.BankKeeper.InputOutputCoins(suite.ctx, inputs, outputs)
 	suite.Assert().EqualError(err, expErr, "InputOutputCoins error")
 }
 
