@@ -9,6 +9,7 @@ import (
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	"github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -118,7 +119,8 @@ func SimulateMsgCreateValidator(ak types.AccountKeeper, bk types.BankKeeper, k k
 
 		denom := k.GetParams(ctx).BondDenom
 
-		balance := bk.GetBalance(ctx, simAccount.Address, denom).Amount
+		spendable := bk.SpendableCoins(banktypes.WithVestingLockedBypass(ctx), simAccount.Address)
+		balance := spendable.AmountOf(denom)
 		if !balance.IsPositive() {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgCreateValidator, "balance is negative"), nil, nil
 		}
@@ -129,9 +131,6 @@ func SimulateMsgCreateValidator(ak types.AccountKeeper, bk types.BankKeeper, k k
 		}
 
 		selfDelegation := sdk.NewCoin(denom, amount)
-
-		account := ak.GetAccount(ctx, simAccount.Address)
-		spendable := bk.SpendableCoins(ctx, account.GetAddress())
 
 		var fees sdk.Coins
 
@@ -261,7 +260,8 @@ func SimulateMsgDelegate(ak types.AccountKeeper, bk types.BankKeeper, k keeper.K
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgDelegate, "validator's invalid echange rate"), nil, nil
 		}
 
-		amount := bk.GetBalance(ctx, simAccount.Address, denom).Amount
+		spendable := bk.SpendableCoins(banktypes.WithoutVestingLockedBypass(ctx), simAccount.Address)
+		amount := spendable.AmountOf(denom)
 		if !amount.IsPositive() {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgDelegate, "balance is negative"), nil, nil
 		}
@@ -272,9 +272,6 @@ func SimulateMsgDelegate(ak types.AccountKeeper, bk types.BankKeeper, k keeper.K
 		}
 
 		bondAmt := sdk.NewCoin(denom, amount)
-
-		account := ak.GetAccount(ctx, simAccount.Address)
-		spendable := bk.SpendableCoins(ctx, account.GetAddress())
 
 		var fees sdk.Coins
 
