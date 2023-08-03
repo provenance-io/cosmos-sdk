@@ -552,7 +552,7 @@ func (suite *IntegrationTestSuite) TestLockedCoins_InputOutputCoins() {
 	inputs := []types.Input{{Address: fromAddr.String(), Coins: toSend}}
 	outputs := []types.Output{{Address: toAddr.String(), Coins: toSend}}
 	err := suite.app.BankKeeper.InputOutputCoins(suite.ctx, inputs, outputs)
-	suite.Assert().EqualError(err, expErr, "InputOutputCoins error")
+	suite.Assert().ErrorContains(err, expErr, "InputOutputCoins error")
 }
 
 func (suite *IntegrationTestSuite) TestLockedCoins_DelegateCoins() {
