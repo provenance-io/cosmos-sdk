@@ -46,6 +46,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Improvements
 
+* [#580](https://github.com/provenance-io/cosmos-sdk/pull/580) Add SpendableBalances query CLI command.
 * [#581](https://github.com/provenance-io/cosmos-sdk/pull/581) For `MsgMultiSend` and `InputOutputCoins`, allow many inputs when there's a single output.
 
 ### Bug Fixes
