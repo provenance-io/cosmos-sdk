@@ -39,6 +39,12 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased
 
+* nothing
+
+---
+
+## [v0.46.13-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.46.13-pio-2) - 2023-08-11
+
 ### Features
 
 * [#578](https://github.com/provenance-io/cosmos-sdk/pull/578) Add `binary_version` to the `NodeInfo` object returned by status command.
@@ -58,6 +64,11 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 * [#581](https://github.com/provenance-io/cosmos-sdk/pull/581) The `InputOutputCoins` once again takes in multiple inputs. It returns an error if there are multiple inputs and multiple outputs.
 * [#582](https://github.com/provenance-io/cosmos-sdk/pull/582) The `SimulateFromSeed` function now also returns the last block time simulated.
+
+### Full Commit History
+
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.46.13-pio-1...v0.46.13-pio-2
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.46.13..v0.46.13-pio-2
 
 ---
 
