@@ -16,12 +16,12 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/node"
 	tmclient "github.com/tendermint/tendermint/rpc/client"
-	dbm "github.com/tendermint/tm-db"
 	"google.golang.org/grpc"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"

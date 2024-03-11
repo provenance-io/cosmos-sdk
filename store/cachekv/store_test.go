@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"testing"
 
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/stretchr/testify/require"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/cosmos/cosmos-sdk/store/cachekv"
 	"github.com/cosmos/cosmos-sdk/store/dbadapter"
