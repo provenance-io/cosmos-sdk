@@ -12,5 +12,5 @@ var (
 	ErrInvalidKey            = errors.Register(ModuleName, 7, "invalid key")
 	ErrDuplicateEntry        = errors.Register(ModuleName, 8, "duplicate entry")
 	ErrMultipleSenders       = errors.Register(ModuleName, 9, "multiple senders not allowed")
-	ErrManyToMany            = errors.Register(ModuleName, 10, "multiple senders to multiple receivers not allowed")
+	ErrManyToMany            = errors.Register(ModuleName, 50, "multiple senders to multiple receivers not allowed")
 )
