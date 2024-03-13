@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 func TestVestingLockedContextFuncs(t *testing.T) {
@@ -17,37 +17,37 @@ func TestVestingLockedContextFuncs(t *testing.T) {
 	}{
 		{
 			name: "brand new mostly empty context",
-			ctx:  sdk.NewContext(nil, tmproto.Header{}, false, nil),
+			ctx:  sdk.NewContext(nil, cmtproto.Header{}, false, nil),
 			exp:  false,
 		},
 		{
 			name: "context with bypass",
-			ctx:  WithVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil)),
+			ctx:  WithVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil)),
 			exp:  true,
 		},
 		{
 			name: "context with bypass on one that originally was without it",
-			ctx:  WithVestingLockedBypass(WithoutVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
+			ctx:  WithVestingLockedBypass(WithoutVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil))),
 			exp:  true,
 		},
 		{
 			name: "context with bypass twice",
-			ctx:  WithVestingLockedBypass(WithVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
+			ctx:  WithVestingLockedBypass(WithVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil))),
 			exp:  true,
 		},
 		{
 			name: "context without bypass",
-			ctx:  WithoutVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil)),
+			ctx:  WithoutVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil)),
 			exp:  false,
 		},
 		{
 			name: "context without bypass on one that originally had it",
-			ctx:  WithoutVestingLockedBypass(WithVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
+			ctx:  WithoutVestingLockedBypass(WithVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil))),
 			exp:  false,
 		},
 		{
 			name: "context without bypass twice",
-			ctx:  WithoutVestingLockedBypass(WithoutVestingLockedBypass(sdk.NewContext(nil, tmproto.Header{}, false, nil))),
+			ctx:  WithoutVestingLockedBypass(WithoutVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil))),
 			exp:  false,
 		},
 	}
@@ -61,7 +61,7 @@ func TestVestingLockedContextFuncs(t *testing.T) {
 }
 
 func TestContextFuncsDoNotModifyProvided(t *testing.T) {
-	origCtx := sdk.NewContext(nil, tmproto.Header{}, false, nil)
+	origCtx := sdk.NewContext(nil, cmtproto.Header{}, false, nil)
 	assert.False(t, HasVestingLockedBypass(origCtx), "HasVestingLockedBypass(origCtx)")
 	afterWith := WithVestingLockedBypass(origCtx)
 	assert.True(t, HasVestingLockedBypass(afterWith), "HasVestingLockedBypass(afterWith)")
