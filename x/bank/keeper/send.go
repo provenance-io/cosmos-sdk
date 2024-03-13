@@ -169,12 +169,12 @@ func (k BaseSendKeeper) InputOutputCoinsProv(ctx context.Context, inputs []types
 
 	// Remove the funds from the inputs first as that's the most common point of failure.
 	for _, input := range inputs {
-		inAddress, err := k.ak.AddressCodec().StringToBytes(input.Address)
+		inAddr, err := k.ak.AddressCodec().StringToBytes(input.Address)
 		if err != nil {
 			return err
 		}
 
-		err = k.subUnlockedCoins(ctx, inAddress, input.Coins)
+		err = k.subUnlockedCoins(ctx, inAddr, input.Coins)
 		if err != nil {
 			return err
 		}
@@ -194,12 +194,12 @@ func (k BaseSendKeeper) InputOutputCoinsProv(ctx context.Context, inputs []types
 	outputOrder := make([]sdk.AccAddress, 0, len(outputs))
 	// applySendRestriction will make the call to the send restriction function,
 	// and update the toOutput and outputOrder values accordingly.
-	applySendRestriction := func(inputAddress, outputAddress string, coins sdk.Coins) error {
-		inAddr, err := k.ak.AddressCodec().StringToBytes(inputAddress)
+	applySendRestriction := func(inAddrStr, outAddrStr string, coins sdk.Coins) error {
+		inAddr, err := k.ak.AddressCodec().StringToBytes(inAddrStr)
 		if err != nil {
 			return err
 		}
-		outAddrOrig, err := k.ak.AddressCodec().StringToBytes(outputAddress)
+		outAddrOrig, err := k.ak.AddressCodec().StringToBytes(outAddrStr)
 		if err != nil {
 			return err
 		}
@@ -236,16 +236,16 @@ func (k BaseSendKeeper) InputOutputCoinsProv(ctx context.Context, inputs []types
 	}
 
 	// Finally, add the coins to the appropriate account(s).
-	for _, outAddress := range outputOrder {
-		amt := toOutput[string(outAddress)]
-		if err := k.addCoins(ctx, outAddress, amt); err != nil {
+	for _, outAddr := range outputOrder {
+		amt := toOutput[string(outAddr)]
+		if err := k.addCoins(ctx, outAddr, amt); err != nil {
 			return err
 		}
 
 		sdkCtx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypeTransfer,
-				sdk.NewAttribute(types.AttributeKeyRecipient, outAddress.String()),
+				sdk.NewAttribute(types.AttributeKeyRecipient, outAddr.String()),
 				sdk.NewAttribute(sdk.AttributeKeyAmount, amt.String()),
 			),
 		)
@@ -254,10 +254,10 @@ func (k BaseSendKeeper) InputOutputCoinsProv(ctx context.Context, inputs []types
 		//
 		// NOTE: This should ultimately be removed in favor a more flexible approach
 		// such as delegated fee messages.
-		accExists := k.ak.HasAccount(ctx, outAddress)
+		accExists := k.ak.HasAccount(ctx, outAddr)
 		if !accExists {
 			defer telemetry.IncrCounter(1, "new", "account")
-			k.ak.SetAccount(ctx, k.ak.NewAccountWithAddress(ctx, outAddress))
+			k.ak.SetAccount(ctx, k.ak.NewAccountWithAddress(ctx, outAddr))
 		}
 	}
 
