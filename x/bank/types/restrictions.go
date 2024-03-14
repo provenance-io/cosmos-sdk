@@ -99,12 +99,12 @@ func ComposeSendRestrictions(restrictions ...SendRestrictionFn) SendRestrictionF
 }
 
 // A GetLockedCoinsFn returns some coins locked for an address.
-type GetLockedCoinsFn func(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
+type GetLockedCoinsFn func(ctx context.Context, addr sdk.AccAddress) sdk.Coins
 
 var _ GetLockedCoinsFn = NoOpGetLockedCoinsFn
 
 // NoOpGetLockedCoinsFn is a no-op GetLockedCoinsFn.
-func NoOpGetLockedCoinsFn(_ sdk.Context, _ sdk.AccAddress) sdk.Coins {
+func NoOpGetLockedCoinsFn(_ context.Context, _ sdk.AccAddress) sdk.Coins {
 	return sdk.NewCoins()
 }
 
@@ -132,7 +132,7 @@ func ComposeGetLockedCoins(restrictions ...GetLockedCoinsFn) GetLockedCoinsFn {
 	case 1:
 		return toRun[0]
 	}
-	return func(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+	return func(ctx context.Context, addr sdk.AccAddress) sdk.Coins {
 		rv := sdk.NewCoins()
 		for _, f := range toRun {
 			newLocked := f(ctx, addr)
