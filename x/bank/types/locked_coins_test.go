@@ -1,75 +1,111 @@
 package types
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func TestVestingLockedContextFuncs(t *testing.T) {
+func TestVestingLockedContextFuncsSdk(t *testing.T) {
+	sdkCtxMaker := func() sdk.Context {
+		return sdk.NewContext(nil, cmtproto.Header{}, false, nil)
+	}
+	runVestingLockedContextFuncsTests(t, sdkCtxMaker)
+}
+
+func TestVestingLockedContextFuncsStdlib(t *testing.T) {
+	stdlibCtxMaker := func() context.Context {
+		return context.Context(sdk.NewContext(nil, cmtproto.Header{}, false, nil))
+	}
+	runVestingLockedContextFuncsTests(t, stdlibCtxMaker)
+}
+
+func runVestingLockedContextFuncsTests[C context.Context](t *testing.T, ctxMaker func() C) {
 	tests := []struct {
-		name string
-		ctx  sdk.Context
-		exp  bool
+		name       string
+		ctxWrapper func(ctx C) C
+		expHas     bool
 	}{
 		{
-			name: "brand new mostly empty context",
-			ctx:  sdk.NewContext(nil, cmtproto.Header{}, false, nil),
-			exp:  false,
+			name: "fresh context",
+			ctxWrapper: func(ctx C) C {
+				return ctx
+			},
+			expHas: false,
 		},
 		{
-			name: "context with bypass",
-			ctx:  WithVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil)),
-			exp:  true,
+			name:       "context with bypass",
+			ctxWrapper: WithVestingLockedBypass[C],
+			expHas:     true,
 		},
 		{
 			name: "context with bypass on one that originally was without it",
-			ctx:  WithVestingLockedBypass(WithoutVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil))),
-			exp:  true,
+			ctxWrapper: func(ctx C) C {
+				return WithVestingLockedBypass(WithoutVestingLockedBypass(ctx))
+			},
+			expHas: true,
 		},
 		{
 			name: "context with bypass twice",
-			ctx:  WithVestingLockedBypass(WithVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil))),
-			exp:  true,
+			ctxWrapper: func(ctx C) C {
+				return WithVestingLockedBypass(WithVestingLockedBypass(ctx))
+			},
+			expHas: true,
 		},
 		{
-			name: "context without bypass",
-			ctx:  WithoutVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil)),
-			exp:  false,
+			name:       "context without bypass",
+			ctxWrapper: WithoutVestingLockedBypass[C],
+			expHas:     false,
 		},
 		{
 			name: "context without bypass on one that originally had it",
-			ctx:  WithoutVestingLockedBypass(WithVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil))),
-			exp:  false,
+			ctxWrapper: func(ctx C) C {
+				return WithoutVestingLockedBypass(WithVestingLockedBypass(ctx))
+			},
+			expHas: false,
 		},
 		{
 			name: "context without bypass twice",
-			ctx:  WithoutVestingLockedBypass(WithoutVestingLockedBypass(sdk.NewContext(nil, cmtproto.Header{}, false, nil))),
-			exp:  false,
+			ctxWrapper: func(ctx C) C {
+				return WithoutVestingLockedBypass(WithoutVestingLockedBypass(ctx))
+			},
+			expHas: false,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := HasVestingLockedBypass(tc.ctx)
-			assert.Equal(t, tc.exp, actual, "HasVestingLockedBypass")
+			ctx := ctxMaker()
+			wrapFunc := func() {
+				ctx = tc.ctxWrapper(ctx)
+			}
+			require.NotPanics(t, wrapFunc, "ctxWrapper")
+			var actHas bool
+			testFunc := func() {
+				actHas = HasVestingLockedBypass(ctx)
+			}
+			require.NotPanics(t, testFunc, "HasVestingLockedBypass")
+			assert.Equal(t, tc.expHas, actHas, "HasVestingLockedBypass")
 		})
 	}
-}
 
-func TestContextFuncsDoNotModifyProvided(t *testing.T) {
-	origCtx := sdk.NewContext(nil, cmtproto.Header{}, false, nil)
-	assert.False(t, HasVestingLockedBypass(origCtx), "HasVestingLockedBypass(origCtx)")
-	afterWith := WithVestingLockedBypass(origCtx)
-	assert.True(t, HasVestingLockedBypass(afterWith), "HasVestingLockedBypass(afterWith)")
-	assert.False(t, HasVestingLockedBypass(origCtx), "HasVestingLockedBypass(origCtx) after giving it to WithVestingLockedBypass")
-	afterWithout := WithoutVestingLockedBypass(afterWith)
-	assert.False(t, HasVestingLockedBypass(afterWithout), "HasVestingLockedBypass(afterWithout)")
-	assert.True(t, HasVestingLockedBypass(afterWith), "HasVestingLockedBypass(afterWith) after giving it to WithoutVestingLockedBypass")
-	assert.False(t, HasVestingLockedBypass(origCtx), "HasVestingLockedBypass(origCtx) after giving afterWith to WithoutVestingLockedBypass")
+	t.Run("does not modify provided", func(t *testing.T) {
+		origCtx := ctxMaker()
+		assert.False(t, HasVestingLockedBypass(origCtx), "HasVestingLockedBypass(origCtx)")
+		afterWith := WithVestingLockedBypass(origCtx)
+		assert.True(t, HasVestingLockedBypass(afterWith), "HasVestingLockedBypass(afterWith)")
+		assert.False(t, HasVestingLockedBypass(origCtx), "HasVestingLockedBypass(origCtx) after giving it to WithVestingLockedBypass")
+		afterWithout := WithoutVestingLockedBypass(afterWith)
+		assert.False(t, HasVestingLockedBypass(afterWithout), "HasVestingLockedBypass(afterWithout)")
+		assert.True(t, HasVestingLockedBypass(afterWith), "HasVestingLockedBypass(afterWith) after giving it to WithoutVestingLockedBypass")
+		assert.False(t, HasVestingLockedBypass(origCtx), "HasVestingLockedBypass(origCtx) after giving afterWith to WithoutVestingLockedBypass")
+	})
 }
 
 func TestKeyContainsSpecificName(t *testing.T) {
