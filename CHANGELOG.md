@@ -40,6 +40,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Features
 
+* [#593](https://github.com/provenance-io/cosmos-sdk/pull/593) Provenance: Use a new IMsgServiceRouter interface instead of a concrete one.
 * [#595](https://github.com/provenance-io/cosmos-sdk/pull/595) Provenance: Add ability to inject a locked coins function into the bank module.
 
 ### Improvements
