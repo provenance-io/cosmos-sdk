@@ -38,6 +38,16 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
+### Features
+
+* [#595](https://github.com/provenance-io/cosmos-sdk/pull/595) Provenance: Add ability to inject a locked coins function into the bank module.
+
+### Improvements
+
+* [#595](https://github.com/provenance-io/cosmos-sdk/pull/595) Provenance: Create SimulateFromSeedProv which is the same as SimulateFromSeed but also returns the simulation's end block time which is needed for some sims tests.
+
+---
+
 ## [v0.50.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.4) - 2023-02-19
 
 ### Features
