@@ -36,11 +36,16 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Changelog
 
+## [Unreleased]
+
 ### Features
 
-* [593](https://github.com/provenance-io/cosmos-sdk/pull/593) Provenance: Use a new IMsgServiceRouter interface instead of a concrete one.
+* [#593](https://github.com/provenance-io/cosmos-sdk/pull/593) Provenance: Use a new IMsgServiceRouter interface instead of a concrete one.
+* [#596](https://github.com/provenance-io/cosmos-sdk/pull/596) Provenance: Include the binary version in the status command output.
 
-## [Unreleased]
+### Bug Fixes
+
+* [#596](https://github.com/provenance-io/cosmos-sdk/pull/596) Provenance: Fix the prune command to properly load configuration files.
 
 ## [v0.50.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.4) - 2023-02-19
 
