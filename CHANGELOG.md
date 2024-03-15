@@ -36,11 +36,12 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Changelog
 
+## [Unreleased]
+
 ### Features
 
-* [593](https://github.com/provenance-io/cosmos-sdk/pull/593) Provenance: Use a new IMsgServiceRouter interface instead of a concrete one.
-
-## [Unreleased]
+* [#593](https://github.com/provenance-io/cosmos-sdk/pull/593) Provenance: Use a new IMsgServiceRouter interface instead of a concrete one.
+* [#597](https://github.com/provenance-io/cosmos-sdk/pull/597) Provenance: Create the ReadPageRequestWithPageKeyDecoded helper.
 
 ## [v0.50.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.4) - 2023-02-19
 
