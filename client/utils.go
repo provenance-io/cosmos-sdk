@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/base64"
+	"fmt"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/spf13/pflag"
@@ -49,8 +50,20 @@ func Paginate(numObjs, page, limit, defLimit int) (start, end int) {
 	return start, end
 }
 
+// A FlagSetMutator is a function that takes in a flagSet and possibly modifies entries.
+type FlagSetMutator = func(flagSet *pflag.FlagSet) (*pflag.FlagSet, error)
+
 // ReadPageRequest reads and builds the necessary page request flags for pagination.
-func ReadPageRequest(flagSet *pflag.FlagSet) (*query.PageRequest, error) {
+// If one or more mutators are provided, they are applied to the provided flagSet before attempting to read the flags.
+func ReadPageRequest(flagSet *pflag.FlagSet, mutators ...FlagSetMutator) (*query.PageRequest, error) {
+	var err error
+	for _, mutator := range mutators {
+		flagSet, err = mutator(flagSet)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	pageKey, _ := flagSet.GetString(flags.FlagPageKey)
 	offset, _ := flagSet.GetUint64(flags.FlagOffset)
 	limit, _ := flagSet.GetUint64(flags.FlagLimit)
@@ -75,6 +88,11 @@ func ReadPageRequest(flagSet *pflag.FlagSet) (*query.PageRequest, error) {
 	}, nil
 }
 
+// ReadPageRequestWithPageKeyDecoded is a shortcut for ReadPageRequest(flagSet, FlagSetWithPageKeyDecoded)
+func ReadPageRequestWithPageKeyDecoded(flagSet *pflag.FlagSet) (*query.PageRequest, error) {
+	return ReadPageRequest(flagSet, FlagSetWithPageKeyDecoded)
+}
+
 // NewClientFromNode sets up Client implementation that communicates with a CometBFT node over
 // JSON RPC and WebSockets
 func NewClientFromNode(nodeURI string) (*rpchttp.HTTP, error) {
@@ -97,7 +115,7 @@ func FlagSetWithPageKeyDecoded(flagSet *pflag.FlagSet) (*pflag.FlagSet, error) {
 		var raw []byte
 		raw, err = base64.StdEncoding.DecodeString(encoded)
 		if err != nil {
-			return flagSet, err
+			return flagSet, fmt.Errorf("error decoding %s flag: %w", flags.FlagPageKey, err)
 		}
 		_ = flagSet.Set(flags.FlagPageKey, string(raw))
 	}
