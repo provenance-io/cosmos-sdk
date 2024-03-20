@@ -24,20 +24,53 @@ type EventManagerI interface {
 	EmitEvents(events Events)
 }
 
+type EventManagerWithHistoryI interface {
+	EventManagerI
+	GetABCIEventHistory() []abci.Event
+}
+
 // ----------------------------------------------------------------------------
 // Event Manager
 // ----------------------------------------------------------------------------
 
-var _ EventManagerI = (*EventManager)(nil)
+var (
+	_ EventManagerI            = (*EventManager)(nil)
+	_ EventManagerWithHistoryI = (*EventManager)(nil)
+)
 
 // EventManager implements a simple wrapper around a slice of Event objects that
 // can be emitted from.
 type EventManager struct {
-	events Events
+	events  Events
+	history []abci.Event
+}
+
+// NewEventManagerWithHistory creates a new event manager with empty events and the provided history.
+func NewEventManagerWithHistory(history []abci.Event) *EventManager {
+	return &EventManager{
+		events:  EmptyEvents(),
+		history: history,
+	}
 }
 
 func NewEventManager() *EventManager {
-	return &EventManager{EmptyEvents()}
+	return NewEventManagerWithHistory(EmptyABCIEvents())
+}
+
+// GetABCIEventHistory returns the ABCI events that have been committed to thus far.
+func (em *EventManager) GetABCIEventHistory() []abci.Event {
+	return em.history
+}
+
+// GetABCIEventHistory attempts to get the ABCI history from the provided event manager.
+// If the provided thing implements EventManagerWithHistoryI, it's GetABCIEventHistory is returned.
+// Otherwise, an empty slice is returned.
+func GetABCIEventHistory(em EventManagerI) []abci.Event {
+	emwh, ok := em.(EventManagerWithHistoryI)
+	if !ok {
+		return EmptyABCIEvents()
+	}
+	return emwh.GetABCIEventHistory()
 }
 
 func (em *EventManager) Events() Events { return em.events }
@@ -187,6 +220,11 @@ func NewAttribute(k, v string) Attribute {
 // EmptyEvents returns an empty slice of events.
 func EmptyEvents() Events {
 	return make(Events, 0)
+}
+
+// EmptyABCIEvents returns an empty slice of abci events.
+func EmptyABCIEvents() []abci.Event {
+	return make([]abci.Event, 0)
 }
 
 func (a Attribute) String() string {
