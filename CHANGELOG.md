@@ -39,6 +39,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Features
 
 * [593](https://github.com/provenance-io/cosmos-sdk/pull/593) Provenance: Use a new IMsgServiceRouter interface instead of a concrete one.
+* [#602](https://github.com/provenance-io/cosmos-sdk/pull/602) Provenance: Add functionality to update denom metadata via gov proposal
 
 ## [Unreleased]
 
