@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Msg_Send_FullMethodName           = "/cosmos.bank.v1beta1.Msg/Send"
-	Msg_MultiSend_FullMethodName      = "/cosmos.bank.v1beta1.Msg/MultiSend"
-	Msg_UpdateParams_FullMethodName   = "/cosmos.bank.v1beta1.Msg/UpdateParams"
-	Msg_SetSendEnabled_FullMethodName = "/cosmos.bank.v1beta1.Msg/SetSendEnabled"
+	Msg_Send_FullMethodName                = "/cosmos.bank.v1beta1.Msg/Send"
+	Msg_MultiSend_FullMethodName           = "/cosmos.bank.v1beta1.Msg/MultiSend"
+	Msg_UpdateParams_FullMethodName        = "/cosmos.bank.v1beta1.Msg/UpdateParams"
+	Msg_SetSendEnabled_FullMethodName      = "/cosmos.bank.v1beta1.Msg/SetSendEnabled"
+	Msg_UpdateDenomMetadata_FullMethodName = "/cosmos.bank.v1beta1.Msg/UpdateDenomMetadata"
 )
 
 // MsgClient is the client API for Msg service.
@@ -45,6 +46,8 @@ type MsgClient interface {
 	//
 	// Since: cosmos-sdk 0.47
 	SetSendEnabled(ctx context.Context, in *MsgSetSendEnabled, opts ...grpc.CallOption) (*MsgSetSendEnabledResponse, error)
+	// UpdateDenomMetadata defines a method for updating the denom metadata. Only usable in x/gov proposal.
+	UpdateDenomMetadata(ctx context.Context, in *MsgUpdateDenomMetadata, opts ...grpc.CallOption) (*MsgUpdateDenomMetadataResponse, error)
 }
 
 type msgClient struct {
@@ -91,6 +94,15 @@ func (c *msgClient) SetSendEnabled(ctx context.Context, in *MsgSetSendEnabled, o
 	return out, nil
 }
 
+func (c *msgClient) UpdateDenomMetadata(ctx context.Context, in *MsgUpdateDenomMetadata, opts ...grpc.CallOption) (*MsgUpdateDenomMetadataResponse, error) {
+	out := new(MsgUpdateDenomMetadataResponse)
+	err := c.cc.Invoke(ctx, Msg_UpdateDenomMetadata_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
@@ -111,6 +123,8 @@ type MsgServer interface {
 	//
 	// Since: cosmos-sdk 0.47
 	SetSendEnabled(context.Context, *MsgSetSendEnabled) (*MsgSetSendEnabledResponse, error)
+	// UpdateDenomMetadata defines a method for updating the denom metadata. Only usable in x/gov proposal.
+	UpdateDenomMetadata(context.Context, *MsgUpdateDenomMetadata) (*MsgUpdateDenomMetadataResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -129,6 +143,9 @@ func (UnimplementedMsgServer) UpdateParams(context.Context, *MsgUpdateParams) (*
 }
 func (UnimplementedMsgServer) SetSendEnabled(context.Context, *MsgSetSendEnabled) (*MsgSetSendEnabledResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSendEnabled not implemented")
+}
+func (UnimplementedMsgServer) UpdateDenomMetadata(context.Context, *MsgUpdateDenomMetadata) (*MsgUpdateDenomMetadataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDenomMetadata not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
 
@@ -215,6 +232,24 @@ func _Msg_SetSendEnabled_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_UpdateDenomMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgUpdateDenomMetadata)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).UpdateDenomMetadata(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Msg_UpdateDenomMetadata_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).UpdateDenomMetadata(ctx, req.(*MsgUpdateDenomMetadata))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Msg_ServiceDesc is the grpc.ServiceDesc for Msg service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -237,6 +272,10 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetSendEnabled",
 			Handler:    _Msg_SetSendEnabled_Handler,
+		},
+		{
+			MethodName: "UpdateDenomMetadata",
+			Handler:    _Msg_UpdateDenomMetadata_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
