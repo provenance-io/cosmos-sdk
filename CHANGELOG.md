@@ -56,6 +56,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Bug Fixes
 
 * [#596](https://github.com/provenance-io/cosmos-sdk/pull/596) Provenance: Fix the prune command to properly load configuration files.
+* [#603](https://github.com/provenance-io/cosmos-sdk/pull/603) Provenance: Fix bank mocks to properly include UpdateDenomMetadata.
 
 ---
 
