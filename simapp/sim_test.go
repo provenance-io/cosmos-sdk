@@ -12,9 +12,10 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	dbm "github.com/cosmos/cosmos-db"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+
+	dbm "github.com/cosmos/cosmos-db"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/store"
@@ -124,7 +125,7 @@ func TestAppImportExport(t *testing.T) {
 	require.Equal(t, "SimApp", app.Name())
 
 	// Run randomized simulation
-	_, simParams, simErr := simulation.SimulateFromSeed(
+	_, lastBlockTime, simParams, simErr := simulation.SimulateFromSeedProv(
 		t,
 		os.Stdout,
 		app.BaseApp,
@@ -167,8 +168,8 @@ func TestAppImportExport(t *testing.T) {
 	err = json.Unmarshal(exported.AppState, &genesisState)
 	require.NoError(t, err)
 
-	ctxA := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
-	ctxB := newApp.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
+	ctxA := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight(), Time: lastBlockTime})
+	ctxB := newApp.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight(), Time: lastBlockTime})
 	_, err = newApp.ModuleManager.InitGenesis(ctxB, app.AppCodec(), genesisState)
 
 	if err != nil {
@@ -243,7 +244,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	require.Equal(t, "SimApp", app.Name())
 
 	// Run randomized simulation
-	stopEarly, simParams, simErr := simulation.SimulateFromSeed(
+	stopEarly, lastBlockTime, simParams, simErr := simulation.SimulateFromSeedProv(
 		t,
 		os.Stdout,
 		app.BaseApp,
@@ -264,15 +265,15 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		simtestutil.PrintStats(db)
 	}
 
-	if stopEarly {
-		fmt.Println("can't export or import a zero-validator genesis, exiting test...")
-		return
-	}
-
 	fmt.Printf("exporting genesis...\n")
 
 	exported, err := app.ExportAppStateAndValidators(true, []string{}, []string{})
 	require.NoError(t, err)
+
+	if stopEarly || len(exported.Validators) == 0 {
+		fmt.Println("can't import a zero-validator genesis, exiting test...")
+		return
+	}
 
 	fmt.Printf("importing genesis...\n")
 
@@ -290,8 +291,10 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	newApp.InitChain(&abci.RequestInitChain{
 		AppStateBytes: exported.AppState,
 		ChainId:       SimAppChainID,
+		Time:          lastBlockTime,
 	})
 
+	simcli.FlagGenesisTimeValue = lastBlockTime.Unix()
 	_, _, err = simulation.SimulateFromSeed(
 		t,
 		os.Stdout,
