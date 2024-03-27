@@ -791,7 +791,7 @@ func (m *Manager) BeginBlock(ctx sdk.Context) (sdk.BeginBlock, error) {
 // child context with an event manager to aggregate events emitted from all
 // modules.
 func (m *Manager) EndBlock(ctx sdk.Context) (sdk.EndBlock, error) {
-	ctx = ctx.WithEventManager(sdk.NewEventManager())
+	ctx = ctx.WithEventManager(sdk.NewEventManagerWithHistory(sdk.GetABCIEventHistory(ctx.EventManager())))
 	validatorUpdates := []abci.ValidatorUpdate{}
 
 	for _, moduleName := range m.OrderEndBlockers {

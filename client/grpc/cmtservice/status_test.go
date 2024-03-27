@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
+	"github.com/cosmos/cosmos-sdk/version"
 )
 
 func TestStatusCommand(t *testing.T) {
@@ -29,4 +30,7 @@ func TestStatusCommand(t *testing.T) {
 
 	// Make sure the output has the validator moniker.
 	require.Contains(t, out.String(), fmt.Sprintf("\"moniker\":\"%s\"", val0.Moniker))
+
+	// Make sure the output has the binary name.
+	require.Contains(t, out.String(), fmt.Sprintf("\"binary_version\":\"%s\"", version.NewInfo().Version))
 }
