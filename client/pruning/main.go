@@ -6,7 +6,6 @@ import (
 
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"cosmossdk.io/log"
 	pruningtypes "cosmossdk.io/store/pruning/types"
@@ -39,7 +38,7 @@ Supported app-db-backend types include 'goleveldb', 'rocksdb', 'pebbledb'.`,
 		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// bind flags to the Context's Viper so we can get pruning options.
-			vp := viper.New()
+			vp := server.GetServerContextFromCmd(cmd).Viper
 			if err := vp.BindPFlags(cmd.Flags()); err != nil {
 				return err
 			}

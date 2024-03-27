@@ -6,6 +6,7 @@ import (
 	"math/rand"
 
 	"cosmossdk.io/math"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -131,24 +132,25 @@ func SimulateMsgCreateValidator(
 			return simtypes.NoOpMsg(types.ModuleName, msgType, "bond denom not found"), nil, err
 		}
 
-		balance := bk.GetBalance(ctx, simAccount.Address, denom).Amount
-		if !balance.IsPositive() {
+		delegatable := bk.SpendableCoins(banktypes.WithVestingLockedBypass(ctx), simAccount.Address)
+		delegatableAmt := delegatable.AmountOf(denom)
+		if !delegatableAmt.IsPositive() {
 			return simtypes.NoOpMsg(types.ModuleName, msgType, "balance is negative"), nil, nil
 		}
 
-		amount, err := simtypes.RandPositiveInt(r, balance)
+		selfDelegationAmt, err := simtypes.RandPositiveInt(r, delegatableAmt)
 		if err != nil {
 			return simtypes.NoOpMsg(types.ModuleName, msgType, "unable to generate positive amount"), nil, err
 		}
 
-		selfDelegation := sdk.NewCoin(denom, amount)
+		selfDelegation := sdk.NewCoin(denom, selfDelegationAmt)
 
-		account := ak.GetAccount(ctx, simAccount.Address)
-		spendable := bk.SpendableCoins(ctx, account.GetAddress())
-
+		spendable := bk.SpendableCoins(ctx, simAccount.Address)
+		coins, hasNeg, err := calculateAmountAvailableForFees(delegatable, spendable, selfDelegation)
+		if err != nil {
+			return simtypes.NoOpMsg(types.ModuleName, msgType, "unable to calculate spendable"), nil, err
+		}
 		var fees sdk.Coins
-
-		coins, hasNeg := spendable.SafeSub(selfDelegation)
 		if !hasNeg {
 			fees, err = simtypes.RandomFees(r, ctx, coins)
 			if err != nil {
@@ -302,24 +304,25 @@ func SimulateMsgDelegate(
 			return simtypes.NoOpMsg(types.ModuleName, msgType, "validator's invalid echange rate"), nil, nil
 		}
 
-		amount := bk.GetBalance(ctx, simAccount.Address, denom).Amount
-		if !amount.IsPositive() {
+		delegatable := bk.SpendableCoins(banktypes.WithVestingLockedBypass(ctx), simAccount.Address)
+		delegatableAmt := delegatable.AmountOf(denom)
+		if !delegatableAmt.IsPositive() {
 			return simtypes.NoOpMsg(types.ModuleName, msgType, "balance is negative"), nil, nil
 		}
 
-		amount, err = simtypes.RandPositiveInt(r, amount)
+		toDelegateAmt, err := simtypes.RandPositiveInt(r, delegatableAmt)
 		if err != nil {
 			return simtypes.NoOpMsg(types.ModuleName, msgType, "unable to generate positive amount"), nil, err
 		}
 
-		bondAmt := sdk.NewCoin(denom, amount)
+		toDelegate := sdk.NewCoin(denom, toDelegateAmt)
 
-		account := ak.GetAccount(ctx, simAccount.Address)
-		spendable := bk.SpendableCoins(ctx, account.GetAddress())
-
+		spendable := bk.SpendableCoins(ctx, simAccount.Address)
+		coins, hasNeg, err := calculateAmountAvailableForFees(delegatable, spendable, toDelegate)
+		if err != nil {
+			return simtypes.NoOpMsg(types.ModuleName, msgType, "unable to calculate spendable"), nil, err
+		}
 		var fees sdk.Coins
-
-		coins, hasNeg := spendable.SafeSub(bondAmt)
 		if !hasNeg {
 			fees, err = simtypes.RandomFees(r, ctx, coins)
 			if err != nil {
@@ -327,7 +330,7 @@ func SimulateMsgDelegate(
 			}
 		}
 
-		msg := types.NewMsgDelegate(simAccount.Address.String(), val.GetOperator(), bondAmt)
+		msg := types.NewMsgDelegate(simAccount.Address.String(), val.GetOperator(), toDelegate)
 
 		txCtx := simulation.OperationInput{
 			R:             r,
@@ -703,5 +706,29 @@ func SimulateMsgBeginRedelegate(
 		}
 
 		return simulation.GenAndDeliverTxWithRandFees(txCtx)
+	}
+}
+
+// calculateAmountAvailableForFees compares the delegatable and spendable amounts, and factors in the amount being delegated
+// in order to return the amount of coins that will be available for fees after toDelegate is removed from the account.
+// Returns the coins available for fees, whether the calculation resulting in a negative amount, and any error encountered.
+func calculateAmountAvailableForFees(delegatable, spendable sdk.Coins, toDelegate sdk.Coin) (sdk.Coins, bool, error) {
+	delegatableAmt := delegatable.AmountOf(toDelegate.Denom)
+	spendableAmt := spendable.AmountOf(toDelegate.Denom)
+	switch {
+	case delegatableAmt.Equal(spendableAmt):
+		coins, hasNeg := spendable.SafeSub(toDelegate)
+		return coins, hasNeg, nil
+	case delegatableAmt.GT(spendableAmt):
+		vestingAmt := delegatableAmt.Sub(spendableAmt)
+		if toDelegate.Amount.GT(vestingAmt) {
+			coins, hasNeg := delegatable.SafeSub(toDelegate)
+			return coins, hasNeg, nil
+		} else {
+			return spendable, false, nil
+		}
+	default:
+		// Shouldn't be possible.
+		return nil, false, fmt.Errorf("spendable %q is greater than delegatable %q", spendable, delegatable)
 	}
 }

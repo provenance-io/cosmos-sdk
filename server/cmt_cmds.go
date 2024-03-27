@@ -8,10 +8,12 @@ import (
 	"strings"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
+	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
 	pvm "github.com/cometbft/cometbft/privval"
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	cmtversion "github.com/cometbft/cometbft/version"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -30,6 +32,64 @@ import (
 	auth "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 )
 
+// ResultStatusProv is like coretypes.ResultStatus but uses our own NodeInfo struct that also includes the binary version.
+type ResultStatusProv struct {
+	NodeInfo      DefaultNodeInfoProv     `json:"node_info"`
+	SyncInfo      coretypes.SyncInfo      `json:"sync_info"`
+	ValidatorInfo coretypes.ValidatorInfo `json:"validator_info"`
+}
+
+// DefaultNodeInfoProv is like p2p.DefaultNodeInfo but also includes the binary version.
+type DefaultNodeInfoProv struct {
+	ProtocolVersion p2p.ProtocolVersion `json:"protocol_version"`
+
+	// Authenticate
+	// TODO: replace with NetAddress
+	DefaultNodeID p2p.ID `json:"id"`          // authenticated identifier
+	ListenAddr    string `json:"listen_addr"` // accepting incoming
+
+	// Check compatibility.
+	// Channels are HexBytes so easier to read as JSON
+	Network  string            `json:"network"`  // network/chain ID
+	Version  string            `json:"version"`  // major.minor.revision
+	Channels cmtbytes.HexBytes `json:"channels"` // channels this node knows about
+
+	// ASCIIText fields
+	Moniker string                   `json:"moniker"` // arbitrary moniker
+	Other   p2p.DefaultNodeInfoOther `json:"other"`   // other application specific data
+
+	// BinaryVersion is the version of the binary running the node (added by Provenance).
+	BinaryVersion string `json:"binary_version"`
+}
+
+// NewResultStatusProv creates a new ResultStatusProv which has all the info in the provided ResultStatus
+// as well as the binary version in the node info.
+func NewResultStatusProv(orig *coretypes.ResultStatus, binaryVersion string) *ResultStatusProv {
+	if orig == nil {
+		return nil
+	}
+	return &ResultStatusProv{
+		NodeInfo:      NewDefaultNodeInfoProv(orig.NodeInfo, binaryVersion),
+		SyncInfo:      orig.SyncInfo,
+		ValidatorInfo: orig.ValidatorInfo,
+	}
+}
+
+// NewDefaultNodeInfoProv creates a new DefaultNodeInfoProv that has all the info in DefaultNodeInfo as well as the binary version.
+func NewDefaultNodeInfoProv(orig p2p.DefaultNodeInfo, binaryVersion string) DefaultNodeInfoProv {
+	return DefaultNodeInfoProv{
+		ProtocolVersion: orig.ProtocolVersion,
+		DefaultNodeID:   orig.DefaultNodeID,
+		ListenAddr:      orig.ListenAddr,
+		Network:         orig.Network,
+		Version:         orig.Version,
+		Channels:        orig.Channels,
+		Moniker:         orig.Moniker,
+		Other:           orig.Other,
+		BinaryVersion:   binaryVersion,
+	}
+}
+
 // StatusCommand returns the command to return the status of the network.
 func StatusCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -46,7 +106,15 @@ func StatusCommand() *cobra.Command {
 				return err
 			}
 
-			output, err := cmtjson.Marshal(status)
+			queryClient := cmtservice.NewServiceClient(clientCtx)
+			res, err := queryClient.GetNodeInfo(context.Background(), &cmtservice.GetNodeInfoRequest{})
+			if err != nil {
+				return err
+			}
+
+			statusProv := NewResultStatusProv(status, res.ApplicationVersion.GetVersion())
+
+			output, err := cmtjson.Marshal(statusProv)
 			if err != nil {
 				return err
 			}
