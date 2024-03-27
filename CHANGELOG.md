@@ -38,6 +38,8 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased Provenance]
 
+## [v0.50.5-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.5-pio-1) - 2024-03-27
+
 ### Features
 
 * [#593](https://github.com/provenance-io/cosmos-sdk/pull/593) Provenance: Use a new IMsgServiceRouter interface instead of a concrete one.
@@ -58,6 +60,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 * [#596](https://github.com/provenance-io/cosmos-sdk/pull/596) Provenance: Fix the prune command to properly load configuration files.
 * [#603](https://github.com/provenance-io/cosmos-sdk/pull/603) Provenance: Fix bank mocks to properly include UpdateDenomMetadata.
+
+### Full Commit History
+
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.50.5..v0.50.5-pio-1
 
 ---
 
