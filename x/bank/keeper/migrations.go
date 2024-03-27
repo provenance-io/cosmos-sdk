@@ -25,18 +25,6 @@ func (m Migrator) Migrate1to2(ctx sdk.Context) error {
 	return v2.MigrateStore(ctx, m.keeper.storeService, m.keeper.cdc)
 }
 
-// Migrate2to3Prov is now a no-op migration that was specific to the Provenance blockchain.
-//
-// This used to get the params, call SetAllSendEnabled, and then update the params to remove
-// those flags from there. Since we'll never again have a chain with v2 of the bank module,
-// though, this migration is now just a no-op. The SDK does this in Migrate3to4, but that also
-// moves the params out of the x/params module, which wasn't done for us during this migration.
-//
-// Once we do our upgrade that brings our v4 in line with the SDK's v4, this function can be deleted.
-func (m Migrator) Migrate2to3Prov(_ sdk.Context) error {
-	return nil
-}
-
 // Migrate2to3 migrates x/bank storage from version 2 to 3.
 func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	return v3.MigrateStore(ctx, m.keeper.storeService, m.keeper.cdc)

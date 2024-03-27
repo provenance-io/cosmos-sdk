@@ -123,36 +123,13 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 		panic(fmt.Sprintf("failed to migrate x/bank from version 1 to 2: %v", err))
 	}
 
-	// Provenance needed the send-enabled flags moved out of params at v0.45, which had v2 of the bank module.
-	// To do that, we created our own v3 with a migration that moved the send-enabled flags.
-	//
-	// With v0.46, the SDK bumped the consensus version to 3, and created Migrate2to3.
-	// That migration worked just fine on top of our v3, so we bumped the consensus version to 4 and
-	// registered Migrate2to3 to happen at v3 (instead of 2 like the SDK had).
-	//
-	// With v0.47, the SDK bumped the consensus version to 4 and created Migrate3to4.
-	// That migration moves the send-enabled flags as well as the bank params (both into bank state).
-	// So at this point, the only difference between the SDK's v4 and our v4 is that our v4 still has
-	// the params in the x/params module.
-	//
-	// Provenance will manually move the params in its own upgrade so that our v4 is the same as the SDK's v4.
-	// Once that upgrade is done, these migration customizations are no longer needed, and we can change it back
-	// to what the SDK has defined in here.
-
-	// Register the Provenance-specific Migrate2to3Prov at v2.
-	if err := cfg.RegisterMigration(types.ModuleName, 2, m.Migrate2to3Prov); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/bank from version 2 to 3-prov: %v", err))
+	if err := cfg.RegisterMigration(types.ModuleName, 2, m.Migrate2to3); err != nil {
+		panic(fmt.Sprintf("failed to migrate x/bank from version 2 to 3: %v", err))
 	}
 
-	// We apply the SDK's Migrate2to3 at Provenance's v3, so it actually migrates from our v3 to our v4.
-	// The function name wasn't changed, though, in an effort to keep our alterations footprint small.
-	if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate2to3); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/bank from version 3-prov to 3-sdk: %v", err))
+	if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
+		panic(fmt.Sprintf("failed to migrate x/bank from version 3 to 4: %v", err))
 	}
-
-	// We don't register Migrate3to4 because we're already on v4, and the only part of that migration
-	// that we still need, will be triggered manually in our own upgrade. Once we've done that upgrade,
-	// we put the registration of Migrate3to4 back in and get rid of the rest of the customizations in this func.
 }
 
 // NewAppModule creates a new AppModule object
