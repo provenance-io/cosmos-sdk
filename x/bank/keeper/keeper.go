@@ -14,6 +14,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/cosmos-sdk/x/bank/exported"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
@@ -475,4 +476,35 @@ func (k BaseViewKeeper) IterateTotalSupply(ctx context.Context, cb func(sdk.Coin
 	if err != nil {
 		panic(err)
 	}
+}
+
+// MigrateParamsProv migrates the bank params from the params module into the bank state.
+//
+// It is specifically needed by the Provenance Blockchain in one of its upgrades.
+// The SDK does this as part of the migration from v3 to v4 (Migrate3to4).
+// But Provenance is already on its own v4, so that migration won't be run.
+// The only difference between Provenance's v4 and the SDK's v4 is the movement of the params into the bank state.
+//
+// This function will be called in one of Provenance's upgrades in order to make our v4 the same as the SDK's v4.
+// Once that upgrade is done, this function won't be needed anymore, and should be deleted.
+func (k BaseKeeper) MigrateParamsProv(goCtx context.Context, legacySubspace exported.Subspace) error {
+	// This is basically a copy of migrations.v4.MigrateStore, but I didn't want to import that package to call it directly.
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	var currParams types.Params
+	legacySubspace.GetParamSet(ctx, &currParams)
+
+	// SendEnabled is migrated to the x/bank module store, so delete from the params
+	currParams = types.NewParams(currParams.DefaultSendEnabled)
+
+	if err := currParams.Validate(); err != nil {
+		return err
+	}
+
+	bz, err := k.cdc.Marshal(&currParams)
+	if err != nil {
+		return err
+	}
+
+	st := k.storeService.OpenKVStore(ctx)
+	return st.Set(types.ParamsKey, bz)
 }
