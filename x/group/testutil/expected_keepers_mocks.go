@@ -227,6 +227,21 @@ func (mr *MockBankKeeperMockRecorder) SpendableCoins(ctx, addr interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SpendableCoins", reflect.TypeOf((*MockBankKeeper)(nil).SpendableCoins), ctx, addr)
 }
 
+// UpdateDenomMetadata mocks base method.
+func (m *MockBankKeeper) UpdateDenomMetadata(arg0 context.Context, arg1 *types0.MsgUpdateDenomMetadata) (*types0.MsgUpdateDenomMetadataResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDenomMetadata", arg0, arg1)
+	ret0, _ := ret[0].(*types0.MsgUpdateDenomMetadataResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDenomMetadata indicates an expected call of UpdateDenomMetadata.
+func (mr *MockBankKeeperMockRecorder) UpdateDenomMetadata(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDenomMetadata", reflect.TypeOf((*MockBankKeeper)(nil).UpdateDenomMetadata), arg0, arg1)
+}
+
 // UpdateParams mocks base method.
 func (m *MockBankKeeper) UpdateParams(arg0 context.Context, arg1 *types0.MsgUpdateParams) (*types0.MsgUpdateParamsResponse, error) {
 	m.ctrl.T.Helper()
