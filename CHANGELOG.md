@@ -47,6 +47,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * [#601](https://github.com/provenance-io/cosmos-sdk/pull/601) Provenance: Propagate the event history into the end blocker.
 * [#602](https://github.com/provenance-io/cosmos-sdk/pull/602) Provenance: Add functionality to update denom metadata via gov proposal
 * [#597](https://github.com/provenance-io/cosmos-sdk/pull/597) Provenance: Create the ReadPageRequestWithPageKeyDecoded helper.
+* [#599](https://github.com/provenance-io/cosmos-sdk/pull/599) Provenance: Create the CountAuthorization.
 
 ### Improvements
 
