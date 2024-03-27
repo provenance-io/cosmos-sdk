@@ -360,3 +360,89 @@ func (suite *KeeperTestSuite) TestMsgSetSendEnabled() {
 		})
 	}
 }
+
+func (suite *KeeperTestSuite) TestUpdateDenomMetadata() {
+	snowMetadata := banktypes.Metadata{
+		Description: "Frozen stuff falling from the sky.",
+		DenomUnits: []*banktypes.DenomUnit{
+			{
+				Denom:    "nsnow",
+				Exponent: 0,
+				Aliases:  nil,
+			},
+			{
+				Denom:    "snow",
+				Exponent: 9,
+				Aliases:  nil,
+			},
+		},
+		Base:    "nsnow",
+		Display: "snow",
+		Name:    "Snow",
+		Symbol:  "SNOW",
+		URI:     "",
+		URIHash: "",
+	}
+
+	testCases := []struct {
+		name   string
+		req    *banktypes.MsgUpdateDenomMetadata
+		expErr string
+	}{
+		{
+			name: "wrong authority",
+			req: &banktypes.MsgUpdateDenomMetadata{
+				FromAddress: accAddrs[0].String(),
+				Title:       "Whatever",
+				Description: "Nope.",
+				Metadata:    snowMetadata,
+			},
+			expErr: "invalid from address; " +
+				"expected " + suite.bankKeeper.GetAuthority() + " " +
+				"got " + accAddrs[0].String() + ": " +
+				"expected gov account as only signer for proposal message",
+		},
+		{
+			name: "invalid metadata",
+			req: &banktypes.MsgUpdateDenomMetadata{
+				FromAddress: suite.bankKeeper.GetAuthority(),
+				Title:       "Sure",
+				Description: "But still nope.",
+				Metadata: banktypes.Metadata{
+					Description: snowMetadata.Description,
+					DenomUnits:  nil,
+					Base:        snowMetadata.Base,
+					Display:     snowMetadata.Display,
+					Name:        snowMetadata.Name,
+					Symbol:      snowMetadata.Symbol,
+				},
+			},
+			expErr: "invalid metadata: metadata must contain a denomination unit with display denom 'snow': invalid request",
+		},
+		{
+			name: "valid metadata",
+			req: &banktypes.MsgUpdateDenomMetadata{
+				FromAddress: suite.bankKeeper.GetAuthority(),
+				Title:       "Whatever",
+				Description: "Nope.",
+				Metadata:    snowMetadata,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			var err error
+			testFunc := func() {
+				_, err = suite.msgServer.UpdateDenomMetadata(suite.ctx, tc.req)
+			}
+			suite.Require().NotPanics(testFunc, "UpdateDenomMetadata")
+
+			if len(tc.expErr) > 0 {
+				suite.Require().ErrorContains(err, tc.expErr, "UpdateDenomMetadata error")
+			} else {
+				suite.Require().NoError(err, "UpdateDenomMetadata error")
+			}
+		})
+	}
+}
