@@ -65,6 +65,22 @@ func SimulateFromSeed(
 	config simulation.Config,
 	cdc codec.JSONCodec,
 ) (stopEarly bool, exportedParams Params, err error) {
+	stopEarly, _, exportedParams, err = SimulateFromSeedProv(tb, w, app, appStateFn, randAccFn, ops, blockedAddrs, config, cdc)
+	return
+}
+
+// SimulateFromSeedProv is the same as SimulateFromSeed, except this one also returns the last block time.
+func SimulateFromSeedProv(
+	tb testing.TB,
+	w io.Writer,
+	app *baseapp.BaseApp,
+	appStateFn simulation.AppStateFn,
+	randAccFn simulation.RandomAccountFn,
+	ops WeightedOperations,
+	blockedAddrs map[string]bool,
+	config simulation.Config,
+	cdc codec.JSONCodec,
+) (stopEarly bool, endTime time.Time, exportedParams Params, err error) {
 	// in case we have to end early, don't os.Exit so that we can run cleanup code.
 	testingMode, _, b := getTestingMode(tb)
 
@@ -82,7 +98,7 @@ func SimulateFromSeed(
 	// TM 0.24) Initially this is the same as the initial validator set
 	validators, blockTime, accs, chainID := initChain(r, params, accs, app, appStateFn, config, cdc)
 	if len(accs) == 0 {
-		return true, params, fmt.Errorf("must have greater than zero genesis accounts")
+		return true, blockTime, params, fmt.Errorf("must have greater than zero genesis accounts")
 	}
 
 	config.ChainID = chainID
@@ -181,7 +197,7 @@ func SimulateFromSeed(
 
 		res, err := app.FinalizeBlock(finalizeBlockReq)
 		if err != nil {
-			return true, params, err
+			return true, blockTime, params, err
 		}
 
 		ctx := app.NewContextLegacy(false, cmtproto.Header{
@@ -256,7 +272,7 @@ func SimulateFromSeed(
 			eventStats.Print(w)
 		}
 
-		return true, exportedParams, err
+		return true, blockTime, exportedParams, err
 	}
 
 	fmt.Fprintf(
@@ -272,7 +288,7 @@ func SimulateFromSeed(
 		eventStats.Print(w)
 	}
 
-	return false, exportedParams, nil
+	return false, blockTime, exportedParams, nil
 }
 
 type blockSimFn func(
