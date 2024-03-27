@@ -44,6 +44,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * [#594](https://github.com/provenance-io/cosmos-sdk/pull/594) Provenance: Create the InputOutputCoinsProv function that's similar to InputOutputCoins but allows many inputs with a single output (as well as 1-1 and 1-many still).
 * [#595](https://github.com/provenance-io/cosmos-sdk/pull/595) Provenance: Add ability to inject a locked coins function into the bank module.
 * [#596](https://github.com/provenance-io/cosmos-sdk/pull/596) Provenance: Include the binary version in the status command output.
+* [#601](https://github.com/provenance-io/cosmos-sdk/pull/601) Provenance: Propagate the event history into the end blocker.
 
 ### Improvements
 
@@ -54,7 +55,6 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * [#596](https://github.com/provenance-io/cosmos-sdk/pull/596) Provenance: Fix the prune command to properly load configuration files.
 
 ---
-
 
 ## [v0.50.4](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.4) - 2023-02-19
 
