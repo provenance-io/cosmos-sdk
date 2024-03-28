@@ -19,13 +19,20 @@ func (app *BaseApp) SimCheck(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo, *
 		return sdk.GasInfo{}, nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
 	}
 
-	gasInfo, result, _, _, err := app.runTx(execModeCheck, bz)
+	gasInfo, result, _, err := app.runTx(execModeCheck, bz)
 	return gasInfo, result, err
 }
 
 // Simulate executes a tx in simulate mode to get result and gas info.
-func (app *BaseApp) Simulate(txBytes []byte) (sdk.GasInfo, *sdk.Result, sdk.Context, error) {
-	gasInfo, result, _, ctx, err := app.runTx(execModeSimulate, txBytes)
+func (app *BaseApp) Simulate(txBytes []byte) (sdk.GasInfo, *sdk.Result, error) {
+	gasInfo, result, _, err := app.runTx(execModeSimulate, txBytes)
+	return gasInfo, result, err
+}
+
+// SimulateProv is the same as Simulate but also returns the context used.
+// It's needed by Provenance's msg-fees module.
+func (app *BaseApp) SimulateProv(txBytes []byte) (sdk.GasInfo, *sdk.Result, sdk.Context, error) {
+	gasInfo, result, _, ctx, err := app.runTxProv(execModeSimulate, txBytes)
 	return gasInfo, result, ctx, err
 }
 
@@ -35,7 +42,7 @@ func (app *BaseApp) SimDeliver(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo,
 	if err != nil {
 		return sdk.GasInfo{}, nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
 	}
-	gasInfo, result, _, _, err := app.runTx(execModeFinalize, bz)
+	gasInfo, result, _, err := app.runTx(execModeFinalize, bz)
 	return gasInfo, result, err
 }
 
@@ -46,7 +53,7 @@ func (app *BaseApp) SimTxFinalizeBlock(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.
 		return sdk.GasInfo{}, nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
 	}
 
-	gasInfo, result, _, _, err := app.runTx(execModeFinalize, bz)
+	gasInfo, result, _, err := app.runTx(execModeFinalize, bz)
 	return gasInfo, result, err
 }
 

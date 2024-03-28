@@ -764,7 +764,7 @@ func (app *BaseApp) deliverTx(tx []byte) *abci.ExecTxResult {
 		telemetry.SetGauge(float32(gInfo.GasWanted), "tx", "gas", "wanted")
 	}()
 
-	gInfo, result, anteEvents, _, err := app.runTx(execModeFinalize, tx)
+	gInfo, result, anteEvents, err := app.runTx(execModeFinalize, tx)
 	if err != nil {
 		resultStr = "failed"
 		resp = sdkerrors.ResponseExecTxResultWithEvents(
@@ -823,7 +823,14 @@ func (app *BaseApp) endBlock(ctx context.Context) (sdk.EndBlock, error) {
 // Note, gas execution info is always returned. A reference to a Result is
 // returned if the tx does not run out of gas and if all the messages are valid
 // and execute successfully. An error is returned otherwise.
-func (app *BaseApp) runTx(mode execMode, txBytes []byte) (gInfo sdk.GasInfo, result *sdk.Result, anteEvents []abci.Event, txCtx sdk.Context, err error) {
+func (app *BaseApp) runTx(mode execMode, txBytes []byte) (gInfo sdk.GasInfo, result *sdk.Result, anteEvents []abci.Event, err error) {
+	gInfo, result, anteEvents, _, err = app.runTxProv(mode, txBytes)
+	return
+}
+
+// runTxProv is a Provenance Blockchain customization to runTx that also returns the context used.
+// It's needed by our msg-fees module.
+func (app *BaseApp) runTxProv(mode execMode, txBytes []byte) (gInfo sdk.GasInfo, result *sdk.Result, anteEvents []abci.Event, txCtx sdk.Context, err error) {
 	// NOTE: GasWanted should be returned by the AnteHandler. GasUsed is
 	// determined by the GasMeter. We need access to the context to get the gas
 	// meter, so we initialize upfront.
@@ -1145,7 +1152,7 @@ func (app *BaseApp) PrepareProposalVerifyTx(tx sdk.Tx) ([]byte, error) {
 		return nil, err
 	}
 
-	_, _, _, _, err = app.runTx(execModePrepareProposal, bz)
+	_, _, _, err = app.runTx(execModePrepareProposal, bz)
 	if err != nil {
 		return nil, err
 	}
@@ -1164,7 +1171,7 @@ func (app *BaseApp) ProcessProposalVerifyTx(txBz []byte) (sdk.Tx, error) {
 		return nil, err
 	}
 
-	_, _, _, _, err = app.runTx(execModeProcessProposal, txBz)
+	_, _, _, err = app.runTx(execModeProcessProposal, txBz)
 	if err != nil {
 		return nil, err
 	}
