@@ -55,6 +55,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 * [#595](https://github.com/provenance-io/cosmos-sdk/pull/595) Provenance: Create SimulateFromSeedProv which is the same as SimulateFromSeed but also returns the simulation's end block time which is needed for some sims tests.
 * [#604](https://github.com/provenance-io/cosmos-sdk/pull/604) Provenance: Create bankkeeper.MigrateParamsProv so we can finish the v3-v4 bank module migration.
+* [#607](https://github.com/provenance-io/cosmos-sdk/pull/607) Provenance: Return context from base app simulate function used for custom fee calculations
 
 ### Bug Fixes
 
