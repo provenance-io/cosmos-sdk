@@ -29,6 +29,13 @@ func (app *BaseApp) Simulate(txBytes []byte) (sdk.GasInfo, *sdk.Result, error) {
 	return gasInfo, result, err
 }
 
+// SimulateProv is the same as Simulate but also returns the context used.
+// It's needed by Provenance's msg-fees module.
+func (app *BaseApp) SimulateProv(txBytes []byte) (sdk.GasInfo, *sdk.Result, sdk.Context, error) {
+	gasInfo, result, _, ctx, err := app.runTxProv(execModeSimulate, txBytes)
+	return gasInfo, result, ctx, err
+}
+
 func (app *BaseApp) SimDeliver(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo, *sdk.Result, error) {
 	// See comment for Check().
 	bz, err := txEncoder(tx)
