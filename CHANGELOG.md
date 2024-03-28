@@ -38,6 +38,19 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased Provenance]
 
+## [v0.50.5-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.5-pio-2) - 2024-03-28
+
+### Improvements
+
+* [#607](https://github.com/provenance-io/cosmos-sdk/pull/607) Provenance: Create baseapp.SimulateProv that is the same as Simulate, but also returns a context.
+
+### Full Commit History
+
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.50.5-pio-1..v0.50.5-pio-2
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.50.5..v0.50.5-pio-2
+
+---
+
 ## [v0.50.5-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.5-pio-1) - 2024-03-27
 
 ### Features
