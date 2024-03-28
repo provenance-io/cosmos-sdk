@@ -759,13 +759,13 @@ func TestABCI_Query_SimulateTx(t *testing.T) {
 		require.Nil(t, err)
 
 		// simulate a message, check gas reported
-		gInfo, result, err := suite.baseApp.Simulate(txBytes)
+		gInfo, result, _, err := suite.baseApp.Simulate(txBytes)
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		require.Equal(t, gasConsumed, gInfo.GasUsed)
 
 		// simulate again, same result
-		gInfo, result, err = suite.baseApp.Simulate(txBytes)
+		gInfo, result, _, err = suite.baseApp.Simulate(txBytes)
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		require.Equal(t, gasConsumed, gInfo.GasUsed)
