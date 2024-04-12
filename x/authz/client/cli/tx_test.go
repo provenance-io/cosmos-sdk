@@ -452,6 +452,41 @@ func (s *CLITestSuite) TestCLITxGrantAuthorization() {
 			false,
 			"",
 		},
+		{
+			name: "invalid count authorization: no allowed authorizations",
+			args: []string{
+				grantee.String(),
+				"count",
+				fmt.Sprintf("--%s=%s", cli.FlagMsgType, typeMsgVote),
+			},
+			expectErr: true,
+			expErrMsg: "--allowed-authorizations must be greater than 0",
+		},
+		{
+			name: "invalid count authorization: negative allowed authorizations",
+			args: []string{
+				grantee.String(),
+				"count",
+				fmt.Sprintf("--%s=%s", cli.FlagMsgType, typeMsgVote),
+				"--allowed-authorizations", "-3",
+			},
+			expectErr: true,
+			expErrMsg: "--allowed-authorizations must be greater than 0",
+		},
+		{
+			name: "valid count authorization",
+			args: []string{
+				grantee.String(),
+				"count",
+				fmt.Sprintf("--%s=%s", cli.FlagMsgType, typeMsgVote),
+				"--allowed-authorizations", "3",
+				fmt.Sprintf("--%s=%s", flags.FlagFrom, val[0].Address.String()),
+				fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastSync),
+				fmt.Sprintf("--%s=%d", cli.FlagExpiration, twoHours),
+				fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
+				fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin("stake", sdkmath.NewInt(10))).String()),
+			},
+		},
 	}
 
 	for _, tc := range testCases {

@@ -98,7 +98,7 @@ Examples:
 				}
 
 				if allowedAuthorizations <= 0 {
-					return fmt.Errorf("allowed-authorizations must be greater than 0")
+					return fmt.Errorf("--%s must be greater than 0", FlagAllowedAuthorizations)
 				}
 
 				authorization = authz.NewCountAuthorization(msgType, allowedAuthorizations)
