@@ -38,6 +38,21 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased Provenance]
 
+* nothing
+
+## [v0.50.5-pio-3](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.5-pio-3) - 2024-04-15
+
+### Improvements
+
+* [#609](https://github.com/provenance-io/cosmos-sdk/pull/609) Allow creation of count authorizations via command line.
+
+### Full Commit History
+
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.50.5-pio-2..v0.50.5-pio-3
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.50.5..v0.50.5-pio-3
+
+---
+
 ## [v0.50.5-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.5-pio-2) - 2024-03-28
 
 ### Improvements
