@@ -449,7 +449,7 @@ func BootstrapStateCmd(appCreator types.AppCreator) *cobra.Command {
 				height = app.CommitMultiStore().LastCommitID().Version
 			}
 
-			return node.BootstrapState(cmd.Context(), cfg, cmtcfg.DefaultDBProvider, uint64(height), nil)
+			return node.BootstrapStateWithGenProvider(cmd.Context(), cfg, cmtcfg.DefaultDBProvider, getGenDocProvider(cfg), uint64(height), nil)
 		},
 	}
 
