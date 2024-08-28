@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
+	"strconv"
 
 	"github.com/gogo/protobuf/proto"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -680,7 +680,6 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 // Handler does not exist for a given message route. Otherwise, a reference to a
 // Result is returned. The caller must not commit state if an error is returned.
 func (app *BaseApp) runMsgs(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*sdk.Result, error) {
-	msgLogs := make(sdk.ABCIMessageLogs, 0, len(msgs))
 	events := sdk.EmptyEvents()
 	txMsgData := &sdk.TxMsgData{
 		Data: make([]*sdk.MsgData, 0, len(msgs)),
@@ -699,7 +698,7 @@ func (app *BaseApp) runMsgs(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*s
 			msgFqName string
 			err       error
 		)
-
+		pre_gas := ctx.BlockGasMeter().GasConsumed()
 		if svcMsg, ok := msg.(sdk.ServiceMsg); ok {
 			msgFqName = svcMsg.MethodName
 			handler := app.msgServiceRouter.Handler(msgFqName)
@@ -722,11 +721,21 @@ func (app *BaseApp) runMsgs(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*s
 		if err != nil {
 			return nil, sdkerrors.Wrapf(err, "failed to execute message; message index: %d", i)
 		}
-
+		post_gas := ctx.BlockGasMeter().GasConsumed()
+		msg_consumed := post_gas - pre_gas
 		msgEvents = sdk.Events{
-			sdk.NewEvent(sdk.EventTypeMessage, sdk.NewAttribute(sdk.AttributeKeyAction, msgFqName)),
+			sdk.NewEvent(sdk.EventTypeMessage, sdk.NewAttribute(sdk.AttributeKeyAction, msgFqName), sdk.NewAttribute("msg_gas_consumed", strconv.FormatUint(msg_consumed, 10))),
 		}
 		msgEvents = msgEvents.AppendEvents(msgResult.GetEvents())
+
+		// append message events and data
+		//
+		// Note: Each message result's data must be length-prefixed in order to
+		// separate each result.
+		for j, event := range msgEvents {
+			// append message index to all events
+			msgEvents[j] = event.AppendAttributes(sdk.NewAttribute("msg_index", strconv.Itoa(i)))
+		}
 
 		// append message events, data and logs
 		//
@@ -735,7 +744,7 @@ func (app *BaseApp) runMsgs(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*s
 		events = events.AppendEvents(msgEvents)
 
 		txMsgData.Data = append(txMsgData.Data, &sdk.MsgData{MsgType: msg.Type(), Data: msgResult.Data})
-		msgLogs = append(msgLogs, sdk.NewABCIMessageLog(uint32(i), msgResult.Log, msgEvents))
+		//msgLogs = append(msgLogs, sdk.NewABCIMessageLog(uint32(i), msgResult.Log, msgEvents))
 	}
 
 	data, err := proto.Marshal(txMsgData)
@@ -745,7 +754,6 @@ func (app *BaseApp) runMsgs(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*s
 
 	return &sdk.Result{
 		Data:   data,
-		Log:    strings.TrimSpace(msgLogs.String()),
 		Events: events.ToABCIEvents(),
 	}, nil
 }
