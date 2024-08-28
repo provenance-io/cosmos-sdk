@@ -38,7 +38,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased Provenance]
 
-* nothing
+### Improvements
+
+* [#611](https://github.com/provenance-io/cosmos-sdk/pull/611) Provenance: Fix emission of pre-block events.
 
 ---
 
