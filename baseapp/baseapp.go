@@ -693,24 +693,24 @@ func (app *BaseApp) runMsgs(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*s
 		}
 
 		var (
-			msgEvents sdk.Events
-			msgResult *sdk.Result
-			msgFqName string
-			err       error
+			msgEvents  sdk.Events
+			msgResult  *sdk.Result
+			msgTypeUrl string
+			err        error
 		)
 
-		pre_gas := ctx.BlockGasMeter().GasConsumed()
+		preMsgGas := ctx.GasMeter().GasConsumed()
 		if svcMsg, ok := msg.(sdk.ServiceMsg); ok {
-			msgFqName = svcMsg.MethodName
-			handler := app.msgServiceRouter.Handler(msgFqName)
+			msgTypeUrl = sdk.MsgTypeURL(msg)
+			handler := app.msgServiceRouter.Handler(svcMsg.MethodName)
 			if handler == nil {
-				return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized message service method: %s; message index: %d", msgFqName, i)
+				return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized message service method: %s; message index: %d", svcMsg.MethodName, i)
 			}
 			msgResult, err = handler(ctx, svcMsg.Request)
 		} else {
 			// legacy sdk.Msg routing
 			msgRoute := msg.Route()
-			msgFqName = msg.Type()
+			msgTypeUrl = sdk.MsgTypeURL(msg)
 			handler := app.router.Route(ctx, msgRoute)
 			if handler == nil {
 				return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized message route: %s; message index: %d", msgRoute, i)
@@ -722,11 +722,10 @@ func (app *BaseApp) runMsgs(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*s
 		if err != nil {
 			return nil, sdkerrors.Wrapf(err, "failed to execute message; message index: %d", i)
 		}
-		post_gas := ctx.BlockGasMeter().GasConsumed()
-		msg_consumed := post_gas - pre_gas
-
+		postMsgGas := ctx.GasMeter().GasConsumed()
+		msg_consumed := postMsgGas - preMsgGas
 		msgEvents = sdk.Events{
-			sdk.NewEvent(sdk.EventTypeMessage, sdk.NewAttribute(sdk.AttributeKeyAction, msgFqName), sdk.NewAttribute("msg_gas_consumed", strconv.FormatUint(msg_consumed, 10))),
+			sdk.NewEvent(sdk.EventTypeMessage, sdk.NewAttribute(sdk.AttributeKeyAction, msgTypeUrl), sdk.NewAttribute("msg_gas_consumed", strconv.FormatUint(msg_consumed, 10))),
 		}
 		msgEvents = msgEvents.AppendEvents(msgResult.GetEvents())
 
