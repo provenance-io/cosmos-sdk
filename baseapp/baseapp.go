@@ -722,9 +722,9 @@ func (app *BaseApp) runMsgs(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*s
 			return nil, sdkerrors.Wrapf(err, "failed to execute message; message index: %d", i)
 		}
 		postMsgGas := ctx.GasMeter().GasConsumed()
-		msg_consumed := postMsgGas - preMsgGas
+		msgGasConsumed := postMsgGas - preMsgGas
 		msgEvents = sdk.Events{
-			sdk.NewEvent(sdk.EventTypeMessage, sdk.NewAttribute(sdk.AttributeKeyAction, msgTypeUrl), sdk.NewAttribute("msg_gas_consumed", strconv.FormatUint(msg_consumed, 10))),
+			sdk.NewEvent(sdk.EventTypeMessage, sdk.NewAttribute(sdk.AttributeKeyAction, msgTypeUrl), sdk.NewAttribute("msg_gas_consumed", strconv.FormatUint(msgGasConsumed, 10))),
 		}
 		msgEvents = msgEvents.AppendEvents(msgResult.GetEvents())
 
