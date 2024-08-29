@@ -2,6 +2,7 @@ package types
 
 import (
 	"github.com/gogo/protobuf/proto"
+	protov2 "google.golang.org/protobuf/proto"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 )
@@ -85,3 +86,12 @@ type TxDecoder func(txBytes []byte) (Tx, error)
 
 // TxEncoder marshals transaction to bytes
 type TxEncoder func(tx Tx) ([]byte, error)
+
+// MsgTypeURL returns the TypeURL of a `sdk.Msg`.
+func MsgTypeURL(msg proto.Message) string {
+	if m, ok := msg.(protov2.Message); ok {
+		return "/" + string(m.ProtoReflect().Descriptor().FullName())
+	}
+
+	return "/" + proto.MessageName(msg)
+}
