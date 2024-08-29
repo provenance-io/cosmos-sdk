@@ -701,9 +701,9 @@ func (app *BaseApp) runMsgs(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*s
 		preMsgGas := ctx.GasMeter().GasConsumed()
 		if svcMsg, ok := msg.(sdk.ServiceMsg); ok {
 			msgTypeUrl = sdk.MsgTypeURL(msg)
-			handler := app.msgServiceRouter.Handler(msgTypeUrl)
+			handler := app.msgServiceRouter.Handler(svcMsg.MethodName)
 			if handler == nil {
-				return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized message service method: %s; message index: %d", msgTypeUrl, i)
+				return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized message service method: %s; message index: %d", svcMsg.MethodName, i)
 			}
 			msgResult, err = handler(ctx, svcMsg.Request)
 		} else {
