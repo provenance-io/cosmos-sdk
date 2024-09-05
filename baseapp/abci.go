@@ -175,6 +175,12 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 
 	if app.beginBlocker != nil {
 		res = app.beginBlocker(app.deliverState.ctx, req)
+		for i, event := range res.Events {
+			res.Events[i].Attributes = append(
+				event.Attributes,
+				abci.EventAttribute{Key: []byte("mode"), Value: []byte("BeginBlock")},
+			)
+		}
 		res.Events = sdk.MarkEventsToIndex(res.Events, app.indexEvents)
 	}
 	// set the signed validators for addition to context in deliverTx
@@ -202,6 +208,12 @@ func (app *BaseApp) EndBlock(req abci.RequestEndBlock) (res abci.ResponseEndBloc
 		// Propagate the event history.
 		em := sdk.NewEventManagerWithHistory(app.deliverState.eventHistory)
 		res = app.endBlocker(app.deliverState.ctx.WithEventManager(em), req)
+		for i, event := range res.Events {
+			res.Events[i].Attributes = append(
+				event.Attributes,
+				abci.EventAttribute{Key: []byte("mode"), Value: []byte("EndBlock")},
+			)
+		}
 		res.Events = sdk.MarkEventsToIndex(res.Events, app.indexEvents)
 	}
 
