@@ -3,7 +3,6 @@ package baseapp
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -896,7 +895,6 @@ func (app *BaseApp) runMsgs(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*s
 
 	return &sdk.Result{
 		Data:         data,
-		Log:          strings.TrimSpace(msgLogs.String()),
 		Events:       events.ToABCIEvents(),
 		MsgResponses: msgResponses,
 	}, nil
