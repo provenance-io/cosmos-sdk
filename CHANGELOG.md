@@ -42,6 +42,17 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ---
 
+## [v0.50.11-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.11-pio-1) - 2024-12-18
+
+* [#612](https://github.com/provenance-io/cosmos-sdk/pull/612) Provenance: Bring in SDK changes up to v0.50.11.
+
+### Full Commit History
+
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.50.10-pio-1..v0.50.11-pio-1
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.50.11..v0.50.11-pio-1
+
+---
+
 ## [v0.50.10-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.10-pio-1) - 2024-10-10
 
 * [#612](https://github.com/provenance-io/cosmos-sdk/pull/612) Provenance: Bring in SDK changes up to v0.50.10.
