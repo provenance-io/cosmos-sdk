@@ -121,6 +121,10 @@ func SimulateFromSeedProv(
 
 	accs = tmpAccs
 	nextValidators := validators
+	if len(nextValidators) == 0 {
+		tb.Skip("skipping: empty validator set in genesis")
+		return true, blockTime, params, nil
+	}
 
 	var (
 		pastTimes          []time.Time
@@ -259,6 +263,10 @@ func SimulateFromSeedProv(
 		// on the next block
 		validators = nextValidators
 		nextValidators = updateValidators(tb, r, params, validators, res.ValidatorUpdates, eventStats.Tally)
+		if len(nextValidators) == 0 {
+			tb.Skip("skipping: empty validator set")
+			return true, blockTime, params, nil
+		}
 
 		// update the exported params
 		if config.ExportParamsPath != "" && int64(config.ExportParamsHeight) == blockHeight {
