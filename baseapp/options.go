@@ -6,6 +6,7 @@ import (
 	"math"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+
 	dbm "github.com/cosmos/cosmos-db"
 
 	"cosmossdk.io/store/metrics"
@@ -317,15 +318,6 @@ func (app *BaseApp) SetTxEncoder(txEncoder sdk.TxEncoder) {
 // Ref: https://github.com/cosmos/cosmos-sdk/issues/13317
 func (app *BaseApp) SetQueryMultiStore(ms storetypes.MultiStore) {
 	app.qms = ms
-}
-
-// SetFeeHandler sets the FeeHandler which if set will change the behavior of fee handling
-func (app *BaseApp) SetFeeHandler(feeHandler sdk.FeeHandler) {
-	if app.sealed {
-		panic("SetFeeHandler() on sealed BaseApp")
-	}
-
-	app.feeHandler = feeHandler
 }
 
 // SetAggregateEventsFunc sets the function that aggregates events from baseapp result events and feehandler events

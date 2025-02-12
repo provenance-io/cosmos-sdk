@@ -172,8 +172,6 @@ type BaseApp struct {
 	// trace set will return full stack traces for errors in ABCI Log field
 	trace bool
 
-	feeHandler sdk.FeeHandler
-
 	aggregateEventsFunc func(anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event)
 
 	// indexEvents defines the set of events in the form {eventType}.{attributeKey},
@@ -995,15 +993,9 @@ func (app *BaseApp) runTxProv(mode execMode, txBytes []byte) (gInfo sdk.GasInfo,
 	}
 
 	if err == nil {
-		var feeEvents sdk.Events
 		if mode == execModeFinalize {
 			// When block gas exceeds, it'll panic and won't commit the cached store.
 			consumeBlockGas()
-
-			feeEvents, err = FeeInvoke(mode, app, runMsgCtx)
-			if err != nil {
-				return gInfo, nil, nil, ctx, err
-			}
 
 			msCache.Write()
 			app.finalizeBlockState.eventHistory = append(app.finalizeBlockState.eventHistory, result.Events...)
@@ -1012,12 +1004,6 @@ func (app *BaseApp) runTxProv(mode execMode, txBytes []byte) (gInfo sdk.GasInfo,
 		if len(anteEvents) > 0 && (mode == execModeFinalize || mode == execModeSimulate) {
 			// append the events in the order of occurrence
 			result.Events = append(anteEvents, result.Events...)
-		}
-
-		// additional fee events
-		if len(feeEvents) > 0 {
-			// append the fee events at the end of the other events, since they get charged at the end of the Tx
-			result.Events = append(result.Events, feeEvents.ToABCIEvents()...)
 		}
 	}
 
@@ -1036,19 +1022,6 @@ func AggregateEvents(app *BaseApp, anteEvents []abci.Event, resultEvents []abci.
 		return app.aggregateEventsFunc(anteEvents, resultEvents)
 	}
 	return anteEvents, resultEvents
-}
-
-// FeeInvoke apply fee logic and append events
-func FeeInvoke(mode execMode, app *BaseApp, runMsgCtx sdk.Context) (sdk.Events, error) {
-	if app.feeHandler != nil {
-		// call the msgFee
-		_, eventsFromFeeHandler, err := app.feeHandler(runMsgCtx, mode == execModeSimulate)
-		if err != nil {
-			return nil, err
-		}
-		return eventsFromFeeHandler, nil
-	}
-	return nil, nil
 }
 
 // runMsgs iterates through a list of messages and executes them with the provided
