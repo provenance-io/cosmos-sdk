@@ -982,7 +982,13 @@ func (app *BaseApp) runTxProv(mode execMode, txBytes []byte) (gInfo sdk.GasInfo,
 
 		newCtx, errPostHandler := app.postHandler(postCtx, tx, mode == execModeSimulate, err == nil)
 		if errPostHandler != nil {
-			return gInfo, nil, anteEvents, ctx, errors.Join(err, errPostHandler)
+			// The result of errors.Join breaks the response code stuff, resulting in code 1 (logic error) always.
+			// So if there was also an error running the msgs, we'll use the error code from that, but include
+			// the post handler error too. Otherwise, we just return the post handler error.
+			if err != nil {
+				errPostHandler = errorsmod.Wrap(err, errPostHandler.Error())
+			}
+			return gInfo, nil, anteEvents, ctx, errPostHandler
 		}
 
 		// we don't want runTx to panic if runMsgs has failed earlier
