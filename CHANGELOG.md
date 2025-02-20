@@ -42,6 +42,17 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ---
 
+## [v0.50.12-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.12-pio-1) - 2024-02-20
+
+* [#614](https://github.com/provenance-io/cosmos-sdk/pull/614) Provenance: Bring in SDK changes up to v0.50.12.
+
+### Full Commit History
+
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.50.11-pio-1..v0.50.12-pio-1
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.50.12..v0.50.12-pio-1
+
+---
+
 ## [v0.50.11-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.11-pio-1) - 2024-12-18
 
 * [#612](https://github.com/provenance-io/cosmos-sdk/pull/612) Provenance: Bring in SDK changes up to v0.50.11.
@@ -132,6 +143,13 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * https://github.com/provenance-io/cosmos-sdk/compare/v0.50.5..v0.50.5-pio-1
 
 ---
+
+## [v0.50.12](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.12) - 2025-02-20
+
+### Bug Fixes
+
+* [GHSA-x5vx-95h7-rv4p](https://github.com/cosmos/cosmos-sdk/security/advisories/GHSA-x5vx-95h7-rv4p) Fix Group module can halt chain when handling a malicious proposal
+
 
 ## [v0.50.11](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.11) - 2024-12-16
 
