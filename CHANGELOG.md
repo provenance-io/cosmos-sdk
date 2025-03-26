@@ -38,9 +38,22 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased Provenance]
 
+* nothing
+
+---
+
+## [v0.50.13-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.13-pio-1) - 2024-03-26
+
 ### Improvments
 
+* [#615](https://github.com/provenance-io/cosmos-sdk/pull/615) Provenance: Bring in SDK changes up to v0.50.13.
 * [#616](https://github.com/provenance-io/cosmos-sdk/pull/616) Provenance: Improve performance of the `GetAllBalances` and `GetAccountsBalances` keeper methods.
+
+
+### Full Commit History
+
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.50.12-pio-1..v0.50.13-pio-1
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.50.13..v0.50.13-pio-1
 
 ---
 
@@ -145,6 +158,12 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * https://github.com/provenance-io/cosmos-sdk/compare/v0.50.5..v0.50.5-pio-1
 
 ---
+
+## [v0.50.13](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.13) - 2025-03-12
+
+### Bug Fixes
+
+* [GHSA-47ww-ff84-4jrg](https://github.com/cosmos/cosmos-sdk/security/advisories/GHSA-47ww-ff84-4jrg) Fix x/group can halt when erroring in EndBlocker
 
 ## [v0.50.12](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.50.12) - 2025-02-20
 
