@@ -38,6 +38,8 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased Provenance]
 
+* nothing
+
 ---
 
 ## [v0.50.13-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.13-pio-1) - 2024-03-26
