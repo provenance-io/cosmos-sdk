@@ -59,10 +59,15 @@ func (w *wrapper) GetSigningTxData() txsigning.TxData {
 		modeInfo := &txv1beta1.ModeInfo{}
 		adaptModeInfo(signerInfo.ModeInfo, modeInfo)
 		txSignerInfo := &txv1beta1.SignerInfo{
-			PublicKey: &anypb.Any{
-				TypeUrl: signerInfo.PublicKey.TypeUrl,
-				Value:   signerInfo.PublicKey.Value,
-			},
+			PublicKey: func() *anypb.Any {
+				if signerInfo.PublicKey == nil {
+					return nil
+				}
+				return &anypb.Any{
+					TypeUrl: signerInfo.PublicKey.TypeUrl,
+					Value:   signerInfo.PublicKey.Value,
+				}
+			}(),
 			Sequence: signerInfo.Sequence,
 			ModeInfo: modeInfo,
 		}
