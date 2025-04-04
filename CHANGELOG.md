@@ -148,6 +148,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * [#604](https://github.com/provenance-io/cosmos-sdk/pull/604) Provenance: Create bankkeeper.MigrateParamsProv so we can finish the v3-v4 bank module migration.
 * [#607](https://github.com/provenance-io/cosmos-sdk/pull/607) Provenance: Create baseapp.SimulateProv that is the same as Simulate, but also returns a context.
 
+### Improvements
+
+* (x/gov) [#24386](https://github.com/cosmos/cosmos-sdk/pull/24386) Improve helpers to easily create governance proposals from CLI.
+
 ### Bug Fixes
 
 * [#596](https://github.com/provenance-io/cosmos-sdk/pull/596) Provenance: Fix the prune command to properly load configuration files.
