@@ -56,6 +56,29 @@ const (
 	execModeFinalize                            // Finalize a block proposal
 )
 
+func (e execMode) String() string {
+	switch e {
+	case execModeCheck:
+		return "Check"
+	case execModeReCheck:
+		return "ReCheck"
+	case execModeSimulate:
+		return "Simulate"
+	case execModePrepareProposal:
+		return "PrepareProposal"
+	case execModeProcessProposal:
+		return "ProcessProposal"
+	case execModeVoteExtension:
+		return "VoteExtension"
+	case execModeVerifyVoteExtension:
+		return "VerifyVoteExtension"
+	case execModeFinalize:
+		return "Finalize"
+	default:
+		return fmt.Sprintf("execMode(%d)", e)
+	}
+}
+
 var _ servertypes.ABCI = (*BaseApp)(nil)
 
 // BaseApp reflects the ABCI application implementation.
@@ -842,6 +865,15 @@ func (app *BaseApp) runTxProv(mode execMode, txBytes []byte) (gInfo sdk.GasInfo,
 
 	ctx = app.getContextForTx(mode, txBytes)
 	ms := ctx.MultiStore()
+	logger := ctx.Logger().With("mode", mode.String(), "func", "runTxProv")
+	logger.Debug("Starting.")
+	defer func() {
+		if err != nil {
+			logger.Error("Returning with error.", "error", err)
+		} else {
+			logger.Debug("Ending.")
+		}
+	}()
 
 	// only run the tx if there is block gas remaining
 	if mode == execModeFinalize && ctx.BlockGasMeter().IsOutOfGas() {
@@ -930,10 +962,12 @@ func (app *BaseApp) runTxProv(mode execMode, txBytes []byte) (gInfo sdk.GasInfo,
 
 		// GasMeter expected to be set in AnteHandler
 		gasWanted = ctx.GasMeter().Limit()
+		logger.Debug("Antehandler run.", "error", err, "gas limit", gasWanted, "events", len(events))
 
 		if err != nil {
 			if mode == execModeReCheck {
 				// if the ante handler fails on recheck, we want to remove the tx from the mempool
+				logger.Debug("Removing tx from mempool due to antehandler error.", "error", err)
 				if mempoolErr := app.mempool.Remove(tx); mempoolErr != nil {
 					return gInfo, nil, anteEvents, ctx, errors.Join(err, mempoolErr)
 				}
@@ -947,11 +981,13 @@ func (app *BaseApp) runTxProv(mode execMode, txBytes []byte) (gInfo sdk.GasInfo,
 
 	if mode == execModeCheck {
 		err = app.mempool.Insert(ctx, tx)
+		logger.Debug("Adding tx to mempool.", "error", err)
 		if err != nil {
 			return gInfo, nil, anteEvents, ctx, err
 		}
 	} else if mode == execModeFinalize {
 		err = app.mempool.Remove(tx)
+		logger.Debug("Removing tx from mempool.", "error", err)
 		if err != nil && !errors.Is(err, mempool.ErrTxNotFound) {
 			return gInfo, nil, anteEvents, ctx,
 				fmt.Errorf("failed to remove tx from mempool: %w", err)
@@ -968,7 +1004,9 @@ func (app *BaseApp) runTxProv(mode execMode, txBytes []byte) (gInfo sdk.GasInfo,
 	// Result if any single message fails or does not have a registered Handler.
 	msgsV2, err := tx.GetMsgsV2()
 	if err == nil {
+		logger.Debug("Running Msgs.", "count", len(msgs))
 		result, err = app.runMsgs(runMsgCtx, msgs, msgsV2, mode)
+		logger.Debug("Done Running Msgs.", "count", len(msgs), "error", err)
 	}
 
 	// Run optional postHandlers (should run regardless of the execution result).
@@ -980,6 +1018,7 @@ func (app *BaseApp) runTxProv(mode execMode, txBytes []byte) (gInfo sdk.GasInfo,
 		// Note that the state is still preserved.
 		postCtx := runMsgCtx.WithEventManager(sdk.NewEventManager())
 
+		logger.Debug("Calling post handler.", "error", err)
 		newCtx, errPostHandler := app.postHandler(postCtx, tx, mode == execModeSimulate, err == nil)
 		if errPostHandler != nil {
 			// The result of errors.Join breaks the response code stuff, resulting in code 1 (logic error) always.
