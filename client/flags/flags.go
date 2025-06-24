@@ -10,13 +10,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 )
 
-var DefaultGasLimit uint64 = 200000
-
 const (
 	// DefaultGasAdjustment is applied to gas estimates to avoid tx execution
 	// failures due to state changes that might occur between the tx simulation
 	// and the actual run.
 	DefaultGasAdjustment = 1.0
+	DefaultGasLimit      = 200000
 	GasFlagAuto          = "auto"
 
 	// DefaultKeyringBackend
