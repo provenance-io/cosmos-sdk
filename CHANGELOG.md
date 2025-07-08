@@ -38,7 +38,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased Provenance]
 
-* nothing
+### Improvements
+
+* [#619](https://github.com/provenance-io/cosmos-sdk/pull/619) Provenance: Bring in SDK changes up to v0.50.14.
+* (x/gov) [#24386](https://github.com/cosmos/cosmos-sdk/pull/24386) Improve helpers to easily create governance proposals from CLI.
 
 ---
 
@@ -147,10 +150,6 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * [#595](https://github.com/provenance-io/cosmos-sdk/pull/595) Provenance: Create SimulateFromSeedProv which is the same as SimulateFromSeed but also returns the simulation's end block time which is needed for some sims tests.
 * [#604](https://github.com/provenance-io/cosmos-sdk/pull/604) Provenance: Create bankkeeper.MigrateParamsProv so we can finish the v3-v4 bank module migration.
 * [#607](https://github.com/provenance-io/cosmos-sdk/pull/607) Provenance: Create baseapp.SimulateProv that is the same as Simulate, but also returns a context.
-
-### Improvements
-
-* (x/gov) [#24386](https://github.com/cosmos/cosmos-sdk/pull/24386) Improve helpers to easily create governance proposals from CLI.
 
 ### Bug Fixes
 
