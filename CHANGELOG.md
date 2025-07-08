@@ -41,7 +41,6 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Improvements
 
 * [#619](https://github.com/provenance-io/cosmos-sdk/pull/619) Provenance: Bring in SDK changes up to v0.50.14.
-* (x/gov) [#24386](https://github.com/cosmos/cosmos-sdk/pull/24386) Improve helpers to easily create governance proposals from CLI.
 
 ---
 
