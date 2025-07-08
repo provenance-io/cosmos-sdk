@@ -38,7 +38,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased Provenance]
 
-* nothing
+### Improvments
+
+* [618](https://github.com/provenance-io/cosmos-sdk/pull/618) Provenance: Remove the fee handler (now using the post handler).
 
 ---
 
