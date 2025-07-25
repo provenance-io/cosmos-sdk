@@ -38,10 +38,11 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased Provenance]
 
-### Improvments
-
+### Improvements
+* (x/auth/tx) [#617](https://github.com/provenance-io/cosmos-sdk/pull/617) Provenance: For WebAuthn signatures, the public key can be derived in from signature itself,
+ and has no correlation to the address itself(as can be the case in normal cosmos signatures flows),
+ the signature is compared against the pubkey registered while webauthn key registration, Additionally this doesn't really seem to be used anywhere else and does not affect normal cosmos verification flows.
 * [618](https://github.com/provenance-io/cosmos-sdk/pull/618) Provenance: Remove the fee handler (now using the post handler).
-
 ---
 
 ## [v0.50.14-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.50.14-pio-1) - 2025-07-09
