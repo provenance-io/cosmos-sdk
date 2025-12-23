@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/base64"
+	"fmt"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/spf13/pflag"
@@ -49,6 +50,7 @@ func Paginate(numObjs, page, limit, defLimit int) (start, end int) {
 type FlagSetMutator = func(flagSet *pflag.FlagSet) (*pflag.FlagSet, error)
 
 // ReadPageRequest reads and builds the necessary page request flags for pagination.
+// If one or more mutators are provided, they are applied to the provided flagSet before attempting to read the flags.
 func ReadPageRequest(flagSet *pflag.FlagSet, mutators ...FlagSetMutator) (*query.PageRequest, error) {
 	var err error
 	for _, mutator := range mutators {
@@ -108,7 +110,7 @@ func FlagSetWithPageKeyDecoded(flagSet *pflag.FlagSet) (*pflag.FlagSet, error) {
 		var raw []byte
 		raw, err = base64.StdEncoding.DecodeString(encoded)
 		if err != nil {
-			return flagSet, err
+			return flagSet, fmt.Errorf("error decoding %s flag: %w", flags.FlagPageKey, err)
 		}
 		_ = flagSet.Set(flags.FlagPageKey, string(raw))
 	}
