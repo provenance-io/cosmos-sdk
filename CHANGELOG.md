@@ -40,12 +40,13 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Features
 
-* [616](https://github.com/provenance-io/cosmos-sdk/pull/616) Improve GetAllBalances and GetAccountsBalances optimization from v0.50.x to v0.53.x (original PR #616)"
+
 * (crypto/ledger) [#25435](https://github.com/cosmos/cosmos-sdk/pull/25435) Add SetDERConversion to reset skipDERConversion and App name for ledger.
 * (gRPC) [#25565](https://github.com/cosmos/cosmos-sdk/pull/25565) Support for multi gRPC query clients serve with historical binaries to serve proper historical state.
 
 ### Improvements
 
+* (x/bank) [616](https://github.com/provenance-io/cosmos-sdk/pull/616) Improve GetAllBalances and GetAccountsBalances optimization from v0.50.x to v0.53.x (original PR #616)"
 * (x/mint) [#25562](https://github.com/cosmos/cosmos-sdk/pull/25562) Improve and test `x/mint` params validation.
 * (server) [#25632](https://github.com/cosmos/cosmos-sdk/pull/25632) Add missing call to close the app on shutdown.
 
