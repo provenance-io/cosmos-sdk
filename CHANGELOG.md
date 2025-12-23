@@ -36,7 +36,11 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Changelog
 
-## UNRELEASED
+## Unreleased Provenance
+
+---
+
+## [v0.53.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.53.5) - 2025-12-12
 
 ### Features
 
