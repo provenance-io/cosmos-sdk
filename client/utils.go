@@ -45,8 +45,18 @@ func Paginate(numObjs, page, limit, defLimit int) (start, end int) {
 	return start, end
 }
 
+// A FlagSetMutator is a function that takes in a flagSet and possibly modifies entries.
+type FlagSetMutator = func(flagSet *pflag.FlagSet) (*pflag.FlagSet, error)
+
 // ReadPageRequest reads and builds the necessary page request flags for pagination.
-func ReadPageRequest(flagSet *pflag.FlagSet) (*query.PageRequest, error) {
+func ReadPageRequest(flagSet *pflag.FlagSet, mutators ...FlagSetMutator) (*query.PageRequest, error) {
+	var err error
+	for _, mutator := range mutators {
+		flagSet, err = mutator(flagSet)
+		if err != nil {
+			return nil, err
+		}
+	}
 	pageKey, _ := flagSet.GetString(flags.FlagPageKey)
 	offset, _ := flagSet.GetUint64(flags.FlagOffset)
 	limit, _ := flagSet.GetUint64(flags.FlagLimit)
@@ -69,6 +79,11 @@ func ReadPageRequest(flagSet *pflag.FlagSet) (*query.PageRequest, error) {
 		CountTotal: countTotal,
 		Reverse:    reverse,
 	}, nil
+}
+
+// ReadPageRequestWithPageKeyDecoded is a shortcut for ReadPageRequest(flagSet, FlagSetWithPageKeyDecoded)
+func ReadPageRequestWithPageKeyDecoded(flagSet *pflag.FlagSet) (*query.PageRequest, error) {
+	return ReadPageRequest(flagSet, FlagSetWithPageKeyDecoded)
 }
 
 // NewClientFromNode sets up Client implementation that communicates with a CometBFT node over
