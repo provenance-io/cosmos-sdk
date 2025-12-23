@@ -111,7 +111,7 @@ func (k BaseViewKeeper) GetAllBalances(ctx context.Context, addr sdk.AccAddress)
 		return false
 	})
 
-	return balances.Sort()
+	return balances
 }
 
 // GetAccountsBalances returns all the accounts balances from the store.
