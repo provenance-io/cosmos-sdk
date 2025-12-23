@@ -44,7 +44,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Features
 
-* [#597](https://github.com/provenance-io/cosmos-sdk/pull/597) Provenance: Create the ReadPageRequestWithPageKeyDecoded helper.
+* [597](https://github.com/provenance-io/cosmos-sdk/pull/597) Provenance: Create the ReadPageRequestWithPageKeyDecoded helper from v0.50.x to v0.53.x (original PR #597).
 * (crypto/ledger) [#25435](https://github.com/cosmos/cosmos-sdk/pull/25435) Add SetDERConversion to reset skipDERConversion and App name for ledger.
 * (gRPC) [#25565](https://github.com/cosmos/cosmos-sdk/pull/25565) Support for multi gRPC query clients serve with historical binaries to serve proper historical state.
 
