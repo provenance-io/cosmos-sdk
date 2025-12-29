@@ -40,7 +40,11 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Features
 
-* [597](https://github.com/provenance-io/cosmos-sdk/pull/597) Provenance: Create the ReadPageRequestWithPageKeyDecoded helper from v0.50.x to v0.53.x (original PR #597).
+* [#621](https://github.com/provenance-io/cosmos-sdk/pull/621) Provenance: Create the ReadPageRequestWithPageKeyDecoded helper from v0.50.x to v0.53.x (original PR #597).
+
+### Improvements
+
+* (x/bank) [#622](https://github.com/provenance-io/cosmos-sdk/pull/622) Improve GetAllBalances and GetAccountsBalances optimization from v0.50.x to v0.53.x (original PR #616).
 
 ---
 
