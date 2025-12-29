@@ -36,7 +36,24 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Changelog
 
-## UNRELEASED
+## Unreleased Provenance
+
+### Features
+
+* [#621](https://github.com/provenance-io/cosmos-sdk/pull/621) Provenance: Create the ReadPageRequestWithPageKeyDecoded helper from v0.50.x to v0.53.x (original PR #597).
+* [#624](https://github.com/provenance-io/cosmos-sdk/pull/624) Provenance: Include the binary version in the status command output from v0.50.x to v0.53.x (original PR #596).
+
+### Improvements
+
+* (x/bank) [#622](https://github.com/provenance-io/cosmos-sdk/pull/622) Improve GetAllBalances and GetAccountsBalances optimization from v0.50.x to v0.53.x (original PR #616).
+
+### Bug Fixes
+
+* [#624](https://github.com/provenance-io/cosmos-sdk/pull/624) Provenance: Fix the prune command to properly load configuration files from v0.50.x to v0.53.x (original PR #596).
+
+---
+
+## [v0.53.5](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.53.5) - 2025-12-12
 
 ### Features
 
