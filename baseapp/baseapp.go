@@ -71,7 +71,7 @@ type BaseApp struct {
 	qms               storetypes.MultiStore       // Optional alternative multistore for querying only.
 	storeLoader       StoreLoader                 // function to handle store loading, may be overridden with SetStoreLoader()
 	grpcQueryRouter   *GRPCQueryRouter            // router for redirecting gRPC query calls
-	msgServiceRouter  *MsgServiceRouter           // router for redirecting Msg service messages
+	msgServiceRouter  IMsgServiceRouter           // router for redirecting Msg service messages
 	interfaceRegistry codectypes.InterfaceRegistry
 	txDecoder         sdk.TxDecoder // unmarshal []byte into sdk.Tx
 	txEncoder         sdk.TxEncoder // marshal sdk.Tx into []byte
@@ -175,6 +175,8 @@ type BaseApp struct {
 
 	// trace set will return full stack traces for errors in ABCI Log field
 	trace bool
+
+	aggregateEventsFunc func(anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event)
 
 	// indexEvents defines the set of events in the form {eventType}.{attributeKey},
 	// which informs CometBFT what to index. If empty, all events will be indexed.
@@ -293,7 +295,7 @@ func (app *BaseApp) Trace() bool {
 }
 
 // MsgServiceRouter returns the MsgServiceRouter of a BaseApp.
-func (app *BaseApp) MsgServiceRouter() *MsgServiceRouter { return app.msgServiceRouter }
+func (app *BaseApp) MsgServiceRouter() IMsgServiceRouter { return app.msgServiceRouter }
 
 // GRPCQueryRouter returns the GRPCQueryRouter of a BaseApp.
 func (app *BaseApp) GRPCQueryRouter() *GRPCQueryRouter { return app.grpcQueryRouter }
@@ -1023,7 +1025,21 @@ func (app *BaseApp) runTx(mode execMode, txBytes []byte, tx sdk.Tx) (gInfo sdk.G
 		}
 	}
 
+	if result != nil { // tx was successful run aggregator for ante and result events
+		anteEvents, result.Events = AggregateEvents(app, anteEvents, result.Events)
+	} else { // tx failed run aggregator for ante events only since result object is nil
+		anteEvents, _ = AggregateEvents(app, anteEvents, nil)
+	}
+
 	return gInfo, result, anteEvents, err
+}
+
+// AggregateEvents aggregation logic of result events (ante and postHander events) with feeEvents
+func AggregateEvents(app *BaseApp, anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event) {
+	if app.aggregateEventsFunc != nil {
+		return app.aggregateEventsFunc(anteEvents, resultEvents)
+	}
+	return anteEvents, resultEvents
 }
 
 // runMsgs iterates through a list of messages and executes them with the provided
