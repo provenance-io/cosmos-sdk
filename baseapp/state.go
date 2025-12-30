@@ -5,14 +5,16 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type state struct {
 	ms storetypes.CacheMultiStore
 
-	mtx sync.RWMutex
-	ctx sdk.Context
+	mtx          sync.RWMutex
+	ctx          sdk.Context
+	eventHistory []abci.Event
 }
 
 // CacheMultiStore calls and returns a CacheMultiStore on the state's underling
