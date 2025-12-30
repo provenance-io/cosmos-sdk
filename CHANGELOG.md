@@ -42,6 +42,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 * [#621](https://github.com/provenance-io/cosmos-sdk/pull/621) Provenance: Create the ReadPageRequestWithPageKeyDecoded helper from v0.50.x to v0.53.x (original PR #597).
 * [#624](https://github.com/provenance-io/cosmos-sdk/pull/624) Provenance: Include the binary version in the status command output from v0.50.x to v0.53.x (original PR #596).
+* [#626](https://github.com/provenance-io/cosmos-sdk/pull/626) Provenance: Propagate the event history into the end blocker from v0.50.x to v0.53.x (original PR #601).
 
 ### Improvements
 
