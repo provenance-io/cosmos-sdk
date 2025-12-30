@@ -46,8 +46,8 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Improvements
 
 * (x/bank) [#622](https://github.com/provenance-io/cosmos-sdk/pull/622) Improve GetAllBalances and GetAccountsBalances optimization from v0.50.x to v0.53.x (original PR #616).
-* [#625](https://github.com/provenance-io/cosmos-sdk/pull/625) Provenance: Use a new IMsgServiceRouter interface instead of a concrete one.
-* [#625](https://github.com/provenance-io/cosmos-sdk/pull/625) Provenance: Create baseapp.SimulateProv that is the same as Simulate, but also returns a context.
+* [#625](https://github.com/provenance-io/cosmos-sdk/pull/625) Provenance: Use a new IMsgServiceRouter interface instead of a concrete one (original PRs #593, #607, #618).
+* [#625](https://github.com/provenance-io/cosmos-sdk/pull/625) Provenance: Create baseapp.SimulateProv that is the same as Simulate, but also returns a context (original PRs #593, #607, #618).
 
 ### Bug Fixes
 
