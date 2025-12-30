@@ -504,6 +504,7 @@ func (app *BaseApp) setState(mode execMode, h cmtproto.Header) {
 		ctx: sdk.NewContext(ms, h, false, app.logger).
 			WithStreamingManager(app.streamingManager).
 			WithHeaderInfo(headerInfo),
+		eventHistory: sdk.EmptyABCIEvents(),
 	}
 
 	switch mode {
@@ -813,7 +814,9 @@ func (app *BaseApp) endBlock(_ context.Context) (sdk.EndBlock, error) {
 	var endblock sdk.EndBlock
 
 	if app.endBlocker != nil {
-		eb, err := app.endBlocker(app.finalizeBlockState.Context())
+		// Propagate the event history.
+		em := sdk.NewEventManagerWithHistory(app.finalizeBlockState.eventHistory)
+		eb, err := app.endBlocker(app.finalizeBlockState.Context().WithEventManager(em))
 		if err != nil {
 			return endblock, err
 		}
@@ -1015,6 +1018,7 @@ func (app *BaseApp) runTx(mode execMode, txBytes []byte, tx sdk.Tx) (gInfo sdk.G
 			consumeBlockGas()
 
 			msCache.Write()
+			app.finalizeBlockState.eventHistory = append(app.finalizeBlockState.eventHistory, result.Events...)
 		}
 
 		if len(anteEvents) > 0 && (mode == execModeFinalize || mode == execModeSimulate) {
