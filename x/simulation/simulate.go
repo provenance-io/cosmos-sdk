@@ -74,6 +74,24 @@ func SimulateFromSeed(
 	return false, expParams, err
 }
 
+// SimulateFromSeedProv is the same as SimulateFromSeed, except this one also returns the last block time.
+func SimulateFromSeedProv(
+	tb testing.TB,
+	w io.Writer,
+	app *baseapp.BaseApp,
+	appStateFn simulation.AppStateFn,
+	randAccFn simulation.RandomAccountFn,
+	ops WeightedOperations,
+	blockedAddrs map[string]bool,
+	config simulation.Config,
+	cdc codec.JSONCodec,
+) (stopEarly bool, endTime time.Time, exportedParams Params, err error) {
+	tb.Helper()
+	mode, _, _ := getTestingMode(tb)
+	endTime, expParams, _, err := SimulateFromSeedXProv(tb, log.NewTestLogger(tb), w, app, appStateFn, randAccFn, ops, blockedAddrs, config, cdc, NewLogWriter(mode))
+	return false, endTime, expParams, err
+}
+
 // SimulateFromSeedX tests an application by running the provided
 // operations, testing the provided invariants, but using the provided config.Seed.
 func SimulateFromSeedX(
@@ -89,6 +107,24 @@ func SimulateFromSeedX(
 	cdc codec.JSONCodec,
 	logWriter LogWriter,
 ) (exportedParams Params, accs []simulation.Account, err error) {
+	_, exportedParams, accs, err = SimulateFromSeedXProv(tb, logger, w, app, appStateFn, randAccFn, ops, blockedAddrs, config, cdc, logWriter)
+	return exportedParams, accs, err
+}
+
+// SimulateFromSeedXProv is the same as SimulateFromSeedX, except this one also returns the last block time.
+func SimulateFromSeedXProv(
+	tb testing.TB,
+	logger log.Logger,
+	w io.Writer,
+	app *baseapp.BaseApp,
+	appStateFn simulation.AppStateFn,
+	randAccFn simulation.RandomAccountFn,
+	ops WeightedOperations,
+	blockedAddrs map[string]bool,
+	config simulation.Config,
+	cdc codec.JSONCodec,
+	logWriter LogWriter,
+) (endTime time.Time, exportedParams Params, accs []simulation.Account, err error) {
 	tb.Helper()
 	// in case we have to end early, don't os.Exit so that we can run cleanup code.
 	testingMode, _, b := getTestingMode(tb)
@@ -110,7 +146,7 @@ func SimulateFromSeedX(
 	// At least 2 accounts must be added here, otherwise when executing SimulateMsgSend
 	// two accounts will be selected to meet the conditions from != to and it will fall into an infinite loop.
 	if len(accs) <= 1 {
-		return params, accs, fmt.Errorf("at least two genesis accounts are required")
+		return blockTime, params, accs, fmt.Errorf("at least two genesis accounts are required")
 	}
 
 	config.ChainID = chainID
@@ -128,7 +164,7 @@ func SimulateFromSeedX(
 	nextValidators := validators
 	if len(nextValidators) == 0 {
 		tb.Skip("skipping: empty validator set in genesis")
-		return params, accs, nil
+		return blockTime, params, accs, nil
 	}
 
 	var (
@@ -196,7 +232,7 @@ func SimulateFromSeedX(
 
 		res, err := app.FinalizeBlock(finalizeBlockReq)
 		if err != nil {
-			return params, accs, fmt.Errorf("block finalization failed at height %d: %w", blockHeight, err)
+			return blockTime, params, accs, fmt.Errorf("block finalization failed at height %d: %w", blockHeight, err)
 		}
 
 		ctx := app.NewContextLegacy(false, cmtproto.Header{
@@ -245,7 +281,7 @@ func SimulateFromSeedX(
 		if config.Commit {
 			app.SimWriteState()
 			if _, err := app.Commit(); err != nil {
-				return params, accs, fmt.Errorf("commit failed at height %d: %w", blockHeight, err)
+				return blockTime, params, accs, fmt.Errorf("commit failed at height %d: %w", blockHeight, err)
 			}
 		}
 
@@ -264,7 +300,7 @@ func SimulateFromSeedX(
 		nextValidators = updateValidators(tb, r, params, validators, res.ValidatorUpdates, eventStats.Tally)
 		if len(nextValidators) == 0 {
 			tb.Skip("skipping: empty validator set")
-			return params, accs, nil
+			return blockTime, params, accs, nil
 		}
 
 		// update the exported params
@@ -282,7 +318,7 @@ func SimulateFromSeedX(
 	} else {
 		eventStats.Print(w)
 	}
-	return exportedParams, accs, err
+	return blockTime, exportedParams, accs, err
 }
 
 type blockSimFn func(
