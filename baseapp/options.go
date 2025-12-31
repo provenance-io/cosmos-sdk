@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 
 	"cosmossdk.io/store/metrics"
@@ -325,6 +326,15 @@ func (app *BaseApp) SetQueryMultiStore(ms storetypes.MultiStore) {
 	app.qms = ms
 }
 
+// SetAggregateEventsFunc sets the function that aggregates events from baseapp result events and feehandler events
+func (app *BaseApp) SetAggregateEventsFunc(aggregateEventsFunc func(resultEvents []abci.Event, feeEvents []abci.Event) ([]abci.Event, []abci.Event)) {
+	if app.sealed {
+		panic("SetAggregateEventsFunc() on sealed BaseApp")
+	}
+
+	app.aggregateEventsFunc = aggregateEventsFunc
+}
+
 // SetMempool sets the mempool for the BaseApp and is required for the app to start up.
 func (app *BaseApp) SetMempool(mempool mempool.Mempool) {
 	if app.sealed {
@@ -395,7 +405,7 @@ func (app *BaseApp) SetDisableBlockGasMeter(disableBlockGasMeter bool) {
 }
 
 // SetMsgServiceRouter sets the MsgServiceRouter of a BaseApp.
-func (app *BaseApp) SetMsgServiceRouter(msgServiceRouter *MsgServiceRouter) {
+func (app *BaseApp) SetMsgServiceRouter(msgServiceRouter IMsgServiceRouter) {
 	app.msgServiceRouter = msgServiceRouter
 }
 

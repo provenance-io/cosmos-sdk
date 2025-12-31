@@ -71,7 +71,7 @@ type BaseApp struct {
 	qms               storetypes.MultiStore       // Optional alternative multistore for querying only.
 	storeLoader       StoreLoader                 // function to handle store loading, may be overridden with SetStoreLoader()
 	grpcQueryRouter   *GRPCQueryRouter            // router for redirecting gRPC query calls
-	msgServiceRouter  *MsgServiceRouter           // router for redirecting Msg service messages
+	msgServiceRouter  IMsgServiceRouter           // router for redirecting Msg service messages
 	interfaceRegistry codectypes.InterfaceRegistry
 	txDecoder         sdk.TxDecoder // unmarshal []byte into sdk.Tx
 	txEncoder         sdk.TxEncoder // marshal sdk.Tx into []byte
@@ -175,6 +175,8 @@ type BaseApp struct {
 
 	// trace set will return full stack traces for errors in ABCI Log field
 	trace bool
+
+	aggregateEventsFunc func(anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event)
 
 	// indexEvents defines the set of events in the form {eventType}.{attributeKey},
 	// which informs CometBFT what to index. If empty, all events will be indexed.
@@ -293,7 +295,7 @@ func (app *BaseApp) Trace() bool {
 }
 
 // MsgServiceRouter returns the MsgServiceRouter of a BaseApp.
-func (app *BaseApp) MsgServiceRouter() *MsgServiceRouter { return app.msgServiceRouter }
+func (app *BaseApp) MsgServiceRouter() IMsgServiceRouter { return app.msgServiceRouter }
 
 // GRPCQueryRouter returns the GRPCQueryRouter of a BaseApp.
 func (app *BaseApp) GRPCQueryRouter() *GRPCQueryRouter { return app.grpcQueryRouter }
@@ -846,17 +848,24 @@ func (app *BaseApp) endBlock(_ context.Context) (sdk.EndBlock, error) {
 // both txbytes and the decoded tx are passed to runTx to avoid the state machine encoding the tx and decoding the transaction twice
 // passing the decoded tx to runTX is optional, it will be decoded if the tx is nil
 func (app *BaseApp) runTx(mode execMode, txBytes []byte, tx sdk.Tx) (gInfo sdk.GasInfo, result *sdk.Result, anteEvents []abci.Event, err error) {
+	gInfo, result, anteEvents, _, err = app.runTxProv(mode, txBytes, tx)
+	return
+}
+
+// runTxProv is a Provenance Blockchain customization to runTx that also returns the context used.
+// It's needed by our msg-fees module.
+func (app *BaseApp) runTxProv(mode execMode, txBytes []byte, tx sdk.Tx) (gInfo sdk.GasInfo, result *sdk.Result, anteEvents []abci.Event, ctx sdk.Context, err error) {
 	// NOTE: GasWanted should be returned by the AnteHandler. GasUsed is
 	// determined by the GasMeter. We need access to the context to get the gas
 	// meter, so we initialize upfront.
 	var gasWanted uint64
 
-	ctx := app.getContextForTx(mode, txBytes)
+	ctx = app.getContextForTx(mode, txBytes)
 	ms := ctx.MultiStore()
 
 	// only run the tx if there is block gas remaining
 	if mode == execModeFinalize && ctx.BlockGasMeter().IsOutOfGas() {
-		return gInfo, nil, nil, errorsmod.Wrap(sdkerrors.ErrOutOfGas, "no block gas left to run tx")
+		return gInfo, nil, nil, ctx, errorsmod.Wrap(sdkerrors.ErrOutOfGas, "no block gas left to run tx")
 	}
 
 	defer func() {
@@ -897,19 +906,19 @@ func (app *BaseApp) runTx(mode execMode, txBytes []byte, tx sdk.Tx) (gInfo sdk.G
 	if tx == nil {
 		tx, err = app.txDecoder(txBytes)
 		if err != nil {
-			return sdk.GasInfo{GasUsed: 0, GasWanted: 0}, nil, nil, sdkerrors.ErrTxDecode.Wrap(err.Error())
+			return sdk.GasInfo{GasUsed: 0, GasWanted: 0}, nil, nil, ctx, sdkerrors.ErrTxDecode.Wrap(err.Error())
 		}
 	}
 
 	msgs := tx.GetMsgs()
 	if err := validateBasicTxMsgs(msgs); err != nil {
-		return sdk.GasInfo{}, nil, nil, err
+		return sdk.GasInfo{}, nil, nil, ctx, err
 	}
 
 	for _, msg := range msgs {
 		handler := app.msgServiceRouter.Handler(msg)
 		if handler == nil {
-			return sdk.GasInfo{}, nil, nil, errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "no message handler found for %T", msg)
+			return sdk.GasInfo{}, nil, nil, ctx, errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "no message handler found for %T", msg)
 		}
 	}
 
@@ -949,10 +958,10 @@ func (app *BaseApp) runTx(mode execMode, txBytes []byte, tx sdk.Tx) (gInfo sdk.G
 			if mode == execModeReCheck {
 				// if the ante handler fails on recheck, we want to remove the tx from the mempool
 				if mempoolErr := app.mempool.Remove(tx); mempoolErr != nil {
-					return gInfo, nil, anteEvents, errors.Join(err, mempoolErr)
+					return gInfo, nil, anteEvents, ctx, errors.Join(err, mempoolErr)
 				}
 			}
-			return gInfo, nil, nil, err
+			return gInfo, nil, nil, ctx, err
 		}
 
 		msCache.Write()
@@ -963,12 +972,12 @@ func (app *BaseApp) runTx(mode execMode, txBytes []byte, tx sdk.Tx) (gInfo sdk.G
 	case execModeCheck:
 		err = app.mempool.Insert(ctx, tx)
 		if err != nil {
-			return gInfo, nil, anteEvents, err
+			return gInfo, nil, anteEvents, ctx, err
 		}
 	case execModeFinalize:
 		err = app.mempool.Remove(tx)
 		if err != nil && !errors.Is(err, mempool.ErrTxNotFound) {
-			return gInfo, nil, anteEvents,
+			return gInfo, nil, anteEvents, ctx,
 				fmt.Errorf("failed to remove tx from mempool: %w", err)
 		}
 	}
@@ -999,10 +1008,10 @@ func (app *BaseApp) runTx(mode execMode, txBytes []byte, tx sdk.Tx) (gInfo sdk.G
 		if errPostHandler != nil {
 			if err == nil {
 				// when the msg was handled successfully, return the post handler error only
-				return gInfo, nil, anteEvents, errPostHandler
+				return gInfo, nil, anteEvents, ctx, errPostHandler
 			}
 			// otherwise append to the msg error so that we keep the original error code for better user experience
-			return gInfo, nil, anteEvents, errorsmod.Wrapf(err, "postHandler: %s", errPostHandler)
+			return gInfo, nil, anteEvents, ctx, errorsmod.Wrapf(err, "postHandler: %s", errPostHandler)
 		}
 
 		// we don't want runTx to panic if runMsgs has failed earlier
@@ -1027,7 +1036,21 @@ func (app *BaseApp) runTx(mode execMode, txBytes []byte, tx sdk.Tx) (gInfo sdk.G
 		}
 	}
 
-	return gInfo, result, anteEvents, err
+	if result != nil { // tx was successful run aggregator for ante and result events
+		anteEvents, result.Events = AggregateEvents(app, anteEvents, result.Events)
+	} else { // tx failed run aggregator for ante events only since result object is nil
+		anteEvents, _ = AggregateEvents(app, anteEvents, nil)
+	}
+
+	return gInfo, result, anteEvents, ctx, err
+}
+
+// AggregateEvents aggregation logic of result events (ante and postHander events) with feeEvents
+func AggregateEvents(app *BaseApp, anteEvents []abci.Event, resultEvents []abci.Event) ([]abci.Event, []abci.Event) {
+	if app.aggregateEventsFunc != nil {
+		return app.aggregateEventsFunc(anteEvents, resultEvents)
+	}
+	return anteEvents, resultEvents
 }
 
 // runMsgs iterates through a list of messages and executes them with the provided
