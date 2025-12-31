@@ -44,12 +44,14 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * [#624](https://github.com/provenance-io/cosmos-sdk/pull/624) Provenance: Include the binary version in the status command output from v0.50.x to v0.53.x (original PR #596).
 * [#626](https://github.com/provenance-io/cosmos-sdk/pull/626) Provenance: Propagate the event history into the end blocker from v0.50.x to v0.53.x (original PR #601).
 * [#627](https://github.com/provenance-io/cosmos-sdk/pull/627) Provenance: Create the CountAuthorization (original PRs #599, #609).
+* [#628](https://github.com/provenance-io/cosmos-sdk/pull/628) Provenance: Add ability to inject a locked coins function into the bank module (original PR #595).
 
 ### Improvements
 
 * (x/bank) [#622](https://github.com/provenance-io/cosmos-sdk/pull/622) Improve GetAllBalances and GetAccountsBalances optimization from v0.50.x to v0.53.x (original PR #616).
 * [#625](https://github.com/provenance-io/cosmos-sdk/pull/625) Provenance: Use a new IMsgServiceRouter interface instead of a concrete one (original PRs #593, #607, #618).
 * [#625](https://github.com/provenance-io/cosmos-sdk/pull/625) Provenance: Create baseapp.SimulateProv that is the same as Simulate, but also returns a context (original PRs #593, #607, #618).
+* [#628](https://github.com/provenance-io/cosmos-sdk/pull/628) Provenance: Create SimulateFromSeedProv which is the same as SimulateFromSeed but also returns the simulation's end block time which is needed for some sims tests (original PR #595).
 
 ### Bug Fixes
 
