@@ -82,7 +82,7 @@ func TestAppImportExport(t *testing.T) {
 		newApp := newTestInstance.App
 		var genesisState GenesisState
 		require.NoError(tb, json.Unmarshal(exported.AppState, &genesisState))
-		ctxB := newApp.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
+		ctxB := newApp.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight(), Time: ti.EndBlockTime})
 		_, err = newApp.ModuleManager.InitGenesis(ctxB, newApp.appCodec, genesisState)
 		if IsEmptyValidatorSetErr(err) {
 			tb.Skip("Skipping simulation as all validators have been unbonded")
@@ -123,11 +123,14 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		require.NoError(tb, err)
 
 		tb.Log("importing genesis...\n")
-		newTestInstance := sims.NewSimulationAppInstance(tb, ti.Cfg, NewSimApp)
+		newCfg := ti.Cfg
+		newCfg.GenesisTime = ti.EndBlockTime.Unix()
+		newTestInstance := sims.NewSimulationAppInstance(tb, newCfg, NewSimApp)
 		newApp := newTestInstance.App
 		_, err = newApp.InitChain(&abci.RequestInitChain{
 			AppStateBytes: exported.AppState,
 			ChainId:       sims.SimAppChainID,
+			Time:          ti.EndBlockTime,
 		})
 		if IsEmptyValidatorSetErr(err) {
 			tb.Skip("Skipping simulation as all validators have been unbonded")
