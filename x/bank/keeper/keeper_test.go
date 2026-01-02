@@ -1010,10 +1010,7 @@ func (suite *KeeperTestSuite) TestInputOutputCoinsWithRestrictions() {
 			testFunc := func() {
 				err = suite.bankKeeper.InputOutputCoins(ctx, input, tc.outputs)
 			}
-			suite.authKeeper.EXPECT().
-				HasAccount(gomock.Any(), gomock.Any()).
-				Return(true).
-				AnyTimes()
+			suite.authKeeper.EXPECT().HasAccount(gomock.Any(), gomock.Any()).Return(true).Times(len(tc.outputAddrs))
 			suite.Require().NotPanics(testFunc, "InputOutputCoins")
 			if len(tc.expErr) > 0 {
 				suite.Assert().EqualError(err, tc.expErr, "InputOutputCoins error")
