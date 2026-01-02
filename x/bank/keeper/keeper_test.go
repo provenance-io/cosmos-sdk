@@ -676,7 +676,7 @@ func (suite *KeeperTestSuite) TestInputOutputCoins() {
 	}
 
 	// test that inputs with no outputs fails
-	require.ErrorContains(suite.bankKeeper.InputOutputCoins(ctx, input, []banktypes.Output{}), banktypes.ErrInputOutputMismatch.Error())
+	require.ErrorContains(suite.bankKeeper.InputOutputCoins(ctx, input, []banktypes.Output{}), banktypes.ErrNoOutputs.Error())
 
 	// accounts has no funds, should error.
 	suite.authKeeper.EXPECT().GetAccount(suite.ctx, accAddrs[0]).Return(acc0)
@@ -1010,7 +1010,10 @@ func (suite *KeeperTestSuite) TestInputOutputCoinsWithRestrictions() {
 			testFunc := func() {
 				err = suite.bankKeeper.InputOutputCoins(ctx, input, tc.outputs)
 			}
-			suite.authKeeper.EXPECT().HasAccount(gomock.Any(), gomock.Any()).Return(true).Times(len(tc.outputAddrs))
+			suite.authKeeper.EXPECT().
+				HasAccount(gomock.Any(), gomock.Any()).
+				Return(true).
+				AnyTimes()
 			suite.Require().NotPanics(testFunc, "InputOutputCoins")
 			if len(tc.expErr) > 0 {
 				suite.Assert().EqualError(err, tc.expErr, "InputOutputCoins error")
