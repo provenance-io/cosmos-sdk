@@ -17,6 +17,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 	cdc.RegisterInterface((*Authorization)(nil), nil)
 	cdc.RegisterConcrete(&GenericAuthorization{}, "cosmos-sdk/GenericAuthorization", nil)
+	cdc.RegisterConcrete(&CountAuthorization{}, "cosmos-sdk/CountAuthorization", nil)
 }
 
 // RegisterInterfaces registers the interfaces types with the interface registry
@@ -31,6 +32,7 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		"cosmos.authz.v1beta1.Authorization",
 		(*Authorization)(nil),
 		&GenericAuthorization{},
+		&CountAuthorization{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, MsgServiceDesc())
