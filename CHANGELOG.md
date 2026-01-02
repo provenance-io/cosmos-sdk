@@ -44,6 +44,8 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * [#624](https://github.com/provenance-io/cosmos-sdk/pull/624) Provenance: Include the binary version in the status command output from v0.50.x to v0.53.x (original PR #596).
 * [#626](https://github.com/provenance-io/cosmos-sdk/pull/626) Provenance: Propagate the event history into the end blocker from v0.50.x to v0.53.x (original PR #601).
 * [#627](https://github.com/provenance-io/cosmos-sdk/pull/627) Provenance: Create the CountAuthorization (original PRs #599, #609).
+* [#593](https://github.com/provenance-io/cosmos-sdk/pull/593) Provenance: Use a new IMsgServiceRouter interface instead of a concrete one from v0.50.x to v0.53.x (original PR #593).
+* [#594](https://github.com/provenance-io/cosmos-sdk/pull/594) Provenance: Create the InputOutputCoinsProv function that's similar to InputOutputCoins but allows many inputs with a single output (as well as 1-1 and 1-many still) from v0.50.x to v0.53.x (original PR #594).
 
 ### Improvements
 
@@ -122,7 +124,7 @@ This patch update also includes minor dependency bumps.
 * (client) [#18101](https://github.com/cosmos/cosmos-sdk/pull/18101) Add a `keyring-default-keyname` in `client.toml` for specifying a default key name, and skip the need to use the `--from` flag when signing transactions.
 * (x/gov) [#24355](https://github.com/cosmos/cosmos-sdk/pull/24355) Allow users to set a custom CalculateVoteResultsAndVotingPower function to be used in govkeeper.Tally.
 * (x/mint) [#24436](https://github.com/cosmos/cosmos-sdk/pull/24436) Allow users to set a custom minting function used in the `x/mint` begin blocker.
-  * The `InflationCalculationFn` argument to `mint.NewAppModule()` is now ignored and must be nil.  To set a custom `InflationCalculationFn` on the default minter, use `mintkeeper.WithMintFn(mintkeeper.DefaultMintFn(customInflationFn))`.
+    * The `InflationCalculationFn` argument to `mint.NewAppModule()` is now ignored and must be nil.  To set a custom `InflationCalculationFn` on the default minter, use `mintkeeper.WithMintFn(mintkeeper.DefaultMintFn(customInflationFn))`.
 * (api) [#24428](https://github.com/cosmos/cosmos-sdk/pull/24428) Add block height to response headers
 
 ### Improvements
@@ -131,7 +133,7 @@ This patch update also includes minor dependency bumps.
 * (telemetry) [#24541](https://github.com/cosmos/cosmos-sdk/pull/24541) Telemetry now includes a pre_blocker metric key. x/upgrade should migrate to this key in v0.54.0.
 * (x/auth) [#24541](https://github.com/cosmos/cosmos-sdk/pull/24541) x/auth's PreBlocker now emits telemetry under the pre_blocker metric key.
 * (x/bank) [#24431](https://github.com/cosmos/cosmos-sdk/pull/24431) Reduce the number of `ValidateDenom` calls in `bank.SendCoins` and `Coin`.
-  * The `AmountOf()` method on`sdk.Coins` no longer will `panic` if given an invalid denom and will instead return a zero value.
+    * The `AmountOf()` method on`sdk.Coins` no longer will `panic` if given an invalid denom and will instead return a zero value.
 * (x/staking) [#24391](https://github.com/cosmos/cosmos-sdk/pull/24391) Replace panics with error results; more verbose error messages
 * (x/staking) [#24354](https://github.com/cosmos/cosmos-sdk/pull/24354) Optimize validator endblock by reducing bech32 conversions, resulting in significant performance improvement
 * (client/keys) [#18950](https://github.com/cosmos/cosmos-sdk/pull/18950) Improve `<appd> keys add`, `<appd> keys import` and `<appd> keys rename` by checking name validation.
