@@ -11,6 +11,7 @@ import (
 	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/internal/conv"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -167,34 +168,48 @@ func (k BaseSendKeeper) InputOutputCoinsProv(ctx context.Context, inputs []types
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	// Emit sender events FIRST (matches original SDK behavior)
+	// Identify the input accounts and the amounts to remove from each.
+	inputAmounts := make(map[string]sdk.Coins)
+	inputOrder := make([]sdk.AccAddress, 0, len(inputs))
 	for _, input := range inputs {
-		sdkCtx.EventManager().EmitEvent(
-			sdk.NewEvent(
-				sdk.EventTypeMessage,
-				sdk.NewAttribute(types.AttributeKeySender, input.Address),
-			),
-		)
+		inAddr, err := k.ak.AddressCodec().StringToBytes(input.Address)
+		if err != nil {
+			return err
+		}
+
+		key := conv.UnsafeBytesToStr(inAddr)
+		amt, known := inputAmounts[key]
+		if !known {
+			inputOrder = append(inputOrder, inAddr)
+		}
+		inputAmounts[key] = amt.Add(input.Coins...)
 	}
 
-	type outputInfo struct {
-		coins  sdk.Coins
-		sender string
+	// Remove the funds from the inputs first as that's the most common point of failure.
+	for _, inAddr := range inputOrder {
+		amt := inputAmounts[conv.UnsafeBytesToStr(inAddr)]
+		err := k.subUnlockedCoins(ctx, inAddr, amt)
+		if err != nil {
+			return err
+		}
+
+		sdkCtx.EventManager().EmitEvent(sdk.NewEvent(sdk.EventTypeMessage,
+			sdk.NewAttribute(types.AttributeKeySender, inAddr.String()),
+		))
 	}
 
 	// Create a map of AccAddress (cast to string) to the amount that that address will get.
 	// The keys are the addresses that come back from the send restriction, not necessarily the addresses in the outputs.
 	// Keep track of the order of the output address too since looping over a map is non-deterministic.
-	toOutput := make(map[string]*outputInfo)
+	outputAmounts := make(map[string]sdk.Coins)
 	outputOrder := make([]sdk.AccAddress, 0, len(outputs))
 	// applySendRestriction will make the call to the send restriction function,
-	// and update the toOutput and outputOrder values accordingly.
+	// and update the outputAmounts and outputOrder values accordingly.
 	applySendRestriction := func(inAddrStr, outAddrStr string, coins sdk.Coins) error {
 		inAddr, err := k.ak.AddressCodec().StringToBytes(inAddrStr)
 		if err != nil {
 			return err
 		}
-
 		outAddrOrig, err := k.ak.AddressCodec().StringToBytes(outAddrStr)
 		if err != nil {
 			return err
@@ -205,24 +220,12 @@ func (k BaseSendKeeper) InputOutputCoinsProv(ctx context.Context, inputs []types
 			return err
 		}
 
-		accExists := k.ak.HasAccount(ctx, outAddr)
-		if !accExists {
-			defer telemetry.IncrCounter(1, "new", "account")
-			k.ak.SetAccount(ctx, k.ak.NewAccountWithAddress(ctx, outAddr))
-		}
-
-		key := string(outAddr)
-		info, exists := toOutput[key]
-		if !exists {
+		key := conv.UnsafeBytesToStr(outAddr)
+		amt, known := outputAmounts[key]
+		if !known {
 			outputOrder = append(outputOrder, outAddr)
-			toOutput[key] = &outputInfo{
-				coins:  coins,
-				sender: inAddrStr,
-			}
-		} else {
-			info.coins = info.coins.Add(coins...)
 		}
-
+		outputAmounts[key] = amt.Add(coins...)
 		return nil
 	}
 
@@ -231,53 +234,73 @@ func (k BaseSendKeeper) InputOutputCoinsProv(ctx context.Context, inputs []types
 	// Validation above ensures there's exactly 1 input and/or exactly 1 output.
 	if len(inputs) > 1 {
 		for _, input := range inputs {
-			if err := applySendRestriction(
-				input.Address,
-				outputs[0].Address,
-				input.Coins,
-			); err != nil {
+			err := applySendRestriction(input.Address, outputs[0].Address, input.Coins)
+			if err != nil {
 				return err
 			}
 		}
 	} else {
 		for _, output := range outputs {
-			if err := applySendRestriction(
-				inputs[0].Address,
-				output.Address,
-				output.Coins,
-			); err != nil {
+			err := applySendRestriction(inputs[0].Address, output.Address, output.Coins)
+			if err != nil {
 				return err
 			}
 		}
 	}
 
-	// Remove the funds from the inputs first as that's the most common point of failure.
-	for _, input := range inputs {
-		inAddr, err := k.ak.AddressCodec().StringToBytes(input.Address)
-		if err != nil {
+	// Now, add the coins to the appropriate account(s).
+	for _, outAddr := range outputOrder {
+		amt := outputAmounts[conv.UnsafeBytesToStr(outAddr)]
+		if err := k.addCoins(ctx, outAddr, amt); err != nil {
 			return err
 		}
-		if err := k.subUnlockedCoins(ctx, inAddr, input.Coins); err != nil {
-			return err
+
+		// Create account if recipient does not exist.
+		//
+		// NOTE: This should ultimately be removed in favor a more flexible approach
+		// such as delegated fee messages.
+		accExists := k.ak.HasAccount(ctx, outAddr)
+		if !accExists {
+			defer telemetry.IncrCounter(1, "new", "account")
+			k.ak.SetAccount(ctx, k.ak.NewAccountWithAddress(ctx, outAddr))
 		}
 	}
 
-	// Finally, add the coins to the appropriate account(s).
-	for _, outAddr := range outputOrder {
-		info := toOutput[string(outAddr)]
-
-		if err := k.addCoins(ctx, outAddr, info.coins); err != nil {
-			return err
-		}
-
-		sdkCtx.EventManager().EmitEvent(
-			sdk.NewEvent(
-				types.EventTypeTransfer,
+	// Finally, Emit the transfer events. This event strategy differs from the SDK's in a few ways:
+	//  1. All the transfer events are emitted at the end instead of being interspersed with the addCoins events.
+	//  2. There's still a chance that the transfer event does not have a sender but it'll probably be pretty rare.
+	//  3. We allow for there to be multiple inputs, but still do our best to include all three attributes.
+	switch {
+	case len(inputOrder) == 1:
+		sender := inputOrder[0].String()
+		for _, outAddr := range outputOrder {
+			sdkCtx.EventManager().EmitEvent(sdk.NewEvent(types.EventTypeTransfer,
 				sdk.NewAttribute(types.AttributeKeyRecipient, outAddr.String()),
-				sdk.NewAttribute(types.AttributeKeySender, info.sender),
-				sdk.NewAttribute(sdk.AttributeKeyAmount, info.coins.String()),
-			),
-		)
+				sdk.NewAttribute(types.AttributeKeySender, sender),
+				sdk.NewAttribute(sdk.AttributeKeyAmount, outputAmounts[conv.UnsafeBytesToStr(outAddr)].String()),
+			))
+		}
+	case len(outputOrder) == 1:
+		recipient := outputOrder[0].String()
+		for _, inAddr := range inputOrder {
+			sdkCtx.EventManager().EmitEvent(sdk.NewEvent(types.EventTypeTransfer,
+				sdk.NewAttribute(types.AttributeKeyRecipient, recipient),
+				sdk.NewAttribute(types.AttributeKeySender, inAddr.String()),
+				sdk.NewAttribute(sdk.AttributeKeyAmount, inputAmounts[conv.UnsafeBytesToStr(inAddr)].String()),
+			))
+		}
+	default:
+		// There's multiple input addresses AND multiple output addresses.
+		// This can happen when there's multiple inputs (and one output) where the send restriction
+		// changed the destination of at least one, but not all of the transfers. We then go back
+		// to the pre-v0.50.10 strategy of emitting transfer events without a sender.
+		// The senders can still be found in the message->sender events.
+		for _, outAddr := range outputOrder {
+			sdkCtx.EventManager().EmitEvent(sdk.NewEvent(types.EventTypeTransfer,
+				sdk.NewAttribute(types.AttributeKeyRecipient, outAddr.String()),
+				sdk.NewAttribute(sdk.AttributeKeyAmount, outputAmounts[conv.UnsafeBytesToStr(outAddr)].String()),
+			))
+		}
 	}
 
 	return nil
