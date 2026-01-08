@@ -357,6 +357,7 @@ func (suite *KeeperTestSuite) TestMsgSetSendEnabled() {
 		})
 	}
 }
+
 func (suite *KeeperTestSuite) TestUpdateDenomMetadata() {
 	snowMetadata := banktypes.Metadata{
 		Description: "Frozen stuff falling from the sky.",

@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -14,6 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	govcli "github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 )
 
 var FlagSplit = "split"
@@ -31,6 +34,7 @@ func NewTxCmd(ac address.Codec) *cobra.Command {
 	txCmd.AddCommand(
 		NewSendTxCmd(ac),
 		NewMultiSendTxCmd(ac),
+		GetCmdSetDenomMetadata(),
 	)
 
 	return txCmd
@@ -154,6 +158,98 @@ When using '--dry-run' a key name cannot be used, only a bech32 address.`,
 
 	cmd.Flags().Bool(FlagSplit, false, "Send the equally split token amount to each address")
 	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// GetCmdSetDenomMetadata returns a CLI command handler for creating a governance
+// proposal to update bank denom metadata.
+//
+// This command constructs a MsgUpdateDenomMetadata wrapped in a governance
+// proposal, allowing on-chain updates to denomination metadata such as name,
+// symbol, display unit, and exponent.
+//
+// The command requires exactly six arguments:
+//
+//	<denom> <name> <symbol> <denom-description> <display> <exponent>
+//
+// Proposal title and summary must be provided via governance flags.
+func GetCmdSetDenomMetadata() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "set-denom-metadata <denom> <name> <symbol> <denom-description> <display> <exponent>",
+		Aliases: []string{"sdm"},
+		Args:    cobra.ExactArgs(6),
+		Short:   "Create a governance proposal to set denom metadata",
+		Long: strings.TrimSpace(`Create a governance proposal to set denomination metadata.
+This creates a gov proposal with title and description that wraps the denom metadata update.`),
+		Example: fmt.Sprintf(`$ %[1]s tx bank set-denom-metadata mycoin "My Coin" "MYC" "My coin description" "myc" 6 \
+  --title="Update MyCoin Metadata" \
+  --description="Proposal to update metadata for mycoin" \
+  --from mykey`, version.AppName),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			denom := args[0]
+			name := args[1]
+			symbol := args[2]
+			denomDescription := args[3]
+			display := args[4]
+
+			exponent, err := strconv.ParseUint(args[5], 10, 32)
+			if err != nil {
+				return fmt.Errorf("invalid exponent %q: %w", args[5], err)
+			}
+
+			title, _ := cmd.Flags().GetString(govcli.FlagTitle)
+			description, _ := cmd.Flags().GetString(govcli.FlagSummary)
+
+			if strings.TrimSpace(title) == "" {
+				return fmt.Errorf(`required flag(s) "title" not set`)
+			}
+			if strings.TrimSpace(description) == "" {
+				return fmt.Errorf(`required flag(s) "summary" not set`)
+			}
+
+			metadata := types.Metadata{
+				Description: denomDescription,
+				DenomUnits: []*types.DenomUnit{
+					{
+						Denom:    denom,
+						Exponent: 0,
+						Aliases:  []string{},
+					},
+					{
+						Denom:    display,
+						Exponent: uint32(exponent),
+						Aliases:  []string{},
+					},
+				},
+				Base:    denom,
+				Display: display,
+				Name:    name,
+				Symbol:  symbol,
+				URI:     "",
+				URIHash: "",
+			}
+
+			fromAddress := clientCtx.GetFromAddress().String()
+
+			msg := &types.MsgUpdateDenomMetadata{
+				FromAddress: fromAddress,
+				Title:       title,
+				Description: description,
+				Metadata:    metadata,
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+	govcli.AddGovPropFlagsToCmd(cmd)
 
 	return cmd
 }
