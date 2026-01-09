@@ -15,11 +15,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	govcli "github.com/cosmos/cosmos-sdk/x/gov/client/cli"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 var FlagSplit = "split"
+
+// FlagAuthority defines the flag for the authority address
+const FlagAuthority = "authority"
 
 // NewTxCmd returns a root CLI command handler for all x/bank transaction commands.
 func NewTxCmd(ac address.Codec) *cobra.Command {
@@ -164,28 +169,24 @@ When using '--dry-run' a key name cannot be used, only a bech32 address.`,
 
 // GetCmdSetDenomMetadata returns a CLI command handler for creating a governance
 // proposal to update bank denom metadata.
-//
-// This command constructs a MsgUpdateDenomMetadata wrapped in a governance
-// proposal, allowing on-chain updates to denomination metadata such as name,
-// symbol, display unit, and exponent.
-//
-// The command requires exactly six arguments:
-//
-//	<denom> <name> <symbol> <denom-description> <display> <exponent>
-//
-// Proposal title and summary must be provided via governance flags.
 func GetCmdSetDenomMetadata() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "set-denom-metadata <denom> <name> <symbol> <denom-description> <display> <exponent>",
 		Aliases: []string{"sdm"},
 		Args:    cobra.ExactArgs(6),
-		Short:   "Create a governance proposal to set denom metadata",
-		Long: strings.TrimSpace(`Create a governance proposal to set denomination metadata.
-This creates a gov proposal with title and description that wraps the denom metadata update.`),
-		Example: fmt.Sprintf(`$ %[1]s tx bank set-denom-metadata mycoin "My Coin" "MYC" "My coin description" "myc" 6 \
-  --title="Update MyCoin Metadata" \
-  --description="Proposal to update metadata for mycoin" \
-  --from mykey`, version.AppName),
+		Short:   "Submit a governance proposal to set denom metadata",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Submit a governance proposal to set denomination metadata.
+This command constructs a governance proposal that wraps a MsgUpdateDenomMetadata.
+The 'authority' automatically defaults to the governance module account, 
+which is required for the network to accept the update.
+Example:
+$ %s tx bank set-denom-metadata uatom "Atom" "ATOM" "The native token of Cosmos" "atom" 6 \
+  --title="Update Atom Metadata" \
+  --summary="Proposal to update metadata for atom" \
+  --deposit=100stake \
+  --from=mykey`, version.AppName),
+		),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -203,14 +204,14 @@ This creates a gov proposal with title and description that wraps the denom meta
 				return fmt.Errorf("invalid exponent %q: %w", args[5], err)
 			}
 
-			title, _ := cmd.Flags().GetString(govcli.FlagTitle)
-			description, _ := cmd.Flags().GetString(govcli.FlagSummary)
+			authorityAddr := authtypes.NewModuleAddress(govtypes.ModuleName)
 
-			if strings.TrimSpace(title) == "" {
-				return fmt.Errorf(`required flag(s) "title" not set`)
-			}
-			if strings.TrimSpace(description) == "" {
-				return fmt.Errorf(`required flag(s) "summary" not set`)
+			if authFlag, _ := cmd.Flags().GetString(FlagAuthority); authFlag != "" {
+				addr, err := sdk.AccAddressFromBech32(authFlag)
+				if err != nil {
+					return fmt.Errorf("invalid authority address: %w", err)
+				}
+				authorityAddr = addr
 			}
 
 			metadata := types.Metadata{
@@ -231,25 +232,30 @@ This creates a gov proposal with title and description that wraps the denom meta
 				Display: display,
 				Name:    name,
 				Symbol:  symbol,
-				URI:     "",
-				URIHash: "",
 			}
 
-			fromAddress := clientCtx.GetFromAddress().String()
-
 			msg := &types.MsgUpdateDenomMetadata{
-				FromAddress: fromAddress,
-				Title:       title,
-				Description: description,
+				FromAddress: authorityAddr.String(),
 				Metadata:    metadata,
 			}
 
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+			// Read --title, --summary, --deposit, etc.
+			proposal, err := govcli.ReadGovPropFlags(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			if err := proposal.SetMsgs([]sdk.Msg{msg}); err != nil {
+				return fmt.Errorf("error setting messages in proposal: %w", err)
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), proposal)
 		},
 	}
 
 	flags.AddTxFlagsToCmd(cmd)
 	govcli.AddGovPropFlagsToCmd(cmd)
+	cmd.Flags().String(FlagAuthority, "", "The address of the authority (defaults to the gov module account)")
 
 	return cmd
 }

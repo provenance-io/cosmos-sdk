@@ -22,7 +22,6 @@ import (
 	testutilmod "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/bank/client/cli"
-	govcli "github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 )
 
 type CLITestSuite struct {
@@ -133,80 +132,109 @@ func (s *CLITestSuite) TestSendTxCmd() {
 	}
 }
 
-func (s *CLITestSuite) TestSetDenomMetadataCmd() {
-	accounts := testutil.CreateKeyringAccounts(s.T(), s.kr, 1)
+func (s *CLITestSuite) TestMultiSendTxCmd() {
+	accounts := testutil.CreateKeyringAccounts(s.T(), s.kr, 3)
 
-	cmd := cli.GetCmdSetDenomMetadata()
+	cmd := cli.NewMultiSendTxCmd(address.NewBech32Codec("cosmos"))
 	cmd.SetOut(io.Discard)
 
 	extraArgs := []string{
-		fmt.Sprintf("--%s=%s", flags.FlagFrom, accounts[0].Address.String()),
 		fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastSync),
 		fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
-		fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin("stake", sdkmath.NewInt(10))).String()),
+		fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastSync),
+		fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin("photon", sdkmath.NewInt(10))).String()),
 		fmt.Sprintf("--%s=test-chain", flags.FlagChainID),
-		fmt.Sprintf("--%s=%s", govcli.FlagTitle, "Update Denom Metadata"),
-		fmt.Sprintf("--%s=%s", govcli.FlagSummary, "Proposal to update denom metadata"),
 	}
 
 	testCases := []struct {
-		name             string
-		ctxGen           func() client.Context
-		denom            string
-		coinName         string
-		symbol           string
-		denomDescription string
-		display          string
-		exponent         string
-		extraArgs        []string
-		expectErrMsg     string
+		name         string
+		ctxGen       func() client.Context
+		from         string
+		to           []string
+		amount       sdk.Coins
+		extraArgs    []string
+		expectErrMsg string
 	}{
 		{
 			"valid transaction",
 			func() client.Context {
 				return s.baseCtx
 			},
-			"mycoin", "My Coin", "MYC", "My coin description", "myc", "6",
+			accounts[0].Address.String(),
+			[]string{
+				accounts[1].Address.String(),
+				accounts[2].Address.String(),
+			},
+			sdk.NewCoins(
+				sdk.NewCoin("stake", sdkmath.NewInt(10)),
+				sdk.NewCoin("photon", sdkmath.NewInt(40)),
+			),
 			extraArgs,
 			"",
 		},
 		{
-			"valid transaction with zero exponent",
+			"invalid from Address",
 			func() client.Context {
 				return s.baseCtx
 			},
-			"nftcoin", "NFT Coin", "NFT", "Non-fungible token", "nftcoin", "0",
+			"foo",
+			[]string{
+				accounts[1].Address.String(),
+				accounts[2].Address.String(),
+			},
+			sdk.NewCoins(
+				sdk.NewCoin("stake", sdkmath.NewInt(10)),
+				sdk.NewCoin("photon", sdkmath.NewInt(40)),
+			),
 			extraArgs,
-			"",
+			"key not found",
 		},
 		{
-			"invalid exponent - not a number",
+			"invalid recipients",
 			func() client.Context {
 				return s.baseCtx
 			},
-			"mycoin", "My Coin", "MYC", "Description", "myc", "abc",
+			accounts[0].Address.String(),
+			[]string{
+				accounts[1].Address.String(),
+				"bar",
+			},
+			sdk.NewCoins(
+				sdk.NewCoin("stake", sdkmath.NewInt(10)),
+				sdk.NewCoin("photon", sdkmath.NewInt(40)),
+			),
 			extraArgs,
-			"invalid exponent",
+			"invalid bech32 string",
 		},
 		{
-			"invalid exponent - overflow",
+			"invalid amount",
 			func() client.Context {
 				return s.baseCtx
 			},
-			"mycoin", "My Coin", "MYC", "Description", "myc", "4294967296",
+			accounts[0].Address.String(),
+			[]string{
+				accounts[1].Address.String(),
+				accounts[2].Address.String(),
+			},
+			nil,
 			extraArgs,
-			"invalid exponent",
+			"must send positive amount",
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			args := []string{tc.denom, tc.coinName, tc.symbol, tc.denomDescription, tc.display, tc.exponent}
+			ctx := svrcmd.CreateExecuteContext(context.Background())
+
+			var args []string
+			args = append(args, tc.from)
+			args = append(args, tc.to...)
+			args = append(args, tc.amount.String())
 			args = append(args, tc.extraArgs...)
 
-			ctx := svrcmd.CreateExecuteContext(context.Background())
 			cmd.SetContext(ctx)
 			cmd.SetArgs(args)
+
 			s.Require().NoError(client.SetCmdClientContextHandler(tc.ctxGen(), cmd))
 
 			out, err := clitestutil.ExecTestCLICmd(tc.ctxGen(), cmd, args)
