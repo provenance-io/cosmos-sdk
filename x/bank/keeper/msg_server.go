@@ -182,3 +182,17 @@ func (k msgServer) SetSendEnabled(goCtx context.Context, msg *types.MsgSetSendEn
 
 	return &types.MsgSetSendEnabledResponse{}, nil
 }
+
+func (k msgServer) UpdateDenomMetadata(goCtx context.Context, msg *types.MsgUpdateDenomMetadata) (*types.MsgUpdateDenomMetadataResponse, error) {
+	if k.GetAuthority() != msg.FromAddress {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid from address; expected %s got %s", k.GetAuthority(), msg.FromAddress)
+	}
+
+	if err := msg.Metadata.Validate(); err != nil {
+		return nil, sdkerrors.ErrInvalidRequest.Wrapf("invalid metadata: %v", err)
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	k.Keeper.SetDenomMetaData(ctx, msg.Metadata)
+	return &types.MsgUpdateDenomMetadataResponse{}, nil
+}

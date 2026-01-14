@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -13,10 +15,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	govcli "github.com/cosmos/cosmos-sdk/x/gov/client/cli"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 var FlagSplit = "split"
+
+// FlagAuthority defines the flag for the authority address
+const FlagAuthority = "authority"
 
 // NewTxCmd returns a root CLI command handler for all x/bank transaction commands.
 func NewTxCmd(ac address.Codec) *cobra.Command {
@@ -31,6 +39,7 @@ func NewTxCmd(ac address.Codec) *cobra.Command {
 	txCmd.AddCommand(
 		NewSendTxCmd(ac),
 		NewMultiSendTxCmd(ac),
+		GetCmdSetDenomMetadata(),
 	)
 
 	return txCmd
@@ -154,6 +163,99 @@ When using '--dry-run' a key name cannot be used, only a bech32 address.`,
 
 	cmd.Flags().Bool(FlagSplit, false, "Send the equally split token amount to each address")
 	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// GetCmdSetDenomMetadata returns a CLI command handler for creating a governance
+// proposal to update bank denom metadata.
+func GetCmdSetDenomMetadata() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "set-denom-metadata <denom> <name> <symbol> <denom-description> <display> <exponent>",
+		Aliases: []string{"sdm"},
+		Args:    cobra.ExactArgs(6),
+		Short:   "Submit a governance proposal to set denom metadata",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Submit a governance proposal to set denomination metadata.
+This command constructs a governance proposal that wraps a MsgUpdateDenomMetadata.
+The 'authority' automatically defaults to the governance module account, 
+which is required for the network to accept the update.
+Example:
+$ %s tx bank set-denom-metadata uatom "Atom" "ATOM" "The native token of Cosmos" "atom" 6 \
+  --title="Update Atom Metadata" \
+  --summary="Proposal to update metadata for atom" \
+  --deposit=100stake \
+  --from=mykey`, version.AppName),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			denom := args[0]
+			name := args[1]
+			symbol := args[2]
+			denomDescription := args[3]
+			display := args[4]
+
+			exponent, err := strconv.ParseUint(args[5], 10, 32)
+			if err != nil {
+				return fmt.Errorf("invalid exponent %q: %w", args[5], err)
+			}
+
+			authorityAddr := authtypes.NewModuleAddress(govtypes.ModuleName)
+
+			if authFlag, _ := cmd.Flags().GetString(FlagAuthority); authFlag != "" {
+				addr, err := sdk.AccAddressFromBech32(authFlag)
+				if err != nil {
+					return fmt.Errorf("invalid authority address: %w", err)
+				}
+				authorityAddr = addr
+			}
+
+			metadata := types.Metadata{
+				Description: denomDescription,
+				DenomUnits: []*types.DenomUnit{
+					{
+						Denom:    denom,
+						Exponent: 0,
+						Aliases:  []string{},
+					},
+					{
+						Denom:    display,
+						Exponent: uint32(exponent),
+						Aliases:  []string{},
+					},
+				},
+				Base:    denom,
+				Display: display,
+				Name:    name,
+				Symbol:  symbol,
+			}
+
+			msg := &types.MsgUpdateDenomMetadata{
+				FromAddress: authorityAddr.String(),
+				Metadata:    metadata,
+			}
+
+			// Read --title, --summary, --deposit, etc.
+			proposal, err := govcli.ReadGovPropFlags(clientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			if err := proposal.SetMsgs([]sdk.Msg{msg}); err != nil {
+				return fmt.Errorf("error setting messages in proposal: %w", err)
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), proposal)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+	govcli.AddGovPropFlagsToCmd(cmd)
+	cmd.Flags().String(FlagAuthority, "", "The address of the authority (defaults to the gov module account)")
 
 	return cmd
 }
