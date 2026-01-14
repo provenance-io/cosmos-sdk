@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/stretchr/testify/require"
@@ -193,7 +194,7 @@ func RunWithSeedAndRandAcc[T SimulationApp](
 	app := testInstance.App
 	stateFactory := setupStateFactory(app)
 	ops, reporter := prepareWeightedOps(app.SimulationManager(), stateFactory, tCfg, testInstance.App.TxConfig(), runLogger)
-	simParams, accs, err := simulation.SimulateFromSeedX(
+	endBlockTime, simParams, accs, err := simulation.SimulateFromSeedXProv(
 		tb,
 		runLogger,
 		WriteToDebugLog(runLogger),
@@ -207,6 +208,7 @@ func RunWithSeedAndRandAcc[T SimulationApp](
 		testInstance.ExecLogWriter,
 	)
 	require.NoError(tb, err)
+	testInstance.EndBlockTime = endBlockTime
 	err = simtestutil.CheckExportSimulation(app, tCfg, simParams)
 	require.NoError(tb, err)
 	if tCfg.Commit {
@@ -268,6 +270,7 @@ type TestInstance[T SimulationApp] struct {
 	Cfg           simtypes.Config
 	AppLogger     log.Logger
 	ExecLogWriter simulation.LogWriter
+	EndBlockTime  time.Time
 }
 
 // included to avoid cyclic dependency in testutils/sims
@@ -391,6 +394,7 @@ func NewSimulationAppInstance[T SimulationApp](
 		Cfg:           tCfg,
 		AppLogger:     logger,
 		ExecLogWriter: &simulation.StandardLogWriter{Seed: tCfg.Seed},
+		EndBlockTime:  time.Unix(tCfg.GenesisTime, 0),
 	}
 }
 

@@ -166,6 +166,18 @@ func (mr *MockBankKeeperMockRecorder) AllBalances(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllBalances", reflect.TypeOf((*MockBankKeeper)(nil).AllBalances), arg0, arg1)
 }
 
+// AppendLockedCoinsGetter mocks base method.
+func (m *MockBankKeeper) AppendLockedCoinsGetter(getter types0.GetLockedCoinsFn) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "AppendLockedCoinsGetter", getter)
+}
+
+// AppendLockedCoinsGetter indicates an expected call of AppendLockedCoinsGetter.
+func (mr *MockBankKeeperMockRecorder) AppendLockedCoinsGetter(getter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppendLockedCoinsGetter", reflect.TypeOf((*MockBankKeeper)(nil).AppendLockedCoinsGetter), getter)
+}
+
 // AppendSendRestriction mocks base method.
 func (m *MockBankKeeper) AppendSendRestriction(restriction types0.SendRestrictionFn) {
 	m.ctrl.T.Helper()
@@ -219,6 +231,18 @@ func (m *MockBankKeeper) BurnCoins(ctx context.Context, moduleName string, amt t
 func (mr *MockBankKeeperMockRecorder) BurnCoins(ctx, moduleName, amt any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BurnCoins", reflect.TypeOf((*MockBankKeeper)(nil).BurnCoins), ctx, moduleName, amt)
+}
+
+// ClearLockedCoinsGetter mocks base method.
+func (m *MockBankKeeper) ClearLockedCoinsGetter() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ClearLockedCoinsGetter")
+}
+
+// ClearLockedCoinsGetter indicates an expected call of ClearLockedCoinsGetter.
+func (mr *MockBankKeeperMockRecorder) ClearLockedCoinsGetter() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearLockedCoinsGetter", reflect.TypeOf((*MockBankKeeper)(nil).ClearLockedCoinsGetter))
 }
 
 // ClearSendRestriction mocks base method.
@@ -757,6 +781,18 @@ func (mr *MockBankKeeperMockRecorder) Params(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Params", reflect.TypeOf((*MockBankKeeper)(nil).Params), arg0, arg1)
 }
 
+// PrependLockedCoinsGetter mocks base method.
+func (m *MockBankKeeper) PrependLockedCoinsGetter(getter types0.GetLockedCoinsFn) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "PrependLockedCoinsGetter", getter)
+}
+
+// PrependLockedCoinsGetter indicates an expected call of PrependLockedCoinsGetter.
+func (mr *MockBankKeeperMockRecorder) PrependLockedCoinsGetter(getter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrependLockedCoinsGetter", reflect.TypeOf((*MockBankKeeper)(nil).PrependLockedCoinsGetter), getter)
+}
+
 // PrependSendRestriction mocks base method.
 func (m *MockBankKeeper) PrependSendRestriction(restriction types0.SendRestrictionFn) {
 	m.ctrl.T.Helper()
@@ -1004,6 +1040,20 @@ func (m *MockBankKeeper) UndelegateCoinsFromModuleToAccount(ctx context.Context,
 func (mr *MockBankKeeperMockRecorder) UndelegateCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UndelegateCoinsFromModuleToAccount", reflect.TypeOf((*MockBankKeeper)(nil).UndelegateCoinsFromModuleToAccount), ctx, senderModule, recipientAddr, amt)
+}
+
+// UnvestedCoins mocks base method.
+func (m *MockBankKeeper) UnvestedCoins(ctx context.Context, addr types.AccAddress) types.Coins {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnvestedCoins", ctx, addr)
+	ret0, _ := ret[0].(types.Coins)
+	return ret0
+}
+
+// UnvestedCoins indicates an expected call of UnvestedCoins.
+func (mr *MockBankKeeperMockRecorder) UnvestedCoins(ctx, addr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnvestedCoins", reflect.TypeOf((*MockBankKeeper)(nil).UnvestedCoins), ctx, addr)
 }
 
 // ValidateBalance mocks base method.
