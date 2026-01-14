@@ -8,6 +8,8 @@ var (
 	_ sdk.Msg = &MsgSend{}
 	_ sdk.Msg = &MsgMultiSend{}
 	_ sdk.Msg = &MsgUpdateParams{}
+	_ sdk.Msg = &MsgSetSendEnabled{}
+	_ sdk.Msg = &MsgUpdateDenomMetadata{}
 )
 
 // NewMsgSend - construct a msg to send coins from one account to another.

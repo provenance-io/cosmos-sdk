@@ -45,6 +45,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 * [#626](https://github.com/provenance-io/cosmos-sdk/pull/626) Provenance: Propagate the event history into the end blocker from v0.50.x to v0.53.x (original PR #601).
 * [#627](https://github.com/provenance-io/cosmos-sdk/pull/627) Provenance: Create the CountAuthorization (original PRs #599, #609).
 * [#629](https://github.com/provenance-io/cosmos-sdk/pull/629) Provenance: Create the InputOutputCoinsProv function that's similar to InputOutputCoins but allows many inputs with a single output (as well as 1-1 and 1-many still) (original PR #594).
+* [#631](https://github.com/provenance-io/cosmos-sdk/pull/631) Provenance: Add functionality to update denom metadata via gov proposal (original PRs #602, #603).
 
 ### Improvements
 
