@@ -38,6 +38,12 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased Provenance
 
+* nothing
+
+---
+
+## [v0.53.5-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.53.5-pio-1) - 2026-01-16
+
 ### Features
 
 * [#621](https://github.com/provenance-io/cosmos-sdk/pull/621) Provenance: Create the ReadPageRequestWithPageKeyDecoded helper from v0.50.x to v0.53.x (original PR #597).
@@ -58,6 +64,10 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Bug Fixes
 
 * [#624](https://github.com/provenance-io/cosmos-sdk/pull/624) Provenance: Fix the prune command to properly load configuration files from v0.50.x to v0.53.x (original PR #596).
+
+### Full Commit History
+
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.53.5..v0.53.5-pio-1
 
 ---
 
