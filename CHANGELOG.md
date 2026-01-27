@@ -38,7 +38,9 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased Provenance
 
-* nothing
+### Features
+
+* [#633](https://github.com/provenance-io/cosmos-sdk/pull/633) Provenance: Add the --expedite flag to gov prop commands.
 
 ---
 
