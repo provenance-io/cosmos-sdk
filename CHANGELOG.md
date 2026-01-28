@@ -38,9 +38,20 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased Provenance
 
+* nothing
+
+---
+
+## [v0.53.5-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.53.5-pio-2) - 2026-01-28
+
 ### Features
 
 * [#633](https://github.com/provenance-io/cosmos-sdk/pull/633) Provenance: Add the --expedite flag to gov prop commands.
+
+### Full Commit History
+
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.53.5-pio-1..v0.53.5-pio-2
+* https://github.com/provenance-io/cosmos-sdk/compare/v0.53.5..v0.53.5-pio-2
 
 ---
 
