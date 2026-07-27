@@ -293,7 +293,7 @@ func (s *coinTestSuite) TestQuoIntCoins() {
 		} else {
 			res := tc.input.QuoInt(tc.divisor)
 			assert.Equal(tc.isValid, res.IsValid())
-			assert.Equal(tc.expected, res, "quotient of coins is incorrect, tc #%d", i)
+			assert.Equal(tc.expected.String(), res.String(), "quotient of coins is incorrect, tc #%d", i)
 		}
 	}
 }
