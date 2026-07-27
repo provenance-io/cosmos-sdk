@@ -582,7 +582,6 @@ func (suite *KeeperTestSuite) TestLockedCoins_InputOutputCoins() {
 	expErr := "spendable balance 7acorn is smaller than 8acorn: insufficient funds"
 	inputs := []types.Input{{Address: fromAddr.String(), Coins: toSend}}
 	outputs := []types.Output{{Address: toAddr.String(), Coins: toSend}}
-	suite.authKeeper.EXPECT().HasAccount(suite.ctx, toAddr).Return(true)
 
 	var err error
 	testFunc := func() {
