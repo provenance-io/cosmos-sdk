@@ -40,7 +40,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Improvements
 
-* [#634](https://github.com/provenance-io/cosmos-sdk/pull/634) Bring in upstream changes up to v0.53.8.
+* [#635](https://github.com/provenance-io/cosmos-sdk/pull/635) Bring in upstream changes up to v0.53.8.
 
 ---
 
