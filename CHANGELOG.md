@@ -42,7 +42,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ---
 
-## [v0.53.8-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.53.8-pio-2) - 2026-07-27
+## [v0.53.8-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.53.8-pio-2) - 2026-09-11
 
 ### Bug Fixes
 
