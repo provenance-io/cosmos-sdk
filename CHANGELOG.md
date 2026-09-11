@@ -38,6 +38,20 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## Unreleased Provenance
 
+- nothing
+
+---
+
+## [v0.53.8-pio-2](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.53.8-pio-2) - 2026-09-11
+
+### Bug Fixes
+
+* [#636](https://github.com/provenance-io/cosmos-sdk/pull/636) Fix feegrant revoke to correctly delete the queue entry.
+
+---
+
+## [v0.53.8-pio-1](https://github.com/provenance-io/cosmos-sdk/releases/tag/v0.53.8-pio-1) - 2026-07-27
+
 ### Improvements
 
 * [#635](https://github.com/provenance-io/cosmos-sdk/pull/635) Bring in upstream changes up to v0.53.8.
