@@ -185,19 +185,6 @@ func (k BaseSendKeeper) InputOutputCoinsProv(ctx context.Context, inputs []types
 		inputAmounts[key] = amt.Add(input.Coins...)
 	}
 
-	// Remove the funds from the inputs first as that's the most common point of failure.
-	for _, inAddr := range inputOrder {
-		amt := inputAmounts[conv.UnsafeBytesToStr(inAddr)]
-		err := k.subUnlockedCoins(ctx, inAddr, amt)
-		if err != nil {
-			return err
-		}
-
-		sdkCtx.EventManager().EmitEvent(sdk.NewEvent(sdk.EventTypeMessage,
-			sdk.NewAttribute(types.AttributeKeySender, inAddr.String()),
-		))
-	}
-
 	// Create a map of AccAddress (cast to string) to the amount that that address will get.
 	// The keys are the addresses that come back from the send restriction, not necessarily the addresses in the outputs.
 	// Keep track of the order of the output address too since looping over a map is non-deterministic.
@@ -246,6 +233,19 @@ func (k BaseSendKeeper) InputOutputCoinsProv(ctx context.Context, inputs []types
 				return err
 			}
 		}
+	}
+
+	// Remove the funds from the inputs first as that's the most common point of failure.
+	for _, inAddr := range inputOrder {
+		amt := inputAmounts[conv.UnsafeBytesToStr(inAddr)]
+		err := k.subUnlockedCoins(ctx, inAddr, amt)
+		if err != nil {
+			return err
+		}
+
+		sdkCtx.EventManager().EmitEvent(sdk.NewEvent(sdk.EventTypeMessage,
+			sdk.NewAttribute(types.AttributeKeySender, inAddr.String()),
+		))
 	}
 
 	// Now, add the coins to the appropriate account(s).

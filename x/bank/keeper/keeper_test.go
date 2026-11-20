@@ -904,7 +904,7 @@ func (suite *KeeperTestSuite) TestInputOutputCoinsWithRestrictions() {
 			},
 			expErr: "restriction test error",
 			expBals: expBals{
-				from: sdk.NewCoins(newFooCoin(959), newBarCoin(412)), // 500 - 88 = 412
+				from: sdk.NewCoins(newFooCoin(959), newBarCoin(500)),
 				to1:  sdk.NewCoins(newFooCoin(15)),
 				to2:  sdk.NewCoins(newFooCoin(26)),
 			},
@@ -933,8 +933,8 @@ func (suite *KeeperTestSuite) TestInputOutputCoinsWithRestrictions() {
 				},
 			},
 			expBals: expBals{
-				// Starting from actual balance after previous test (412bar, not 500bar)
-				from: sdk.NewCoins(newFooCoin(948), newBarCoin(400)), // (959-11)foo, (412-12)bar
+				// Starting from actual balance after previous test
+				from: sdk.NewCoins(newFooCoin(948), newBarCoin(488)), // (959-11)foo, (500-12)bar
 				to1:  sdk.NewCoins(newFooCoin(26)),                   // 15 + 11 = 26
 				to2:  sdk.NewCoins(newFooCoin(26), newBarCoin(12)),
 			},
@@ -964,11 +964,11 @@ func (suite *KeeperTestSuite) TestInputOutputCoinsWithRestrictions() {
 			},
 			expErr: "second restriction error",
 			expBals: expBals{
-				// Funds ARE deducted when restriction fails
-				// Starting from 948foo, 400bar
-				from: sdk.NewCoins(newFooCoin(904), newBarCoin(400)), // 948 - 44 = 904
-				to1:  sdk.NewCoins(newFooCoin(26)),                   // No change (12foo never added)
-				to2:  sdk.NewCoins(newFooCoin(26), newBarCoin(12)),   // No change
+				// Funds ARE NOT deducted when restriction fails
+				// Starting from 948foo, 488bar
+				from: sdk.NewCoins(newFooCoin(948), newBarCoin(488)),
+				to1:  sdk.NewCoins(newFooCoin(26)),                 // No change (12foo never added)
+				to2:  sdk.NewCoins(newFooCoin(26), newBarCoin(12)), // No change
 			},
 		},
 		{
@@ -995,8 +995,8 @@ func (suite *KeeperTestSuite) TestInputOutputCoinsWithRestrictions() {
 				},
 			},
 			expBals: expBals{
-				// Starting from actual balance after previous test (904foo, 400bar)
-				from: sdk.NewCoins(newFooCoin(904), newBarCoin(365)), // (400-35)bar
+				// Starting from actual balance after previous test (948foo, 488bar)
+				from: sdk.NewCoins(newFooCoin(948), newBarCoin(453)), // (412-35)bar
 				to1:  sdk.NewCoins(newFooCoin(26), newBarCoin(25)),   // Gets 25 (restriction swapped)
 				to2:  sdk.NewCoins(newFooCoin(26), newBarCoin(22)),   // 12 + 10 = 22 (restriction swapped)
 			},
@@ -1043,10 +1043,10 @@ func (suite *KeeperTestSuite) TestInputOutputCoinsWithRestrictions() {
 			suite.Assert().Equal(tc.expBals.to1.String(), to1Bal.String(), "toAddr1 balance")
 			to2Bal := suite.bankKeeper.GetAllBalances(ctx, toAddr2)
 			suite.Assert().Equal(tc.expBals.to2.String(), to2Bal.String(), "toAddr2 balance")
-
 		})
 	}
 }
+
 func (suite *KeeperTestSuite) TestInputOutputCoinsProv() {
 	fooCoins := func(amt int64) sdk.Coins {
 		return sdk.NewCoins(newFooCoin(amt))
@@ -1226,6 +1226,7 @@ func (suite *KeeperTestSuite) TestInputOutputCoinsProv() {
 		}
 	})
 }
+
 func (suite *KeeperTestSuite) TestSendCoins() {
 	ctx := suite.ctx
 	require := suite.Require()
