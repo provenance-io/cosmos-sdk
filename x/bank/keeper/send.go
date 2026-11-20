@@ -235,7 +235,7 @@ func (k BaseSendKeeper) InputOutputCoinsProv(ctx context.Context, inputs []types
 		}
 	}
 
-	// Remove the funds from the inputs first as that's the most common point of failure.
+	// Remove the funds from the inputs.
 	for _, inAddr := range inputOrder {
 		amt := inputAmounts[conv.UnsafeBytesToStr(inAddr)]
 		err := k.subUnlockedCoins(ctx, inAddr, amt)
