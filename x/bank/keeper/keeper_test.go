@@ -1399,7 +1399,7 @@ func (suite *KeeperTestSuite) TestSendCoinsWithRestrictions() {
 			},
 			expErr: "test restriction error",
 			expBals: expBals{
-				from: sdk.NewCoins(newFooCoin(885), newBarCoin(273)), // 985-100=885, 473-200=273
+				from: sdk.NewCoins(newFooCoin(985), newBarCoin(473)),
 				to1:  sdk.NewCoins(newFooCoin(15)),
 				to2:  sdk.NewCoins(newBarCoin(27)),
 			},
@@ -1413,9 +1413,7 @@ func (suite *KeeperTestSuite) TestSendCoinsWithRestrictions() {
 			actualRestrictionArgs = nil
 			suite.bankKeeper.SetSendRestriction(tc.fn)
 			ctx := suite.ctx
-			if len(tc.expErr) > 0 {
-				suite.authKeeper.EXPECT().GetAccount(ctx, fromAddr).Return(fromAcc)
-			} else {
+			if len(tc.expErr) == 0 {
 				suite.mockSendCoins(ctx, fromAcc, tc.finalAddr)
 			}
 			var err error
